@@ -29,14 +29,17 @@ class APP_IANN(QMainWindow, Ui_IANN):
             cv2.imread("/home/lin/Desktop/dzq.jpg"),
             cv2.COLOR_BGR2RGB,
         )
-        self.controller.set_image(image)
 
         # 画布部分
         # self.canvas.mousePressEvent = self.canvas_click
         self.canvas.clickRequest.connect(self.canvas_click)
+        self.image = None
+
+        # 控制器
+        self.controller.set_image(image)
 
         ## 信号
-        self.btnOpenImage.clicked.connect(self.check_click)  # 打开图像
+        self.btnOpenImage.clicked.connect(self.openImage)  # 打开图像
         self.btnOpenFolder.clicked.connect(self.check_click)  # 打开文件夹
         self.btnUndo.clicked.connect(self.undo_click)  # 撤销
         self.btnRedo.clicked.connect(self.check_click)  # 重做
@@ -63,6 +66,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.sldThresh.valueChanged.connect(self.thresh_changed)
         self.btnSave.clicked.connect(self.check_click)  # 保存
 
+    def openImage(self):
+        pass
+
     def mask_opacity_changed(self):
         self.labOpacity.setText(str(self.opacity))
         self._update_image()
@@ -86,6 +92,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("重做功能还没有实现")
 
     def canvas_click(self, x, y, isLeft):
+        if x < 0 or y < 0:
+            return
+        s = self.controller.img_size
+        if x > s[0] or y > s[1]:
+            return
         self.controller.add_click(x, y, isLeft)
 
     @property
@@ -109,7 +120,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         self.scene.addPixmap(QPixmap(image))
-        print(self.scene.items())
+        self.scene.removeItem(self.scene.items()[1])
 
     # 确认点击
     def check_click(self):
