@@ -121,7 +121,7 @@ class Ui_IANN(object):
         ImageRegion.addWidget(self.btnPrevImg)  # 上一张图
         # 图片区域
         self.scene = QtWidgets.QGraphicsScene()
-        # self.scene.addPixmap("~/Desktop/dzq.jpg")
+        self.scene.addPixmap(QtGui.QPixmap())
         self.canvas = Canvas(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding

@@ -179,6 +179,11 @@ class InteractiveController:
     def result_mask(self):
         return self._result_mask.copy()
 
+    @property
+    def img_size(self):
+        print(self.image.shape)
+        return self.image.shape[1::-1]
+
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
             return None
