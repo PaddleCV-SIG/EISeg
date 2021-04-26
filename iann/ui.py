@@ -1,26 +1,53 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
+from qtpy.QtCore import Qt
+
+__APPNAME__ = "IANN"
+
+
+class Canvas(QtWidgets.QGraphicsView):
+    clickRequest = QtCore.Signal(int, int, bool)
+
+    def __init__(self, *args):
+        super(Canvas, self).__init__(*args)
+
+    def wheelEvent(self, event):
+        print("in")
+        if event.modifiers() & QtCore.Qt.ControlModifier:
+            print(event.angleDelta().x(), event.angleDelta().y())
+            # self.zoom += event.angleDelta().y() / 2880
+            zoom = 1 + event.angleDelta().y() / 2880
+
+            self.scale(zoom, zoom)
+            event.ignore()
+        else:
+            super(Canvas, self).wheelEvent(event)
+
+    def mousePressEvent(self, ev):
+        print("view pos", ev.pos().x(), ev.pos().y())
+        print("scene pos", self.mapToScene(ev.pos()))
+        pos = self.mapToScene(ev.pos())
+        self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
 
 
 class Ui_IANN(object):
     def setupUi(self, MainWindow):
         ## 窗体设置
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1366, 768)
+        # MainWindow.resize(1366, 768)
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
-        MainWindow.setWindowTitle("IANN")
+        MainWindow.setWindowTitle(__APPNAME__)
         ## 控件区域设置
         CentralWidget = QtWidgets.QWidget(MainWindow)
         CentralWidget.setObjectName("CentralWidget")
         MainLayout = QtWidgets.QVBoxLayout(CentralWidget)
         MainLayout.setObjectName("MainLayout")
-        ## 菜单栏设置
+        # 顶部按MenuRegion钮
         MenuRegion = QtWidgets.QHBoxLayout()
         MenuRegion.setObjectName("MenuRegion")
-        # 加载菜单栏的按钮及logo
         self.btnOpenImage = self.create_button(
-            CentralWidget, "btnOpenImage", btn_text="加载图像", curt="Ctrl+A"
+            CentralWidget, "btnOpenImage", btn_text="打开图片", curt="Ctrl+A"
         )
-        MenuRegion.addWidget(self.btnOpenImage)  # 打开图像
+        MenuRegion.addWidget(self.btnOpenImage)
         self.btnOpenFolder = self.create_button(
             CentralWidget, "btnOpenFolder", btn_text="打开文件夹", curt="Shift+A"
         )
@@ -29,7 +56,7 @@ class Ui_IANN(object):
             CentralWidget,
             "btnUndo",
             btn_text="撤销",
-            btn_ico="ui/resources/undo.png",
+            btn_ico="resources/undo.png",
             curt="Ctrl+Z",
         )
         MenuRegion.addWidget(self.btnUndo)  # 撤销
@@ -37,13 +64,14 @@ class Ui_IANN(object):
             CentralWidget,
             "btnRedo",
             btn_text="重做",
-            btn_ico="ui/resources/redo.png",
+            btn_ico="resources/redo.png",
             curt="Ctrl+Y",
         )
         MenuRegion.addWidget(self.btnRedo)  # 重做
         self.btnUndoAll = self.create_button(
             CentralWidget, "btnUndoAll", btn_text="撤销全部", curt="Ctrl+Shift+Z"
         )
+        # IDEA: 重做最后一个目标，感觉全部重做不是很实用
         MenuRegion.addWidget(self.btnUndoAll)  # 重做
         self.btnScale = self.create_button(CentralWidget, "btnScale", btn_text="细粒度标注")
         self.button_add_menu(self.btnScale, ["四宫格", "九宫格"])
@@ -66,8 +94,7 @@ class Ui_IANN(object):
         )
         labLogo.setSizePolicy(sizePolicy)
         labLogo.setMaximumSize(QtCore.QSize(100, 33))
-        labLogo.setText("")
-        labLogo.setPixmap(QtGui.QPixmap("ui/resources/paddle.png"))
+        labLogo.setPixmap(QtGui.QPixmap("resources/paddle.png"))
         labLogo.setScaledContents(True)
         labLogo.setObjectName("labLogo")
         MenuRegion.addWidget(labLogo)
@@ -80,7 +107,8 @@ class Ui_IANN(object):
         MenuRegion.setStretch(6, 2)
         MenuRegion.setStretch(7, 4)
         MainLayout.addLayout(MenuRegion)
-        ## 图像区设置
+
+        # 图像区域
         ImageRegion = QtWidgets.QHBoxLayout()
         ImageRegion.setObjectName("ImageRegion")
         self.btnPrevImg = self.create_button(
@@ -92,14 +120,16 @@ class Ui_IANN(object):
         )
         ImageRegion.addWidget(self.btnPrevImg)  # 上一张图
         # 图片区域
-        self.canvas = QtWidgets.QLabel(CentralWidget)
+        self.scene = QtWidgets.QGraphicsScene()
+        # self.scene.addPixmap("~/Desktop/dzq.jpg")
+        self.canvas = Canvas(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
         self.canvas.setSizePolicy(sizePolicy)
+        self.canvas.setAlignment(QtCore.Qt.AlignCenter)
         self.canvas.setAutoFillBackground(False)
-        self.canvas.setStyleSheet("background-color: Black")
-        self.canvas.setText("")
+        self.canvas.setStyleSheet("background-color: White")
         self.canvas.setObjectName("canvas")
         ImageRegion.addWidget(self.canvas)
         self.btnNextImg = self.create_button(
@@ -115,7 +145,7 @@ class Ui_IANN(object):
         ImageRegion.setStretch(1, 18)
         ImageRegion.setStretch(2, 1)
         MainLayout.addLayout(ImageRegion)
-        ## 进程查看部分
+        # 显示标注进度
         ProgressRegion = QtWidgets.QHBoxLayout()
         ProgressRegion.setObjectName("ProgressRegion")
         spacerItem1 = QtWidgets.QSpacerItem(
@@ -144,7 +174,8 @@ class Ui_IANN(object):
         MainLayout.setStretch(1, 18)
         MainLayout.setStretch(2, 1)
         MainWindow.setCentralWidget(CentralWidget)
-        ## Dock-worker
+
+        ## 右侧dock widget
         self.DockWidget = QtWidgets.QDockWidget(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
@@ -226,19 +257,19 @@ class Ui_IANN(object):
         labSeg.setObjectName("labSeg")
         labSeg.setText("分割阈值：")
         SegShowRegion.addWidget(labSeg)
-        self.labSegShow = QtWidgets.QLabel(CentralWidget)
-        self.labSegShow.setObjectName("labSegShow")
-        self.labSegShow.setText("0.5")
-        SegShowRegion.addWidget(self.labSegShow)
+        self.labThresh = QtWidgets.QLabel(CentralWidget)
+        self.labThresh.setObjectName("labThresh")
+        self.labThresh.setText("0.5")
+        SegShowRegion.addWidget(self.labThresh)
         SegShowRegion.setStretch(0, 1)
         SegShowRegion.setStretch(1, 10)
         ShowSetRegion.addLayout(SegShowRegion)
-        self.sldSeg = QtWidgets.QSlider(CentralWidget)
-        self.sldSeg.setMaximum(10)  # 好像只能整数的，这里是扩大了10倍，1 -> 10
-        self.sldSeg.setProperty("value", 5)
-        self.sldSeg.setOrientation(QtCore.Qt.Horizontal)
-        self.sldSeg.setObjectName("sldSeg")
-        ShowSetRegion.addWidget(self.sldSeg)
+        self.sldThresh = QtWidgets.QSlider(CentralWidget)
+        self.sldThresh.setMaximum(10)  # 好像只能整数的，这里是扩大了10倍，1 -> 10
+        self.sldThresh.setProperty("value", 5)
+        self.sldThresh.setOrientation(QtCore.Qt.Horizontal)
+        self.sldThresh.setObjectName("sldThresh")
+        ShowSetRegion.addWidget(self.sldThresh)
         MaskShowRegion = QtWidgets.QHBoxLayout()
         MaskShowRegion.setObjectName("MaskShowRegion")
         labMask = QtWidgets.QLabel(CentralWidget)

@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtCore import Qt
+from qtpy.QtWidgets import QMainWindow
+from qtpy.QtGui import QImage, QPixmap
+from qtpy.QtCore import Qt
 import paddle
 import cv2
 
@@ -32,7 +32,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.controller.set_image(image)
 
         # 画布部分
-        self.canvas.mousePressEvent = self.canvas_click
+        # self.canvas.mousePressEvent = self.canvas_click
+        self.canvas.clickRequest.connect(self.canvas_click)
 
         ## 信号
         self.btnOpenImage.clicked.connect(self.check_click)  # 打开图像
@@ -59,15 +60,20 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 分别滑动三个滑动滑块
         self.sldOpacity.valueChanged.connect(self.mask_opacity_changed)
         self.sldClickRadius.valueChanged.connect(self.click_radius_changed)
-        # self.sldThresh.valueChanged.connect(self.thresh_changed)
+        self.sldThresh.valueChanged.connect(self.thresh_changed)
         self.btnSave.clicked.connect(self.check_click)  # 保存
 
     def mask_opacity_changed(self):
-        self.labOpacity.setText(str(self.sldOpacity.value() / 10))
+        self.labOpacity.setText(str(self.opacity))
         self._update_image()
 
     def click_radius_changed(self):
-        self.labClickRadius.setText(str(self.sldClickRadius.value()))
+        self.labClickRadius.setText(str(self.click_radius))
+        self._update_image()
+
+    def thresh_changed(self):
+        self.labThresh.setText(str(self.seg_thresh))
+        self.controller.prob_thresh = self.seg_thresh
         self._update_image()
 
     def undo_click(self):
@@ -79,12 +85,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def redo_click(self):
         print("重做功能还没有实现")
 
-    def canvas_click(self, ev):
-        print("mouse click at:", ev.pos().x(), ev.pos().y())
-        x = ev.pos().x()
-        y = ev.pos().y() - 333
-
-        self.controller.add_click(x, y, ev.buttons() == Qt.LeftButton)
+    def canvas_click(self, x, y, isLeft):
+        self.controller.add_click(x, y, isLeft)
 
     @property
     def opacity(self):
@@ -94,6 +96,10 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def click_radius(self):
         return self.sldClickRadius.value()
 
+    @property
+    def seg_thresh(self):
+        return self.sldThresh.value() / 10
+
     def _update_image(self, reset_canvas=False):
         image = self.controller.get_visualization(
             alpha_blend=self.opacity,
@@ -102,7 +108,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         height, width, channel = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
-        self.canvas.setPixmap(QPixmap(image))
+        self.scene.addPixmap(QPixmap(image))
+        print(self.scene.items())
 
     # 确认点击
     def check_click(self):
