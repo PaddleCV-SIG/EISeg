@@ -3,15 +3,15 @@ import paddle.nn as nn
 import util.util as U
 
 from dist_map import DistMaps
-from modeling.hrnet_ocr import HighResolutionNet
+from model.modeling.hrnet_ocr import HighResolutionNet
 from util.util import SyncBatchNorm
 from paddleseg.models import OCRNet
 from paddleseg.models.backbones import HRNet_W32
 import paddleseg.transforms as T
 
-from modeling.deeplab_v3 import DeepLabV3Plus
-from modeling.basic_blocks import SepConvHead
-from modeling.shufflenet import ShuffleNetV2
+from model.modeling.deeplab_v3 import DeepLabV3Plus
+from model.modeling.basic_blocks import SepConvHead
+from model.modeling.shufflenet import ShuffleNetV2
 
 
 def get_hrnet_model(
