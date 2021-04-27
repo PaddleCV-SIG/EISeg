@@ -60,12 +60,11 @@ class InteractiveController:
             是否是正点
         """
         self.states.append(
-            {
-                "clicker": self.clicker.get_state(),
-                "predictor": self.predictor.get_states(),
-            }
-        )
-
+                {
+                    "clicker": self.clicker.get_state(),
+                    "predictor": self.predictor.get_states(),
+                }
+            )
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
         self.clicker.add_click(click)
         start = time.time()

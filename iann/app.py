@@ -1,11 +1,13 @@
-from qtpy.QtWidgets import QMainWindow
-from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 import paddle
 import cv2
+import os
 
 from controller import InteractiveController
-from ui import Ui_IANN
+from ui import Ui_IANN, GraphicsPixmapItem
 from model import get_hrnet_model, get_deeplab_model
 
 
@@ -13,10 +15,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def __init__(self, parent=None):
         super(APP_IANN, self).__init__(parent)
         self.setupUi(self)
+        self.use_img = False
 
         model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
         para_state_dict = paddle.load(
-            "/home/aistudio/git/paddle/iann/iann/weight/human_resnet/model.pdparams"
+            "weight/human_resnet/model.pdparams"
         )
         model.set_dict(para_state_dict)
         self.controller = InteractiveController(
@@ -25,18 +28,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
             update_image_callback=self._update_image,
         )
 
-        image = cv2.cvtColor(
-            cv2.imread("/home/lin/Desktop/dzq.jpg"),
-            cv2.COLOR_BGR2RGB,
-        )
-
         # 画布部分
         # self.canvas.mousePressEvent = self.canvas_click
-        self.canvas.clickRequest.connect(self.canvas_click)
+        self.view.clickRequest.connect(self.canvas_click)
         self.image = None
-
-        # 控制器
-        self.controller.set_image(image)
+        self.item = None
 
         ## 信号
         self.btnOpenImage.clicked.connect(self.openImage)  # 打开图像
@@ -67,7 +63,43 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.btnSave.clicked.connect(self.check_click)  # 保存
 
     def openImage(self):
-        pass
+        self.path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "选取图像", os.getcwd(), \
+                       "Image Files (*.bmp *.jpg *.png)")   # 设置文件扩展名过滤，用双分号间隔
+        if self.path:
+            self.image = cv2.cvtColor(
+                cv2.imread(self.path),
+                cv2.COLOR_BGR2RGB,
+            )
+            # 显示
+            self.item = self.createPixmapItem(QPixmap(self.path), self.position())
+            # 控制器
+            self.controller.set_image(self.image)
+            self.use_img = True  # 已经打开图像了
+
+    def position(self):
+        point = self.mapFromGlobal(QtGui.QCursor.pos())
+        if not self.view.geometry().contains(point):
+            coord = random.randint(36, 144)
+            point = Qt.QPoint(coord, coord)
+        else:
+            if point == self.prevPoint:
+                point += Qt.QPoint(self.addOffset, self.addOffset)
+                self.addOffset += 5
+            else:
+                self.addOffset = 5
+                self.prevPoint = point
+        return self.view.mapToScene(point)
+
+    def createPixmapItem(self, pixmap, position, matrix=QtGui.QTransform()):
+        item = GraphicsPixmapItem(pixmap)
+        item.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable|
+                      QtWidgets.QGraphicsItem.ItemIsMovable)
+        item.setPos(position)
+        item.setTransform(matrix)
+        self.scene.clearSelection()
+        self.scene.addItem(item)
+        item.setSelected(True)
+        return item
 
     def mask_opacity_changed(self):
         self.labOpacity.setText(str(self.opacity))
@@ -91,13 +123,17 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def redo_click(self):
         print("重做功能还没有实现")
 
-    def canvas_click(self, x, y, isLeft):
-        if x < 0 or y < 0:
-            return
-        s = self.controller.img_size
-        if x > s[0] or y > s[1]:
-            return
-        self.controller.add_click(x, y, isLeft)
+    def canvas_click(self, x, y, mouse_in):
+        if self.use_img:
+            if x < 0 or y < 0:
+                return
+            s = self.controller.img_size
+            if x > s[0] or y > s[1]:
+                return
+            # 样本点选择
+            if mouse_in != "middle":
+                is_positive = True if mouse_in == "left" else False
+                self.controller.add_click(x, y, is_positive)
 
     @property
     def opacity(self):

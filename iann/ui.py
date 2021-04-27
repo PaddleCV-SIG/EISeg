@@ -1,32 +1,83 @@
-from qtpy import QtCore, QtGui, QtWidgets
-from qtpy.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 
 __APPNAME__ = "IANN"
 
 
-class Canvas(QtWidgets.QGraphicsView):
-    clickRequest = QtCore.Signal(int, int, bool)
+# class Canvas(QtWidgets.QGraphicsView):
+#     mouseClickdict = {Qt.LeftButton: "left", Qt.RightButton: "right", Qt.MidButton: "middle"}  # 分离出中键
+#     clickRequest = QtCore.pyqtSignal(int, int, str)  # 第三个int用于捕获鼠标按键
 
-    def __init__(self, *args):
-        super(Canvas, self).__init__(*args)
+#     def __init__(self, *args):
+#         super(Canvas, self).__init__(*args)
+
+#     def wheelEvent(self, event):
+#         print("roll")
+#         if event.modifiers() & QtCore.Qt.ControlModifier:
+#             print(event.angleDelta().x(), event.angleDelta().y())
+#             # self.zoom += event.angleDelta().y() / 2880
+#             zoom = 1 + event.angleDelta().y() / 2880
+
+#             self.scale(zoom, zoom)
+#             event.ignore()
+#         else:
+#             super(Canvas, self).wheelEvent(event)
+
+#     def mousePressEvent(self, ev):
+#         print("view pos", ev.pos().x(), ev.pos().y())
+#         print("scene pos", self.mapToScene(ev.pos()))
+#         pos = self.mapToScene(ev.pos())
+#         self.clickRequest.emit(pos.x(), pos.y(), self.mouseClickdict[ev.buttons()])
+
+
+class GraphicsView(QtWidgets.QGraphicsView):
+    mouseClickdict = {Qt.LeftButton: "left", Qt.RightButton: "right", Qt.MidButton: "middle"}  # 分离出中键
+    clickRequest = QtCore.pyqtSignal(int, int, str)  # 第三个int用于捕获鼠标按键
+
+    def __init__(self, parent=None):
+        super(GraphicsView, self).__init__(parent)
+        self.point = QtCore.QPoint(0, 0)
+        self.left_click = False
+        self.setDragMode(QtWidgets.QGraphicsView.RubberBandDrag)
+        self.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.TextAntialiasing)
 
     def wheelEvent(self, event):
-        print("in")
-        if event.modifiers() & QtCore.Qt.ControlModifier:
-            print(event.angleDelta().x(), event.angleDelta().y())
-            # self.zoom += event.angleDelta().y() / 2880
-            zoom = 1 + event.angleDelta().y() / 2880
-
-            self.scale(zoom, zoom)
-            event.ignore()
+        # factor = 1.41 ** (-event.delta() / 240.0) 
+        factor = event.angleDelta().y() / 120.0
+        if event.angleDelta().y() / 120.0 > 0:
+            factor=2
         else:
-            super(Canvas, self).wheelEvent(event)
+            factor=0.5
+        self.scale(factor, factor)
+        # 这里我觉得要限制一下大小
 
     def mousePressEvent(self, ev):
         print("view pos", ev.pos().x(), ev.pos().y())
         print("scene pos", self.mapToScene(ev.pos()))
         pos = self.mapToScene(ev.pos())
-        self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:  # 我牛逼的左右键一起按就崩了
+            self.clickRequest.emit(pos.x(), pos.y(), self.mouseClickdict[ev.buttons()])
+        elif ev.buttons() == Qt.MidButton:
+            self.left_click = True
+            self._startPos = ev.pos()
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.MidButton:
+            self.left_click = False
+
+    def mouseMoveEvent(self, ev):  # 重写移动事件
+        if self.left_click:
+            self._endPos = ev.pos() - self._startPos
+            self.point = self.point + self._endPos
+            self._startPos = ev.pos()
+            print("move:", self._startPos, ",", self._endPos)
+            self.repaint()
+
+
+class GraphicsPixmapItem(QtWidgets.QGraphicsPixmapItem):
+    def __init__(self, pixmap):
+        super(GraphicsPixmapItem, self).__init__(pixmap)
 
 
 class Ui_IANN(object):
@@ -107,7 +158,6 @@ class Ui_IANN(object):
         MenuRegion.setStretch(6, 2)
         MenuRegion.setStretch(7, 4)
         MainLayout.addLayout(MenuRegion)
-
         # 图像区域
         ImageRegion = QtWidgets.QHBoxLayout()
         ImageRegion.setObjectName("ImageRegion")
@@ -120,18 +170,30 @@ class Ui_IANN(object):
         )
         ImageRegion.addWidget(self.btnPrevImg)  # 上一张图
         # 图片区域
-        self.scene = QtWidgets.QGraphicsScene()
-        self.scene.addPixmap(QtGui.QPixmap())
-        self.canvas = Canvas(self.scene, self)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
-        )
-        self.canvas.setSizePolicy(sizePolicy)
-        self.canvas.setAlignment(QtCore.Qt.AlignCenter)
-        self.canvas.setAutoFillBackground(False)
-        self.canvas.setStyleSheet("background-color: White")
-        self.canvas.setObjectName("canvas")
-        ImageRegion.addWidget(self.canvas)
+        self.scrollArea = QtWidgets.QScrollArea(CentralWidget)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        ImageRegion.addWidget(self.scrollArea)
+        # 画布
+        # self.scene = QtWidgets.QGraphicsScene()
+        # self.scene.addPixmap(QtGui.QPixmap())
+        # self.canvas = Canvas(self.scene, self)
+        # sizePolicy = QtWidgets.QSizePolicy(
+        #     QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
+        # )
+        # self.canvas.setSizePolicy(sizePolicy)
+        # self.canvas.setAlignment(QtCore.Qt.AlignCenter)
+        # self.canvas.setAutoFillBackground(False)
+        # self.canvas.setStyleSheet("background-color: Black")
+        # self.canvas.setObjectName("canvas")
+        # self.scrollArea.setWidget(self.canvas)
+        self.prevPoint = QtCore.QPoint()
+        self.view = GraphicsView()
+        self.scene = QtWidgets.QGraphicsScene(self)
+        self.scene.setSceneRect(0, 0, 512, 512)
+        self.view.setScene(self.scene)
+        self.scrollArea.setWidget(self.view)
+        # 画布完
         self.btnNextImg = self.create_button(
             CentralWidget,
             "btnNextImg",
@@ -373,7 +435,7 @@ class Ui_IANN(object):
         return btn
 
     ## 按钮菜单
-    def button_add_menu(self, button, name_list, ist=False):
+    def button_add_menu(self, button, name_list):
         menu = QtWidgets.QMenu()
         acts = []
         for name in name_list:
@@ -381,5 +443,3 @@ class Ui_IANN(object):
             menu.addAction(act)
         button.setMenu(menu)
         button.Menu = menu
-        if ist:
-            button.setStyleSheet("QPushButton::menu-indicator{image:none;}")  # 不显示小三角
