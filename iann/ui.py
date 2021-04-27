@@ -45,11 +45,11 @@ class Ui_IANN(object):
         MenuRegion = QtWidgets.QHBoxLayout()
         MenuRegion.setObjectName("MenuRegion")
         self.btnOpenImage = self.create_button(
-            CentralWidget, "btnOpenImage", btn_text="打开图片", curt="Ctrl+A"
+            CentralWidget, "btnOpenImage", btn_text="打开图片", curt="Ctrl+O"
         )
         MenuRegion.addWidget(self.btnOpenImage)
         self.btnOpenFolder = self.create_button(
-            CentralWidget, "btnOpenFolder", btn_text="打开文件夹", curt="Shift+A"
+            CentralWidget, "btnOpenFolder", btn_text="打开文件夹", curt="Ctrl+Shift+O"
         )
         MenuRegion.addWidget(self.btnOpenFolder)  # 打开文件夹
         self.btnUndo = self.create_button(
@@ -73,6 +73,14 @@ class Ui_IANN(object):
         )
         # IDEA: 重做最后一个目标，感觉全部重做不是很实用
         MenuRegion.addWidget(self.btnUndoAll)  # 重做
+        self.btnFinishObject = self.create_button(
+            CentralWidget, "btnFinishObject", btn_text="完成当前目标"
+        )
+        MenuRegion.addWidget(self.btnFinishObject)  # 重做
+
+        # IDEA: 重做最后一个目标，感觉全部重做不是很实用
+        MenuRegion.addWidget(self.btnUndoAll)  # 重做
+
         self.btnScale = self.create_button(CentralWidget, "btnScale", btn_text="细粒度标注")
         self.button_add_menu(self.btnScale, ["四宫格", "九宫格"])
         MenuRegion.addWidget(self.btnScale)  # 细粒度标注
@@ -227,28 +235,28 @@ class Ui_IANN(object):
         ModelInfoRegion.setStretch(1, 10)
         SetRegion.addLayout(ModelInfoRegion)
         # 数据列表
-        LabelListRegion = QtWidgets.QVBoxLayout()
-        LabelListRegion.setObjectName("LabelListRegion")
-        labListInfo = QtWidgets.QLabel(CentralWidget)
-        labListInfo.setObjectName("labListInfo")
-        labListInfo.setText("数据列表")
-        LabelListRegion.addWidget(labListInfo)
-        self.listLabel = QtWidgets.QListView(CentralWidget)
-        self.listLabel.setObjectName("listLabel")
-        LabelListRegion.addWidget(self.listLabel)
-        labClassInfo = QtWidgets.QLabel(CentralWidget)
-        labClassInfo.setObjectName("labClassInfo")
-        labClassInfo.setText("标签类别")
-        LabelListRegion.addWidget(labClassInfo)
-        self.listClass = QtWidgets.QListView(CentralWidget)
-        self.listClass.setObjectName("listClass")
-        LabelListRegion.addWidget(self.listClass)
+        listRegion = QtWidgets.QVBoxLayout()
+        listRegion.setObjectName("listRegion")
+        labFiles = QtWidgets.QLabel(CentralWidget)
+        labFiles.setObjectName("labFiles")
+        labFiles.setText("数据列表")
+        listRegion.addWidget(labFiles)
+        self.listFiles = QtWidgets.QListWidget(CentralWidget)
+        self.listFiles.setObjectName("listFiles")
+        listRegion.addWidget(self.listFiles)
+        labelListLab = QtWidgets.QLabel(CentralWidget)
+        labelListLab.setObjectName("labelListLab")
+        labelListLab.setText("标签类别")
+        listRegion.addWidget(labelListLab)
+        self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
+        self.labelListTable.setObjectName("labelListTable")
+        listRegion.addWidget(self.labelListTable)
         self.btnAddClass = self.create_button(
             CentralWidget, "btnAddClass", btn_text="添加标签", type="set"
         )
-        LabelListRegion.addWidget(self.btnAddClass)
+        listRegion.addWidget(self.btnAddClass)
         # 滑块设置
-        SetRegion.addLayout(LabelListRegion)
+        SetRegion.addLayout(listRegion)
         ShowSetRegion = QtWidgets.QVBoxLayout()
         ShowSetRegion.setObjectName("ShowSetRegion")
         SegShowRegion = QtWidgets.QHBoxLayout()
