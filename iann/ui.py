@@ -1,33 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
+
 __APPNAME__ = "IANN"
-
-
-# class Canvas(QtWidgets.QGraphicsView):
-#     mouseClickdict = {Qt.LeftButton: "left", Qt.RightButton: "right", Qt.MidButton: "middle"}  # 分离出中键
-#     clickRequest = QtCore.pyqtSignal(int, int, str)  # 第三个int用于捕获鼠标按键
-
-#     def __init__(self, *args):
-#         super(Canvas, self).__init__(*args)
-
-#     def wheelEvent(self, event):
-#         print("roll")
-#         if event.modifiers() & QtCore.Qt.ControlModifier:
-#             print(event.angleDelta().x(), event.angleDelta().y())
-#             # self.zoom += event.angleDelta().y() / 2880
-#             zoom = 1 + event.angleDelta().y() / 2880
-
-#             self.scale(zoom, zoom)
-#             event.ignore()
-#         else:
-#             super(Canvas, self).wheelEvent(event)
-
-#     def mousePressEvent(self, ev):
-#         print("view pos", ev.pos().x(), ev.pos().y())
-#         print("scene pos", self.mapToScene(ev.pos()))
-#         pos = self.mapToScene(ev.pos())
-#         self.clickRequest.emit(pos.x(), pos.y(), self.mouseClickdict[ev.buttons()])
 
 
 class GraphicsView(QtWidgets.QGraphicsView):
@@ -56,23 +31,11 @@ class GraphicsView(QtWidgets.QGraphicsView):
         print("view pos", ev.pos().x(), ev.pos().y())
         print("scene pos", self.mapToScene(ev.pos()))
         pos = self.mapToScene(ev.pos())
-        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:  # 我牛逼的左右键一起按就崩了
+        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
             self.clickRequest.emit(pos.x(), pos.y(), self.mouseClickdict[ev.buttons()])
         elif ev.buttons() == Qt.MidButton:
             self.left_click = True
             self._startPos = ev.pos()
-
-    def mouseReleaseEvent(self, ev):
-        if ev.button() == Qt.MidButton:
-            self.left_click = False
-
-    def mouseMoveEvent(self, ev):  # 重写移动事件
-        if self.left_click:
-            self._endPos = ev.pos() - self._startPos
-            self.point = self.point + self._endPos
-            self._startPos = ev.pos()
-            print("move:", self._startPos, ",", self._endPos)
-            self.repaint()
 
 
 class GraphicsPixmapItem(QtWidgets.QGraphicsPixmapItem):
@@ -80,195 +43,62 @@ class GraphicsPixmapItem(QtWidgets.QGraphicsPixmapItem):
         super(GraphicsPixmapItem, self).__init__(pixmap)
 
 
-class Ui_IANN(object):
+class UI_IANN(object):
     def setupUi(self, MainWindow):
-        ## 窗体设置
         MainWindow.setObjectName("MainWindow")
-        # MainWindow.resize(1366, 768)
+        # MainWindow.resize(800, 600)
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
-        MainWindow.setWindowTitle(__APPNAME__)
-        ## 控件区域设置
-        CentralWidget = QtWidgets.QWidget(MainWindow)
-        CentralWidget.setObjectName("CentralWidget")
-        MainLayout = QtWidgets.QVBoxLayout(CentralWidget)
-        MainLayout.setObjectName("MainLayout")
-        # 顶部按MenuRegion钮
-        MenuRegion = QtWidgets.QHBoxLayout()
-        MenuRegion.setObjectName("MenuRegion")
-        self.btnOpenImage = self.create_button(
-            CentralWidget, "btnOpenImage", btn_text="打开图片", curt="Ctrl+A"
-        )
-        MenuRegion.addWidget(self.btnOpenImage)
-        self.btnOpenFolder = self.create_button(
-            CentralWidget, "btnOpenFolder", btn_text="打开文件夹", curt="Shift+A"
-        )
-        MenuRegion.addWidget(self.btnOpenFolder)  # 打开文件夹
-        self.btnUndo = self.create_button(
-            CentralWidget,
-            "btnUndo",
-            btn_text="撤销",
-            btn_ico="resources/undo.png",
-            curt="Ctrl+Z",
-        )
-        MenuRegion.addWidget(self.btnUndo)  # 撤销
-        self.btnRedo = self.create_button(
-            CentralWidget,
-            "btnRedo",
-            btn_text="重做",
-            btn_ico="resources/redo.png",
-            curt="Ctrl+Y",
-        )
-        MenuRegion.addWidget(self.btnRedo)  # 重做
-        self.btnUndoAll = self.create_button(
-            CentralWidget, "btnUndoAll", btn_text="撤销全部", curt="Ctrl+Shift+Z"
-        )
-        # IDEA: 重做最后一个目标，感觉全部重做不是很实用
-        MenuRegion.addWidget(self.btnUndoAll)  # 重做
-        self.btnScale = self.create_button(CentralWidget, "btnScale", btn_text="细粒度标注")
-        self.button_add_menu(self.btnScale, ["四宫格", "九宫格"])
-        MenuRegion.addWidget(self.btnScale)  # 细粒度标注
-        self.btnAbout = self.create_button(CentralWidget, "btnAbout", btn_text="关于软件")
-        MenuRegion.addWidget(self.btnAbout)  # 关于
-        self.btnHelp = self.create_button(CentralWidget, "btnHelp", btn_text="快速上手")
-        self.button_add_menu(self.btnHelp, ["文档", "操作流程"])
-        MenuRegion.addWidget(self.btnHelp)  # 帮助
-        # 分隔符号
-        spacerItem = QtWidgets.QSpacerItem(
-            20, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
-        )
-        MenuRegion.addItem(spacerItem)
-        # paddle-logo
-        labLogo = QtWidgets.QLabel(CentralWidget)
-        labLogo.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
-        )
-        labLogo.setSizePolicy(sizePolicy)
-        labLogo.setMaximumSize(QtCore.QSize(100, 33))
-        labLogo.setPixmap(QtGui.QPixmap("resources/paddle.png"))
-        labLogo.setScaledContents(True)
-        labLogo.setObjectName("labLogo")
-        MenuRegion.addWidget(labLogo)
-        # 菜单栏按钮比例
-        MenuRegion.setStretch(0, 2)
-        MenuRegion.setStretch(2, 1)
-        MenuRegion.setStretch(3, 1)
-        MenuRegion.setStretch(4, 2)
-        MenuRegion.setStretch(5, 2)
-        MenuRegion.setStretch(6, 2)
-        MenuRegion.setStretch(7, 4)
-        MainLayout.addLayout(MenuRegion)
-        # 图像区域
-        ImageRegion = QtWidgets.QHBoxLayout()
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("self.centralwidget")
+        ImageRegion = QtWidgets.QHBoxLayout(self.centralwidget)
         ImageRegion.setObjectName("ImageRegion")
-        self.btnPrevImg = self.create_button(
-            CentralWidget,
-            "btnPrevImg",
-            btn_ico="resources/prevImg.png",
-            type="img",
-            curt="A",
-        )
-        ImageRegion.addWidget(self.btnPrevImg)  # 上一张图
-        # 图片区域
-        self.scrollArea = QtWidgets.QScrollArea(CentralWidget)
+        self.scrollArea = QtWidgets.QScrollArea(self.centralwidget)
         self.scrollArea.setWidgetResizable(True)
         self.scrollArea.setObjectName("scrollArea")
+        self.scrollAreaWidgetContents = QtWidgets.QWidget()
+        self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
         ImageRegion.addWidget(self.scrollArea)
-        # 画布
-        # self.scene = QtWidgets.QGraphicsScene()
-        # self.scene.addPixmap(QtGui.QPixmap())
-        # self.canvas = Canvas(self.scene, self)
-        # sizePolicy = QtWidgets.QSizePolicy(
-        #     QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
-        # )
-        # self.canvas.setSizePolicy(sizePolicy)
-        # self.canvas.setAlignment(QtCore.Qt.AlignCenter)
-        # self.canvas.setAutoFillBackground(False)
-        # self.canvas.setStyleSheet("background-color: Black")
-        # self.canvas.setObjectName("canvas")
-        # self.scrollArea.setWidget(self.canvas)
+        ## -- 图形界面 --
         self.prevPoint = QtCore.QPoint()
         self.view = GraphicsView()
         self.scene = QtWidgets.QGraphicsScene(self)
-        self.scene.setSceneRect(0, 0, 512, 512)
+        # self.scene.setSceneRect(0, 0, 512, 512)
         self.view.setScene(self.scene)
         self.scrollArea.setWidget(self.view)
-        # 画布完
-        self.btnNextImg = self.create_button(
-            CentralWidget,
-            "btnNextImg",
-            btn_ico="resources/nextImg.png",
-            type="img",
-            curt="D",
-        )
-        ImageRegion.addWidget(self.btnNextImg)  # 下一张图
-        # 图像区域比例
-        ImageRegion.setStretch(0, 1)
-        ImageRegion.setStretch(1, 18)
-        ImageRegion.setStretch(2, 1)
-        MainLayout.addLayout(ImageRegion)
-        # 显示标注进度
-        ProgressRegion = QtWidgets.QHBoxLayout()
-        ProgressRegion.setObjectName("ProgressRegion")
-        spacerItem1 = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
-        )
-        ProgressRegion.addItem(spacerItem1)
-        labProgress = QtWidgets.QLabel(CentralWidget)
-        labProgress.setObjectName("labProgress")
-        labProgress.setText("当前进度：")
-        ProgressRegion.addWidget(labProgress)
-        self.progressBar = QtWidgets.QProgressBar(CentralWidget)
-        self.progressBar.setProperty("value", 0)
-        self.progressBar.setObjectName("progressBar")
-        ProgressRegion.addWidget(self.progressBar)
-        spacerItem2 = QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum
-        )
-        ProgressRegion.addItem(spacerItem2)
-        ProgressRegion.setStretch(0, 2)
-        ProgressRegion.setStretch(1, 1)
-        ProgressRegion.setStretch(2, 19)
-        ProgressRegion.setStretch(3, 2)
-        MainLayout.addLayout(ProgressRegion)
-        ## 主窗口设置完毕
-        MainLayout.setStretch(0, 1)
-        MainLayout.setStretch(1, 18)
-        MainLayout.setStretch(2, 1)
-        MainWindow.setCentralWidget(CentralWidget)
-
-        ## 右侧dock widget
-        self.DockWidget = QtWidgets.QDockWidget(MainWindow)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
-        )
-        self.DockWidget.setSizePolicy(sizePolicy)
-        self.DockWidget.setFloating(False)
-        self.DockWidget.setAllowedAreas(
-            QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
-        )
-        self.DockWidget.setObjectName("DockWidget")
-        self.DockWidget.setWindowTitle("工作区")
-        self.DockWidget.setFeatures(
-            QtWidgets.QDockWidget.DockWidgetFloatable
-            | QtWidgets.QDockWidget.DockWidgetMovable
-        )
+        ## ----
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setObjectName("statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+        self.dockWorker = QtWidgets.QDockWidget(MainWindow)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.dockWorker.sizePolicy().hasHeightForWidth())
+        self.dockWorker.setSizePolicy(sizePolicy)
+        self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
+        self.dockWorker.setWindowTitle("工作区")
+        self.dockWorker.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable|QtWidgets.QDockWidget.DockWidgetMovable)
+        self.dockWorker.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
+        self.dockWorker.setObjectName("dockWorker")
+        ## -- 工作区 --
+        # 设置区设置
         self.DockRegion = QtWidgets.QWidget()
         self.DockRegion.setObjectName("DockRegion")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.DockRegion)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        # 设置区设置
         SetRegion = QtWidgets.QVBoxLayout()
         SetRegion.setObjectName("SetRegion")
         ModelRegion = QtWidgets.QVBoxLayout()
         ModelRegion.setObjectName("ModelRegion")
         # 模型加载与选择
-        labShowSet = QtWidgets.QLabel(CentralWidget)
+        labShowSet = QtWidgets.QLabel(self.centralwidget)
         labShowSet.setObjectName("labShowSet")
         labShowSet.setText("模型设置")
         ModelRegion.addWidget(labShowSet)
         self.btnModelSelect = self.create_button(
-            CentralWidget, "btnModelSelect", btn_text="模型选择", type="set"
+            self.centralwidget, "btnModelSelect", btn_text="模型选择", type="set"
         )
         self.button_add_menu(self.btnModelSelect, ["人像分割", "面部分割", "通用分割", "自定义模型"])
         ModelRegion.addWidget(self.btnModelSelect)  # 模型选择
@@ -276,11 +106,11 @@ class Ui_IANN(object):
         # 模型信息显示
         ModelInfoRegion = QtWidgets.QHBoxLayout()
         ModelInfoRegion.setObjectName("ModelInfoRegion")
-        labModelNameInfo = QtWidgets.QLabel(CentralWidget)
+        labModelNameInfo = QtWidgets.QLabel(self.centralwidget)
         labModelNameInfo.setObjectName("labModelNameInfo")
         labModelNameInfo.setText("当前模型：")
         ModelInfoRegion.addWidget(labModelNameInfo)
-        self.labModelName = QtWidgets.QLabel(CentralWidget)
+        self.labModelName = QtWidgets.QLabel(self.centralwidget)
         self.labModelName.setObjectName("labModelName")
         self.labModelName.setText("人像分割")
         ModelInfoRegion.addWidget(self.labModelName)
@@ -289,44 +119,44 @@ class Ui_IANN(object):
         ModelInfoRegion.setStretch(1, 10)
         SetRegion.addLayout(ModelInfoRegion)
         # 数据列表
-        LabelListRegion = QtWidgets.QVBoxLayout()
-        LabelListRegion.setObjectName("LabelListRegion")
-        labListInfo = QtWidgets.QLabel(CentralWidget)
-        labListInfo.setObjectName("labListInfo")
-        labListInfo.setText("数据列表")
-        LabelListRegion.addWidget(labListInfo)
-        self.listLabel = QtWidgets.QListView(CentralWidget)
-        self.listLabel.setObjectName("listLabel")
-        LabelListRegion.addWidget(self.listLabel)
-        labClassInfo = QtWidgets.QLabel(CentralWidget)
-        labClassInfo.setObjectName("labClassInfo")
-        labClassInfo.setText("标签类别")
-        LabelListRegion.addWidget(labClassInfo)
-        self.listClass = QtWidgets.QListView(CentralWidget)
-        self.listClass.setObjectName("listClass")
-        LabelListRegion.addWidget(self.listClass)
+        listRegion = QtWidgets.QVBoxLayout()
+        listRegion.setObjectName("listRegion")
+        labFiles = QtWidgets.QLabel(self.centralwidget)
+        labFiles.setObjectName("labFiles")
+        labFiles.setText("数据列表")
+        listRegion.addWidget(labFiles)
+        self.listFiles = QtWidgets.QListWidget(self.centralwidget)
+        self.listFiles.setObjectName("listFiles")
+        listRegion.addWidget(self.listFiles)
+        labelListLab = QtWidgets.QLabel(self.centralwidget)
+        labelListLab.setObjectName("labelListLab")
+        labelListLab.setText("标签类别")
+        listRegion.addWidget(labelListLab)
+        self.labelListTable = QtWidgets.QTableWidget(self.centralwidget)
+        self.labelListTable.setObjectName("labelListTable")
+        listRegion.addWidget(self.labelListTable)
         self.btnAddClass = self.create_button(
-            CentralWidget, "btnAddClass", btn_text="添加标签", type="set"
+            self.centralwidget, "btnAddClass", btn_text="添加标签", type="set"
         )
-        LabelListRegion.addWidget(self.btnAddClass)
+        listRegion.addWidget(self.btnAddClass)
         # 滑块设置
-        SetRegion.addLayout(LabelListRegion)
+        SetRegion.addLayout(listRegion)
         ShowSetRegion = QtWidgets.QVBoxLayout()
         ShowSetRegion.setObjectName("ShowSetRegion")
         SegShowRegion = QtWidgets.QHBoxLayout()
         SegShowRegion.setObjectName("SegShowRegion")
-        labSeg = QtWidgets.QLabel(CentralWidget)
+        labSeg = QtWidgets.QLabel(self.centralwidget)
         labSeg.setObjectName("labSeg")
         labSeg.setText("分割阈值：")
         SegShowRegion.addWidget(labSeg)
-        self.labThresh = QtWidgets.QLabel(CentralWidget)
+        self.labThresh = QtWidgets.QLabel(self.centralwidget)
         self.labThresh.setObjectName("labThresh")
         self.labThresh.setText("0.5")
         SegShowRegion.addWidget(self.labThresh)
         SegShowRegion.setStretch(0, 1)
         SegShowRegion.setStretch(1, 10)
         ShowSetRegion.addLayout(SegShowRegion)
-        self.sldThresh = QtWidgets.QSlider(CentralWidget)
+        self.sldThresh = QtWidgets.QSlider(self.centralwidget)
         self.sldThresh.setMaximum(10)  # 好像只能整数的，这里是扩大了10倍，1 -> 10
         self.sldThresh.setProperty("value", 5)
         self.sldThresh.setOrientation(QtCore.Qt.Horizontal)
@@ -334,37 +164,36 @@ class Ui_IANN(object):
         ShowSetRegion.addWidget(self.sldThresh)
         MaskShowRegion = QtWidgets.QHBoxLayout()
         MaskShowRegion.setObjectName("MaskShowRegion")
-        labMask = QtWidgets.QLabel(CentralWidget)
+        labMask = QtWidgets.QLabel(self.centralwidget)
         labMask.setObjectName("labMask")
         labMask.setText("标签透明度：")
         MaskShowRegion.addWidget(labMask)
-        self.labOpacity = QtWidgets.QLabel(CentralWidget)
+        self.labOpacity = QtWidgets.QLabel(self.centralwidget)
         self.labOpacity.setObjectName("labOpacity")
         self.labOpacity.setText("0.5")
         MaskShowRegion.addWidget(self.labOpacity)
         MaskShowRegion.setStretch(0, 1)
         MaskShowRegion.setStretch(1, 10)
         ShowSetRegion.addLayout(MaskShowRegion)
-        self.sldOpacity = QtWidgets.QSlider(CentralWidget)
+        self.sldOpacity = QtWidgets.QSlider(self.centralwidget)
         self.sldOpacity.setMaximum(10)
         self.sldOpacity.setSingleStep(1)
         self.sldOpacity.setProperty("value", 5)
         self.sldOpacity.setOrientation(QtCore.Qt.Horizontal)
         self.sldOpacity.setObjectName("sldOpacity")
         ShowSetRegion.addWidget(self.sldOpacity)
-
         PointShowRegion = QtWidgets.QHBoxLayout()
         PointShowRegion.setObjectName("PointShowRegion")
-        labPointSzie = QtWidgets.QLabel(CentralWidget)
+        labPointSzie = QtWidgets.QLabel(self.centralwidget)
         labPointSzie.setObjectName("labPointSzie")
         labPointSzie.setText("点击可视化半径：")
         PointShowRegion.addWidget(labPointSzie)
-        self.labClickRadius = QtWidgets.QLabel(CentralWidget)
+        self.labClickRadius = QtWidgets.QLabel(self.centralwidget)
         self.labClickRadius.setObjectName("labClickRadius")
         self.labClickRadius.setText("3")
         PointShowRegion.addWidget(self.labClickRadius)
         ShowSetRegion.addLayout(PointShowRegion)
-        self.sldClickRadius = QtWidgets.QSlider(CentralWidget)
+        self.sldClickRadius = QtWidgets.QSlider(self.centralwidget)
         self.sldClickRadius.setMaximum(10)
         self.sldClickRadius.setMinimum(1)
         self.sldClickRadius.setSingleStep(1)
@@ -373,24 +202,143 @@ class Ui_IANN(object):
         self.sldClickRadius.setObjectName("sldClickRadius")
         ShowSetRegion.addWidget(self.sldClickRadius)
         SetRegion.addLayout(ShowSetRegion)
-        # # 正负样本选择设置
-        # SampleRegion = QtWidgets.QHBoxLayout()
-        # SampleRegion.setObjectName("SampleRegion")
-        # self.btnPos = self.create_button(CentralWidget, "btnPos", btn_text="正样点", type='set')
-        # SampleRegion.addWidget(self.btnPos)
-        # self.btnNeg = self.create_button(CentralWidget, "btnNeg", btn_text="负样点", type='set')
-        # SampleRegion.addWidget(self.btnNeg)
-        # SetRegion.addLayout(SampleRegion)
         # 保存
         self.btnSave = self.create_button(
-            CentralWidget, "btnSave", btn_text="保存", type="set", curt="Ctrl+S"
+            self.centralwidget, "btnSave", btn_text="保存", type="set", curt="Ctrl+S"
         )
         SetRegion.addWidget(self.btnSave)
         SetRegion.setStretch(2, 10)
-        ## dock设置完成
+        # dock设置完成
         self.horizontalLayout.addLayout(SetRegion)
-        self.DockWidget.setWidget(self.DockRegion)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DockWidget)
+        self.dockWorker.setWidget(self.DockRegion)
+        ## ----
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWorker)
+        self.toolBar = QtWidgets.QToolBar(MainWindow)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.toolBar.sizePolicy().hasHeightForWidth())
+        self.toolBar.setSizePolicy(sizePolicy)
+        self.toolBar.setMinimumSize(QtCore.QSize(0, 33))
+        self.toolBar.setMovable(True)
+        self.toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea|QtCore.Qt.TopToolBarArea)
+        self.toolBar.setObjectName("toolBar")
+        MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
+        self.menuBar = QtWidgets.QMenuBar(MainWindow)
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 800, 26))
+        self.menuBar.setObjectName("menuBar")
+        self.menuFile = QtWidgets.QMenu(self.menuBar)
+        self.menuFile.setObjectName("menuFile")
+        self.menuSetting = QtWidgets.QMenu(self.menuBar)
+        self.menuSetting.setObjectName("menuSetting")
+        self.menuAbout = QtWidgets.QMenu(self.menuBar)
+        self.menuAbout.setObjectName("menuAbout")
+        self.menuHelp = QtWidgets.QMenu(self.menuBar)
+        self.menuHelp.setObjectName("menuHelp")
+        MainWindow.setMenuBar(self.menuBar)
+        self.actLoadImage = QtWidgets.QAction(MainWindow)
+        self.actLoadImage.setObjectName("actLoadImage")
+        self.actOpenFolder = QtWidgets.QAction(MainWindow)
+        self.actOpenFolder.setObjectName("actOpenFolder")
+        self.actUndo = QtWidgets.QAction(MainWindow)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("iann/resources/undu.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actUndo.setIcon(icon)
+        self.actUndo.setObjectName("actUndo")
+        self.actRedo = QtWidgets.QAction(MainWindow)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap("iann/resources/redu.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actRedo.setIcon(icon1)
+        self.actRedo.setObjectName("actRedo")
+        self.actClear = QtWidgets.QAction(MainWindow)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap("iann/resources/clear.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actClear.setIcon(icon2)
+        self.actClear.setObjectName("actClear")
+        self.actFinish = QtWidgets.QAction(MainWindow)
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap("iann/resources/finish.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actFinish.setIcon(icon3)
+        self.actFinish.setObjectName("actFinish")
+        self.actPrevImg = QtWidgets.QAction(MainWindow)
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap("iann/resources/left.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actPrevImg.setIcon(icon4)
+        self.actPrevImg.setObjectName("actPrevImg")
+        self.actNextImg = QtWidgets.QAction(MainWindow)
+        icon5 = QtGui.QIcon()
+        icon5.addPixmap(QtGui.QPixmap("iann/resources/right.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actNextImg.setIcon(icon5)
+        self.actNextImg.setObjectName("actFinish")
+        self.actScale = QtWidgets.QAction(MainWindow)
+        self.actScale.setObjectName("actScale")
+        self.actSave = QtWidgets.QAction(MainWindow)
+        self.actSave.setObjectName("actSave")
+        self.toolBar.addAction(self.actFinish)
+        self.toolBar.addAction(self.actClear)
+        self.toolBar.addAction(self.actUndo)
+        self.toolBar.addAction(self.actRedo)
+        self.toolBar.addAction(self.actPrevImg)
+        self.toolBar.addAction(self.actNextImg)
+        self.menuFile.addAction(self.actLoadImage)
+        self.menuFile.addAction(self.actOpenFolder)
+        self.menuSetting.addAction(self.actSave)
+        self.menuSetting.addAction(self.actScale)
+        self.menuBar.addAction(self.menuFile.menuAction())
+        self.menuBar.addAction(self.menuSetting.menuAction())
+        self.menuBar.addAction(self.menuHelp.menuAction())
+        self.menuBar.addAction(self.menuAbout.menuAction())
+        ## -- 进度条 --
+        self.statusbar.setStyleSheet('QStatusBar::item {border: none;}')
+        self.statusLabel = QtWidgets.QLabel()
+        self.statusLabel.setText("当前进度：")
+        self.progressBar = QtWidgets.QProgressBar()
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
+        labLogo = QtWidgets.QLabel()
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum
+        )
+        labLogo.setSizePolicy(sizePolicy)
+        labLogo.setMaximumSize(QtCore.QSize(100, 33))
+        labLogo.setPixmap(QtGui.QPixmap("iann/resources/paddle.png"))
+        labLogo.setScaledContents(True)
+        labLogo.setObjectName("labLogo")
+        # 往状态栏中添加组件
+        self.statusbar.addWidget(self.statusLabel)
+        self.statusbar.addWidget(self.progressBar)
+        self.statusbar.addPermanentWidget(labLogo)
+        ## ----
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", __APPNAME__))
+        self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
+        self.menuFile.setTitle(_translate("MainWindow", "文件"))
+        self.menuSetting.setTitle(_translate("MainWindow", "设置"))
+        self.menuAbout.setTitle(_translate("MainWindow", "关于软件"))
+        self.menuHelp.setTitle(_translate("MainWindow", "快速上手"))
+        self.actLoadImage.setText(_translate("MainWindow", "加载图像"))
+        self.actLoadImage.setShortcut(_translate("MainWindow", "Ctrl+A"))
+        self.actOpenFolder.setText(_translate("MainWindow", "打开文件夹"))
+        self.actOpenFolder.setShortcut(_translate("MainWindow", "Shift+A"))
+        self.actUndo.setText(_translate("MainWindow", "撤销"))
+        self.actUndo.setShortcut(_translate("MainWindow", "Ctrl+Z"))
+        self.actRedo.setText(_translate("MainWindow", "重做"))
+        self.actRedo.setShortcut(_translate("MainWindow", "Ctrl+Y"))
+        self.actPrevImg.setText(_translate("MainWindow", "上一张"))
+        self.actPrevImg.setShortcut(_translate("MainWindow", "A"))
+        self.actNextImg.setText(_translate("MainWindow", "下一张"))
+        self.actNextImg.setShortcut(_translate("MainWindow", "D"))
+        self.actClear.setText(_translate("MainWindow", "清除"))
+        self.actClear.setToolTip(_translate("MainWindow", "清除"))
+        self.actClear.setShortcut(_translate("MainWindow", "Ctrl+Shift+Z"))
+        self.actFinish.setText(_translate("MainWindow", "完成当前"))
+        self.actFinish.setShortcut(_translate("MainWindow", "Space"))
+        self.actScale.setText(_translate("MainWindow", "细粒度标注"))
+        self.actSave.setText(_translate("MainWindow", "保存路径"))
 
     ## 创建按钮
     def create_button(
