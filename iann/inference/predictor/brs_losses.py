@@ -1,7 +1,7 @@
 import paddle
 import paddle.nn as nn
 
-from loss import SigmoidBinaryCrossEntropyLoss
+from inference.predictor.loss import SigmoidBinaryCrossEntropyLoss
 
 
 class BRSMaskLoss(nn.Layer):
@@ -43,8 +43,10 @@ class OracleMaskLoss(nn.Layer):
         gt_mask = self.gt_mask
         if self.predictor.object_roi is not None:
             r1, r2, c1, c2 = self.predictor.object_roi[:4]
-            gt_mask = gt_mask[:, :, r1:r2 + 1, c1:c2 + 1]
-            gt_mask = paddle.nn.functional.interpolate(gt_mask, result.size()[2:], mode='bilinear', align_corners=True)
+            gt_mask = gt_mask[:, :, r1 : r2 + 1, c1 : c2 + 1]
+            gt_mask = paddle.nn.functional.interpolate(
+                gt_mask, result.size()[2:], mode="bilinear", align_corners=True
+            )
 
         if result.shape[0] == 2:
             gt_mask_flipped = paddle.flip(gt_mask, axis=[3])

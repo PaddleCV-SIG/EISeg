@@ -1,13 +1,20 @@
 # iann
 交互式标注软件，暂定名iann。
 
-# 运行
-- 安装依赖
+# 安装
 按照[官网介绍](https://www.paddlepaddle.org.cn/install/quick)安装paddle。
 安装其他依赖
 ```shell
 pip install -r requirements.txt
 ```
+
+# 运行
+```shell
+git clone https://github.com/PaddleCV-SIG/iann/
+cd iann
+python iann/__main__.py
+```
+
 # TODO
 - [ ] 整理创建网络/推理部分代码，简化main分支下代码
 - [ ] 抽象推理网络成一个类，允许用户修改代码注册新的
