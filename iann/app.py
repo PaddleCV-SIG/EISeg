@@ -11,7 +11,7 @@ import cv2
 
 from controller import InteractiveController
 from ui import Ui_IANN
-from model.model import get_hrnet_model, get_deeplab_model
+from models import models
 
 __appname__ = "IANN"
 
@@ -22,36 +22,31 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.setupUi(self)
 
         # app变量
-        self.outputDir = None
-        self.currIdx = 0
-        self.fileNames = []
-        self.labelList = []  # 名字，颜色，数字
+        self.controller = None
+        self.outputDir = None  # 标签保存路径
+        self.currIdx = 0  # 标注文件夹时到第几个了
+        self.filePaths = []  # 标注文件夹时所有文件路径
+        self.labelList = []  # 标签列表(数字，名字，颜色)
 
         self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
 
-        model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
-        para_state_dict = paddle.load(
-            "/home/aistudio/git/paddle/iann/iann/weight/human_resnet/model.pdparams"
-        )
-        model.set_dict(para_state_dict)
-        self.controller = InteractiveController(
-            model,
-            predictor_params={"brs_mode": "f-BRS-B"},
-            update_image_callback=self._update_image,
-        )
+        # model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
+        # para_state_dict = paddle.load("./iann/weight/human_resnet/model.pdparams")
+        # model.set_dict(para_state_dict)
+        # self.controller = InteractiveController(
+        #     model,
+        #     predictor_params={"brs_mode": "f-BRS-B"},
+        #     update_image_callback=self._update_image,
+        # )
 
-        image = cv2.cvtColor(
-            cv2.imread("/home/lin/Desktop/dzq.jpg"),
-            cv2.COLOR_BGR2RGB,
-        )
+        # image = cv2.cvtColor(
+        #     cv2.imread("/home/lin/Desktop/dzq.jpg"),
+        #     cv2.COLOR_BGR2RGB,
+        # )
 
         # 画布部分
-        # self.canvas.mousePressEvent = self.canvas_click
         self.canvas.clickRequest.connect(self.canvas_click)
         self.image = None
-
-        # 控制器
-        # self.controller.set_image(image)
 
         ## 按钮点击
         self.btnOpenImage.clicked.connect(self.openImage)  # 打开图像
@@ -66,9 +61,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
 
         self.listFiles.itemDoubleClicked.connect(self.listClicked)
-        # 选择模型
-        for action in self.btnModelSelect.Menu.actions():
-            action.triggered.connect(self.update_model_name)
+        # 模型选择
+        self.comboModelSelect.currentIndexChanged.connect(self.changeModel)
 
         # 细粒度（这种可以通过sender的text来知道哪个键被点击了）
         for action in self.btnScale.Menu.actions():
@@ -76,15 +70,27 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 帮助
         for action in self.btnHelp.Menu.actions():
             action.triggered.connect(self.check_click)
-        # self.listLabel.clicked.connect(self.check_click)  # 数据列表选择（用row可以获取点击的行数）
-        # self.listClass.clicked.connect(self.check_click)  # 标签选择
-        # self.btnAddClass.clicked.connect(self.check_click)  # 添加标签
 
         # 滑动
         self.sldOpacity.valueChanged.connect(self.mask_opacity_changed)
         self.sldClickRadius.valueChanged.connect(self.click_radius_changed)
         self.sldThresh.valueChanged.connect(self.thresh_changed)
         self.refreshLabelList()
+
+    def changeModel(self, idx):
+        # TODO: 判断是否有没保存
+        # print(
+        #     "changing model", self.controller if self.controller is not None else "None"
+        # )
+        model = models[idx].get_model()
+        if self.controller is None:
+            self.controller = InteractiveController(
+                model,
+                predictor_params={"brs_mode": "f-BRS-B"},
+                update_image_callback=self._update_image,
+            )
+        else:
+            self.controller.reset_predictor(model)
 
     def refreshLabelList(self):
         table = self.labelListTable
@@ -139,15 +145,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
         if len(self.inputDir) == 0:
             return
-        fileNames = os.listdir(self.inputDir)
+        filePaths = os.listdir(self.inputDir)
         exts = QtGui.QImageReader.supportedImageFormats()
-        fileNames = [n for n in fileNames if n.split(".")[-1] in exts]
-        fileNames = [osp.join(self.inputDir, n) for n in fileNames]
-        self.fileNames = fileNames
-        self.listFiles.addItems(self.fileNames)
+        filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
+        filePaths = [osp.join(self.inputDir, n) for n in filePaths]
+        self.filePaths = filePaths
+        self.listFiles.addItems(self.filePaths)
         self.currIdx = 0
         self.turnImg(0)
-        # self.loadFile(self.fileNames[0])
+        # self.loadFile(self.filePaths[0])
 
     def listClicked(self):
         if self.controller.is_incomplete_mask:
@@ -158,12 +164,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
     def turnImg(self, delta):
         self.currIdx += delta
-        if self.currIdx >= len(self.fileNames) or self.currIdx < 0:
+        if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
             return
         if self.controller.is_incomplete_mask:
             self.saveLabel()
-        imagePath = self.fileNames[self.currIdx]
+        imagePath = self.filePaths[self.currIdx]
         self.loadFile(imagePath)
         self.imagePath = imagePath
         self.listFiles.setCurrentRow(self.currIdx)
@@ -252,7 +258,10 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("重做功能还没有实现")
 
     def canvas_click(self, x, y, isLeft):
+        if self.controller is None:
+            return
         if self.controller.image is None:
+            print("image none")
             return
         if x < 0 or y < 0:
             return
