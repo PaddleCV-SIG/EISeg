@@ -141,8 +141,7 @@ class InteractiveController:
         if update_image:
             self.update_image_callback()
 
-    def reset_predictor(self, predictor_params=None):
-        # TODO: 这里添加换网络支持？
+    def reset_predictor(self, net=None, predictor_params=None):
         """重置推理器，可以换权重
 
         Parameters
@@ -150,6 +149,9 @@ class InteractiveController:
         predictor_params : 网络权重
             新的网络权重
         """
+        # print("resetting", self.image.shape)
+        if net is not None:
+            self.net = net
         if predictor_params is not None:
             self.predictor_params = predictor_params
         self.predictor = get_predictor(self.net, **self.predictor_params)

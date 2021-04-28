@@ -1,6 +1,8 @@
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
+from models import models
+
 __APPNAME__ = "IANN"
 
 
@@ -11,7 +13,6 @@ class Canvas(QtWidgets.QGraphicsView):
         super(Canvas, self).__init__(*args)
 
     def wheelEvent(self, event):
-        print("in")
         if event.modifiers() & QtCore.Qt.ControlModifier:
             print(event.angleDelta().x(), event.angleDelta().y())
             # self.zoom += event.angleDelta().y() / 2880
@@ -211,25 +212,25 @@ class Ui_IANN(object):
         # 模型加载与选择
         labShowSet = QtWidgets.QLabel(CentralWidget)
         labShowSet.setObjectName("labShowSet")
-        labShowSet.setText("模型设置")
+        labShowSet.setText("选择模型")
         ModelRegion.addWidget(labShowSet)
-        self.btnModelSelect = self.create_button(
-            CentralWidget, "btnModelSelect", btn_text="模型选择", type="set"
-        )
-        self.button_add_menu(self.btnModelSelect, ["人像分割", "面部分割", "通用分割", "自定义模型"])
-        ModelRegion.addWidget(self.btnModelSelect)  # 模型选择
+        combo = QtWidgets.QComboBox(self)
+        for model in models:
+            combo.addItem(model.name)
+        self.comboModelSelect = combo
+        ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
         SetRegion.addLayout(ModelRegion)
         # 模型信息显示
         ModelInfoRegion = QtWidgets.QHBoxLayout()
         ModelInfoRegion.setObjectName("ModelInfoRegion")
         labModelNameInfo = QtWidgets.QLabel(CentralWidget)
         labModelNameInfo.setObjectName("labModelNameInfo")
-        labModelNameInfo.setText("当前模型：")
-        ModelInfoRegion.addWidget(labModelNameInfo)
-        self.labModelName = QtWidgets.QLabel(CentralWidget)
-        self.labModelName.setObjectName("labModelName")
-        self.labModelName.setText("人像分割")
-        ModelInfoRegion.addWidget(self.labModelName)
+        # labModelNameInfo.setText("当前模型：")
+        # ModelInfoRegion.addWidget(labModelNameInfo)
+        # self.labModelName = QtWidgets.QLabel(CentralWidget)
+        # self.labModelName.setObjectName("labModelName")
+        # self.labModelName.setText("人像分割")
+        # ModelInfoRegion.addWidget(self.labModelName)
         # 划分比例
         ModelInfoRegion.setStretch(0, 1)
         ModelInfoRegion.setStretch(1, 10)

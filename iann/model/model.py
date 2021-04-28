@@ -24,7 +24,6 @@ def get_hrnet_model(
     norm_layer=SyncBatchNorm,
     is_ritm=False,
 ):
-
     model = DistMapsHRNetModel(
         feature_extractor=HighResolutionNet(
             width=width,
