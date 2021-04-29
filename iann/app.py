@@ -48,28 +48,49 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.canvas.clickRequest.connect(self.canvas_click)
         self.image = None
 
+        # 消息栏
+        self.statusbar.showMessage("模型未加载")
+
+        ## 菜单栏点击
+        for menu_act in self.menuBar.actions():
+            if menu_act.text() == "文件":
+                for ac_act in menu_act.menu().actions():
+                    if ac_act.text() == "加载图像":
+                        ac_act.triggered.connect(self.openImage)
+                    else:
+                        ac_act.triggered.connect(self.openFolder)
+            elif menu_act.text() == "设置":
+                for ac_act in menu_act.menu().actions():
+                    if ac_act.text() == "设置保存路径":
+                        ac_act.triggered.connect(self.changeOutputDir)
+                    else:
+                        ac_act.triggered.connect(self.check_click)
+            elif menu_act.text() == "帮助":
+                for ac_act in menu_act.menu().actions():
+                    if ac_act.text() == "快速上手":
+                        ac_act.triggered.connect(self.check_click)
+                    else:
+                        ac_act.triggered.connect(self.check_click)
+
+        ## 工具栏点击
+        for tool_act in self.toolBar.actions():
+            if tool_act.text() == "完成当前":
+                tool_act.triggered.connect(self.finishObject)
+            elif tool_act.text() == "清除全部":
+                tool_act.triggered.connect(self.undo_all)
+            elif tool_act.text() == "撤销":
+                tool_act.triggered.connect(self.undo_click)
+            elif tool_act.text() == "重做":
+                tool_act.triggered.connect(self.check_click)
+            elif tool_act.text() == "上一张":
+                tool_act.triggered.connect(partial(self.turnImg, -1))
+            elif tool_act.text() == "下一张":
+                tool_act.triggered.connect(partial(self.turnImg, 1))
+
         ## 按钮点击
-        self.btnOpenImage.clicked.connect(self.openImage)  # 打开图像
-        self.btnOpenFolder.clicked.connect(self.openFolder)  # 打开文件夹
-        self.btnUndo.clicked.connect(self.undo_click)  # 撤销
-        self.btnRedo.clicked.connect(self.check_click)  # 重做
-        self.btnUndoAll.clicked.connect(self.undo_all)  # 撤销全部
-        self.btnAbout.clicked.connect(self.check_click)  # 关于
-        self.btnFinishObject.clicked.connect(self.finishObject)
-        self.btnPrevImg.clicked.connect(partial(self.turnImg, -1))  # 上一张图
-        self.btnNextImg.clicked.connect(partial(self.turnImg, 1))  # 下一张图
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
-
-        self.listFiles.itemDoubleClicked.connect(self.listClicked)
-        # 模型选择
-        self.comboModelSelect.currentIndexChanged.connect(self.changeModel)
-
-        # 细粒度（这种可以通过sender的text来知道哪个键被点击了）
-        for action in self.btnScale.Menu.actions():
-            action.triggered.connect(self.check_click)
-        # 帮助
-        for action in self.btnHelp.Menu.actions():
-            action.triggered.connect(self.check_click)
+        self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择 
+        self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
 
         # 滑动
         self.sldOpacity.valueChanged.connect(self.mask_opacity_changed)
@@ -91,6 +112,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             )
         else:
             self.controller.reset_predictor(model)
+        self.statusbar.showMessage("已加载模型：" + models[idx].name)
 
     def refreshLabelList(self):
         table = self.labelListTable
@@ -236,15 +258,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
 
     def mask_opacity_changed(self):
-        self.labOpacity.setText(str(self.opacity))
+        self.sldOpacity.textLab.setText(str(self.opacity))
         self._update_image()
 
     def click_radius_changed(self):
-        self.labClickRadius.setText(str(self.click_radius))
+        self.sldClickRadius.textLab.setText(str(self.click_radius))
         self._update_image()
 
     def thresh_changed(self):
-        self.labThresh.setText(str(self.seg_thresh))
+        self.sldThresh.textLab.setText(str(self.seg_thresh))
         self.controller.prob_thresh = self.seg_thresh
         self._update_image()
 
@@ -297,17 +319,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
     # 确认点击
     def check_click(self):
         print(self.sender().text())
-
-    # 滑块数值与标签数值同步
-    def slider_2_label(self):
-        slider = self.sender()
-        name = slider.objectName()
-        if name == "sldMask":
-            self.labMaskShow.setText(str(slider.value() / 10.0))
-        elif name == "sldSeg":
-            self.labSegShow.setText(str(slider.value() / 10.0))
-        else:
-            self.labPointSizeShow.setText(str(slider.value()))
 
     # 当前打开的模型名称或类别更新
     def update_model_name(self):
