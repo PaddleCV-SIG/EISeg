@@ -12,13 +12,14 @@ class Canvas(QtWidgets.QGraphicsView):
 
     def __init__(self, *args):
         super(Canvas, self).__init__(*args)
+        self.setTransformationAnchor(QtWidgets.QGraphicsView.NoAnchor)
+        self.point = QtCore.QPoint(0, 0)
 
     def wheelEvent(self, event):
         if event.modifiers() & QtCore.Qt.ControlModifier:
             print(event.angleDelta().x(), event.angleDelta().y())
             # self.zoom += event.angleDelta().y() / 2880
             zoom = 1 + event.angleDelta().y() / 2880
-
             self.scale(zoom, zoom)
             event.ignore()
         else:
@@ -28,7 +29,23 @@ class Canvas(QtWidgets.QGraphicsView):
         print("view pos", ev.pos().x(), ev.pos().y())
         print("scene pos", self.mapToScene(ev.pos()))
         pos = self.mapToScene(ev.pos())
-        self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+            self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+        elif ev.buttons() == Qt.MiddleButton:
+            self.left_click = True
+            self._startPos = ev.pos()
+
+    def mouseMoveEvent(self, ev):
+        if self.left_click:
+            self._endPos = ev.pos() - self._startPos
+            self.point = self.point + self._endPos
+            self._startPos = ev.pos()
+            print('move:', self._endPos.x(), self._endPos.y())
+            self.translate(self._endPos.x(), self._endPos.y())
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.MiddleButton:
+            self.left_click = False
 
 
 class Ui_IANN(object):
