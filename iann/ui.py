@@ -1,5 +1,6 @@
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
+from qtpy.QtWidgets import QGraphicsView
 
 from models import models
 from functools import partial
@@ -7,19 +8,30 @@ from functools import partial
 __APPNAME__ = "IANN"
 
 
-class Canvas(QtWidgets.QGraphicsView):
+class Canvas(QGraphicsView):
     clickRequest = QtCore.Signal(int, int, bool)
 
     def __init__(self, *args):
         super(Canvas, self).__init__(*args)
+        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setResizeAnchor(QGraphicsView.NoAnchor)
+        self.point = QtCore.QPoint(0, 0)
+        self.middle_click = False
+        self.zoom_all = 1
 
     def wheelEvent(self, event):
         if event.modifiers() & QtCore.Qt.ControlModifier:
             print(event.angleDelta().x(), event.angleDelta().y())
             # self.zoom += event.angleDelta().y() / 2880
             zoom = 1 + event.angleDelta().y() / 2880
-
-            self.scale(zoom, zoom)
+            self.zoom_all *= zoom
+            oldPos = self.mapToScene(event.pos()) 
+            if self.zoom_all >= 0.1 and self.zoom_all <= 10:  # 限制缩放的倍数
+                # print(self.zoom_all)
+                self.scale(zoom, zoom)
+            newPos = self.mapToScene(event.pos())
+            delta = newPos - oldPos 
+            self.translate(delta.x(), delta.y())
             event.ignore()
         else:
             super(Canvas, self).wheelEvent(event)
@@ -28,7 +40,25 @@ class Canvas(QtWidgets.QGraphicsView):
         print("view pos", ev.pos().x(), ev.pos().y())
         print("scene pos", self.mapToScene(ev.pos()))
         pos = self.mapToScene(ev.pos())
-        self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+            self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+        elif ev.buttons() == Qt.MiddleButton:
+            self.middle_click = True
+            self._startPos = ev.pos()
+
+    def mouseMoveEvent(self, ev):
+        if self.middle_click and \
+           self.horizontalScrollBar().isVisible() and self.verticalScrollBar().isVisible():
+           # 放大到出现滚动条才能拖动，避免出现抖动
+            self._endPos = ev.pos() - self._startPos
+            self.point = self.point + self._endPos
+            self._startPos = ev.pos()
+            print('move', self._endPos.x(), self._endPos.y())
+            self.translate(self._endPos.x(), self._endPos.y())
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.MiddleButton:
+            self.middle_click = False
 
 
 class Ui_IANN(object):
@@ -91,6 +121,7 @@ class Ui_IANN(object):
         ## -- 状态栏 --
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
+        self.statusbar.setStyleSheet('QStatusBar::item {border: none;}')
         MainWindow.setStatusBar(self.statusbar)
         self.statusbar.addPermanentWidget(self.show_logo("iann/resources/paddle.png"))
         ## -----
@@ -319,7 +350,7 @@ class Ui_IANN(object):
         Region.setStretch(0, 1)
         Region.setStretch(1, 10)
         sld = QtWidgets.QSlider(parent)
-        sld.setMaximum(max_value)  # 好像只能整数的，这里是扩大了10倍，1 -> 10
+        sld.setMaximum(max_value)  # 好像只能整数的，这里是扩大了10倍，1 . 10
         sld.setProperty("value", default_value)
         sld.setOrientation(QtCore.Qt.Horizontal)
         sld.setObjectName(sld_name)
