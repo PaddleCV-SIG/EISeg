@@ -27,11 +27,11 @@ class Canvas(QGraphicsView):
             self.zoom_all *= zoom
             oldPos = self.mapToScene(event.pos()) 
             if self.zoom_all >= 0.1 and self.zoom_all <= 10:  # 限制缩放的倍数
-                print(self.zoom_all)
+                # print(self.zoom_all)
                 self.scale(zoom, zoom)
             newPos = self.mapToScene(event.pos())
             delta = newPos - oldPos 
-            self.translate(delta.x(), delta.y()) 
+            self.translate(delta.x(), delta.y())
             event.ignore()
         else:
             super(Canvas, self).wheelEvent(event)
@@ -47,7 +47,9 @@ class Canvas(QGraphicsView):
             self._startPos = ev.pos()
 
     def mouseMoveEvent(self, ev):
-        if self.middle_click:
+        if self.middle_click and \
+           self.horizontalScrollBar().isVisible() and self.verticalScrollBar().isVisible():
+           # 放大到出现滚动条才能拖动，避免出现抖动
             self._endPos = ev.pos() - self._startPos
             self.point = self.point + self._endPos
             self._startPos = ev.pos()
