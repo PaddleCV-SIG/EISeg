@@ -50,7 +50,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.image = None
 
         # 消息栏
-        self.statusbar.showMessage("模型未加载")
+        self.statusbar.showMessage("模型未加载", 5000)
 
         ## 菜单栏点击
         for menu_act in self.menuBar.actions():
@@ -113,7 +113,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             )
         else:
             self.controller.reset_predictor(model)
-        self.statusbar.showMessage("已加载模型：" + models[idx].name)
+        self.statusbar.showMessage("已加载模型：" + models[idx].name, 5000)
 
     def refreshLabelList(self):
         table = self.labelListTable
