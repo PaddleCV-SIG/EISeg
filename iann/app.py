@@ -35,27 +35,14 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
 
-        # model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
-        # para_state_dict = paddle.load("./iann/weight/human_resnet/model.pdparams")
-        # model.set_dict(para_state_dict)
-        # self.controller = InteractiveController(
-        #     model,
-        #     predictor_params={"brs_mode": "f-BRS-B"},
-        #     update_image_callback=self._update_image,
-        # )
-
-        # image = cv2.cvtColor(
-        #     cv2.imread("/home/lin/Desktop/dzq.jpg"),
-        #     cv2.COLOR_BGR2RGB,
-        # )
-
         # 画布部分
-        self.canvas.clickRequest.connect(self.canvas_click)
+        self.canvas.clickRequest.connect(self.canvasClick)
         self.image = None
 
         # 消息栏
         self.statusbar.showMessage("模型未加载", 5000)
 
+        # TODO: 按照labelme的方式用action
         ## 菜单栏点击
         for menu_act in self.menuBar.actions():
             if menu_act.text() == "文件":
@@ -82,9 +69,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
             if tool_act.text() == "完成当前":
                 tool_act.triggered.connect(self.finishObject)
             elif tool_act.text() == "清除全部":
-                tool_act.triggered.connect(self.undo_all)
+                tool_act.triggered.connect(self.undoAll)
             elif tool_act.text() == "撤销":
-                tool_act.triggered.connect(self.undo_click)
+                tool_act.triggered.connect(self.undoClick)
             elif tool_act.text() == "重做":
                 tool_act.triggered.connect(self.check_click)
             elif tool_act.text() == "上一张":
@@ -94,20 +81,21 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
-        self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择 
+        self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择
         self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
 
         # 滑动
-        self.sldOpacity.valueChanged.connect(self.mask_opacity_changed)
-        self.sldClickRadius.valueChanged.connect(self.click_radius_changed)
-        self.sldThresh.valueChanged.connect(self.thresh_changed)
+        self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
+        self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
+        self.sldThresh.valueChanged.connect(self.threshChanged)
         self.refreshLabelList()
 
+        # TODO: 打开上次关软件时用的模型
+        # TODO: 在ui展示后再加载模型
+
     def changeModel(self, idx):
-        # TODO: 判断是否有没保存
-        # print(
-        #     "changing model", self.controller if self.controller is not None else "None"
-        # )
+        # TODO: 设置gpu还是cpu运行
+        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
         model = models[idx].get_model()
         if self.controller is None:
             self.controller = InteractiveController(
@@ -115,9 +103,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 predictor_params={"brs_mode": "f-BRS-B"},
                 update_image_callback=self._update_image,
             )
+            self.controller.set_image(self.image)
         else:
             self.controller.reset_predictor(model)
-        self.statusbar.showMessage("已加载模型：" + models[idx].name, 5000)
+
+        self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
 
     def refreshLabelList(self):
         table = self.labelListTable
@@ -131,9 +121,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
             c = lab[2]
             table.setItem(idx, 2, QTableWidgetItem())
             table.item(idx, 2).setBackground(QtGui.QColor(c[0], c[1], c[2]))
-
-    def addLabel(self):
-        pass
 
     def openImage(self):
         formats = [
@@ -159,7 +146,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 解决路径含有中文，cv2.imread读取为None
         image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
-        self.controller.set_image(image)
+        self.image = image
+        if self.controller:
+            self.controller.set_image(self.image)
+        else:
+            self.changeModel(0)
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -261,33 +252,32 @@ class APP_IANN(QMainWindow, Ui_IANN):
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
 
-    def mask_opacity_changed(self):
+    def maskOpacityChanged(self):
         self.sldOpacity.textLab.setText(str(self.opacity))
         self._update_image()
 
-    def click_radius_changed(self):
+    def clickRadiusChanged(self):
         self.sldClickRadius.textLab.setText(str(self.click_radius))
         self._update_image()
 
-    def thresh_changed(self):
+    def threshChanged(self):
         self.sldThresh.textLab.setText(str(self.seg_thresh))
         self.controller.prob_thresh = self.seg_thresh
         self._update_image()
 
-    def undo_click(self):
+    def undoClick(self):
         self.controller.undo_click()
 
-    def undo_all(self):
+    def undoAll(self):
         self.controller.reset_last_object()
 
     def redo_click(self):
         print("重做功能还没有实现")
 
-    def canvas_click(self, x, y, isLeft):
+    def canvasClick(self, x, y, isLeft):
         if self.controller is None:
             return
         if self.controller.image is None:
-            print("image none")
             return
         if x < 0 or y < 0:
             return

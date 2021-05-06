@@ -89,31 +89,49 @@ class Ui_IANN(object):
         ## -----
         ## -- 菜单栏 --
         p_add_menu = partial(self.add_menu, MainWindow)
-        self.menuBar = self.create_menubar(MainWindow, [
-            p_add_menu("menuFile", "文件", acts=[
-                ["actLoadImage", "加载图像", None, "Ctrl+A"],
-                ["actOpenFolder", "打开文件夹", None, "Shift+A"]
-            ]),
-            p_add_menu("menuSetting", "设置", acts=[
-                ["actSave", "设置保存路径", None, None],
-                ["actScale", "细粒度标注", None, None]
-            ]),
-            p_add_menu("menuHelp", "帮助", acts=[
-                ["actHelp", "快速上手", None, None],
-                ["actAbout", "关于软件", None, None]
-            ]),
-        ])
+        self.menuBar = self.create_menubar(
+            MainWindow,
+            [
+                p_add_menu(
+                    "menuFile",
+                    "文件",
+                    acts=[
+                        ["actLoadImage", "加载图像", None, "Ctrl+A"],
+                        ["actOpenFolder", "打开文件夹", None, "Shift+A"],
+                    ],
+                ),
+                p_add_menu(
+                    "menuSetting",
+                    "设置",
+                    acts=[
+                        ["actSave", "设置保存路径", None, None],
+                        ["actScale", "细粒度标注", None, None],
+                    ],
+                ),
+                p_add_menu(
+                    "menuHelp",
+                    "帮助",
+                    acts=[
+                        ["actHelp", "快速上手", None, None],
+                        ["actAbout", "关于软件", None, None],
+                    ],
+                ),
+            ],
+        )
         MainWindow.setMenuBar(self.menuBar)
         ## -----
         ## -- 工具栏 --
-        self.toolBar = self.create_toolbar(MainWindow, [
-            ["actFinish", "完成当前", "iann/resources/finish.png", "Space"],
-            ["actClear", "清除全部", "iann/resources/clear.png", "C"],
-            ["actUndo", "撤销", "iann/resources/undo.png", "Q"],
-            ["actRedo", "重做", "iann/resources/redo.png", "E"],
-            ["actPrevImg", "上一张", "iann/resources/left.png", "A"],
-            ["actNextImg", "下一张", "iann/resources/right.png", "D"]
-        ])
+        self.toolBar = self.create_toolbar(
+            MainWindow,
+            [
+                ["actFinish", "完成当前", "iann/resources/finish.png", "Space"],
+                ["actClear", "清除全部", "iann/resources/clear.png", "Ctrl+Shift+Z"],
+                ["actUndo", "撤销", "iann/resources/undo.png", "Ctrl+Z"],
+                ["actRedo", "重做", "iann/resources/redo.png", "Ctrl+Y"],
+                ["actPrevImg", "上一张", "iann/resources/left.png", "A"],
+                ["actNextImg", "下一张", "iann/resources/right.png", "D"],
+            ],
+        )
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         ## -----
         ## -- 状态栏 --
@@ -147,15 +165,22 @@ class Ui_IANN(object):
         ## -----
         ## -- 工作区 --
         self.dockWorker = QtWidgets.QDockWidget(MainWindow)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.dockWorker.sizePolicy().hasHeightForWidth())
         self.dockWorker.setSizePolicy(sizePolicy)
         self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
         self.dockWorker.setWindowTitle("工作区")
-        self.dockWorker.setFeatures(QtWidgets.QDockWidget.DockWidgetFloatable|QtWidgets.QDockWidget.DockWidgetMovable)
-        self.dockWorker.setAllowedAreas(QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
+        self.dockWorker.setFeatures(
+            QtWidgets.QDockWidget.DockWidgetFloatable
+            | QtWidgets.QDockWidget.DockWidgetMovable
+        )
+        self.dockWorker.setAllowedAreas(
+            QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
+        )
         self.dockWorker.setObjectName("dockWorker")
         p_create_button = partial(self.create_button, CentralWidget)
         # 设置区设置
@@ -191,7 +216,7 @@ class Ui_IANN(object):
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button("btnAddClass", "添加标签")
-        listRegion.addWidget(self.btnAddClass) 
+        listRegion.addWidget(self.btnAddClass)
         SetRegion.addLayout(listRegion)
         SetRegion.setStretch(1, 20)
         # 滑块设置
@@ -228,7 +253,6 @@ class Ui_IANN(object):
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWorker)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):
@@ -294,14 +318,16 @@ class Ui_IANN(object):
     ## 创建工具栏
     def create_toolbar(self, parent, acts):
         toolBar = QtWidgets.QToolBar(parent)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
+        )
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(toolBar.sizePolicy().hasHeightForWidth())
         toolBar.setSizePolicy(sizePolicy)
         toolBar.setMinimumSize(QtCore.QSize(0, 33))
         toolBar.setMovable(True)
-        toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea|QtCore.Qt.TopToolBarArea)
+        toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea | QtCore.Qt.TopToolBarArea)
         toolBar.setObjectName("toolBar")
         for act in acts:
             new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
@@ -322,8 +348,16 @@ class Ui_IANN(object):
         return labLogo
 
     ## 创建滑块区域
-    def create_slider(self, parent, sld_name, text_name, text, \
-                      default_value=5, max_value=10, text_rate=0.1):
+    def create_slider(
+        self,
+        parent,
+        sld_name,
+        text_name,
+        text,
+        default_value=5,
+        max_value=10,
+        text_rate=0.1,
+    ):
         Region = QtWidgets.QHBoxLayout()
         lab = self.create_text(parent, None, text)
         Region.addWidget(lab)
