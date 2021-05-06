@@ -61,6 +61,22 @@ class Canvas(QGraphicsView):
             self.middle_click = False
 
 
+class Ui_Help(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.setWindowTitle("Help")
+        Dialog.resize(650, 560)
+        Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
+        horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
+        horizontalLayout.setObjectName("horizontalLayout")
+        label = QtWidgets.QLabel(Dialog)
+        label.setText("")
+        label.setPixmap(QtGui.QPixmap("iann/resources/shortkey.jpg"))
+        label.setObjectName("label")
+        horizontalLayout.addWidget(label)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
+
+
 class Ui_IANN(object):
     def setupUi(self, MainWindow):
         ## -- 主窗体设置 --

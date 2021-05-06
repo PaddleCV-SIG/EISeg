@@ -11,7 +11,7 @@ import cv2
 import numpy as np
 
 from controller import InteractiveController
-from ui import Ui_IANN
+from ui import Ui_IANN, Ui_Help
 from models import models
 
 __appname__ = "IANN"
@@ -21,6 +21,10 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def __init__(self, parent=None):
         super(APP_IANN, self).__init__(parent)
         self.setupUi(self)
+        # 显示帮助
+        self.help_dialog = QtWidgets.QDialog()
+        help_ui = Ui_Help()
+        help_ui.setupUi(self.help_dialog)
 
         # app变量
         self.controller = None
@@ -69,7 +73,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             elif menu_act.text() == "帮助":
                 for ac_act in menu_act.menu().actions():
                     if ac_act.text() == "快速上手":
-                        ac_act.triggered.connect(self.check_click)
+                        ac_act.triggered.connect(self.help_dialog.show)
                     else:
                         ac_act.triggered.connect(self.check_click)
 
