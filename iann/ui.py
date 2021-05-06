@@ -48,9 +48,9 @@ class Canvas(QGraphicsView):
 
     def mouseMoveEvent(self, ev):
         if self.middle_click and \
-           self.horizontalScrollBar().isVisible() and self.verticalScrollBar().isVisible():
+           (self.horizontalScrollBar().isVisible() or self.verticalScrollBar().isVisible()):
            # 放大到出现滚动条才能拖动，避免出现抖动
-            self._endPos = ev.pos() - self._startPos
+            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
             self.point = self.point + self._endPos
             self._startPos = ev.pos()
             print('move', self._endPos.x(), self._endPos.y())
