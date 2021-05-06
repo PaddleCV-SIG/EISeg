@@ -103,6 +103,7 @@ class Ui_IANN(object):
         ## -- 状态栏 --
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
+        self.statusbar.setStyleSheet('QStatusBar::item {border: none;}')
         MainWindow.setStatusBar(self.statusbar)
         self.statusbar.addPermanentWidget(self.show_logo("iann/resources/paddle.png"))
         ## -----
