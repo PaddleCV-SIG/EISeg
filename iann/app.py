@@ -157,7 +157,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if len(path) == 0 or not osp.exists(path):
             return
         # 解决路径含有中文，cv2.imread读取为None
-        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), -1)
+        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
         self.controller.set_image(image)
 
