@@ -92,9 +92,9 @@ class Ui_IANN(object):
         ## -- 工具栏 --
         self.toolBar = self.create_toolbar(MainWindow, [
             ["actFinish", "完成当前", "iann/resources/finish.png", "Space"],
-            ["actClear", "清除全部", "iann/resources/clear.png", "Ctrl+Shift+Z"],
-            ["actUndo", "撤销", "iann/resources/undo.png", "Ctrl+Z"],
-            ["actRedo", "重做", "iann/resources/redo.png", "Ctrl+Y"],
+            ["actClear", "清除全部", "iann/resources/clear.png", "C"],
+            ["actUndo", "撤销", "iann/resources/undo.png", "Q"],
+            ["actRedo", "重做", "iann/resources/redo.png", "E"],
             ["actPrevImg", "上一张", "iann/resources/left.png", "A"],
             ["actNextImg", "下一张", "iann/resources/right.png", "D"]
         ])
