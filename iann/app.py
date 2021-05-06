@@ -8,6 +8,7 @@ from qtpy.QtGui import QImage, QPixmap
 from qtpy.QtCore import Qt
 import paddle
 import cv2
+import numpy as np
 
 from controller import InteractiveController
 from ui import Ui_IANN
@@ -151,10 +152,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # TODO: 读取标签
         if len(path) == 0 or not osp.exists(path):
             return
-        image = cv2.cvtColor(
-            cv2.imread(path),
-            cv2.COLOR_BGR2RGB,
-        )
+        # 解决路径含有中文，cv2.imread读取为None
+        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), -1)
+        image = image[:, :, ::-1]  # BGR转RGB
         self.controller.set_image(image)
 
     def openFolder(self):
