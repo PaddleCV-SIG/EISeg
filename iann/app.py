@@ -103,7 +103,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 predictor_params={"brs_mode": "f-BRS-B"},
                 update_image_callback=self._update_image,
             )
-            self.controller.set_image(self.image)
+            # 这里如果直接加载模型会报错，先判断有没有图像
+            if self.image is not None:
+                self.controller.set_image(self.image)
         else:
             self.controller.reset_predictor(model)
 
@@ -184,10 +186,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
             return
-        if self.controller.is_incomplete_mask:
-            self.saveLabel()
         imagePath = self.filePaths[self.currIdx]
         self.loadFile(imagePath)
+        if self.controller.is_incomplete_mask:
+            self.saveLabel()
+        # self.loadFile(imagePath)放在前面，不然不先加载模型找不到self.controller
+        # 不过这里我不清楚逻辑上是否应该if判断在前，需要修改的话再来修改
         self.imagePath = imagePath
         self.listFiles.setCurrentRow(self.currIdx)
 
@@ -306,6 +310,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
         height, width, channel = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
+        # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
+        self.scene.setSceneRect(
+            0, 
+            0, 
+            width, 
+            height)
         self.scene.addPixmap(QPixmap(image))
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
