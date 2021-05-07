@@ -26,7 +26,7 @@ class Canvas(QGraphicsView):
             zoom = 1 + event.angleDelta().y() / 2880
             self.zoom_all *= zoom
             oldPos = self.mapToScene(event.pos()) 
-            if self.zoom_all >= 0.1 and self.zoom_all <= 10:  # 限制缩放的倍数
+            if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
                 # print(self.zoom_all)
                 self.scale(zoom, zoom)
             newPos = self.mapToScene(event.pos())
@@ -146,10 +146,10 @@ class Ui_IANN(object):
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
         ImageRegion.setObjectName("ImageRegion")
         # 滑动区域
-        scrollArea = QtWidgets.QScrollArea(CentralWidget)
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setObjectName("scrollArea")
-        ImageRegion.addWidget(scrollArea)
+        self.scrollArea = QtWidgets.QScrollArea(CentralWidget)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        ImageRegion.addWidget(self.scrollArea)
         # 图形显示
         self.scene = QtWidgets.QGraphicsScene()
         self.scene.addPixmap(QtGui.QPixmap())
@@ -162,7 +162,7 @@ class Ui_IANN(object):
         self.canvas.setAutoFillBackground(False)
         self.canvas.setStyleSheet("background-color: White")
         self.canvas.setObjectName("canvas")
-        scrollArea.setWidget(self.canvas)
+        self.scrollArea.setWidget(self.canvas)
         ## -----
         ## -- 工作区 --
         self.dockWorker = QtWidgets.QDockWidget(MainWindow)
