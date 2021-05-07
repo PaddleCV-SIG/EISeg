@@ -315,8 +315,20 @@ class APP_IANN(QMainWindow, Ui_IANN):
             0, 
             0, 
             width, 
-            height)
+            height
+        )
+        # 缩放清除
+        self.canvas.scale(1/self.canvas.zoom_all, 1/self.canvas.zoom_all)  # 重置缩放
+        self.canvas.zoom_all = 1
         self.scene.addPixmap(QPixmap(image))
+        # 最佳缩放
+        s_eps = 5e-2
+        scr_cont = [self.scrollArea.width() / width - s_eps, self.scrollArea.height() / height - s_eps]
+        if scr_cont[0] * height > self.scrollArea.height():
+            self.canvas.zoom_all = scr_cont[1]
+        else:
+            self.canvas.zoom_all = scr_cont[0]
+        self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
 
