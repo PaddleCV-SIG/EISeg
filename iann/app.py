@@ -393,7 +393,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.listFiles.setCurrentRow(self.currIdx)
 
     def finishObject(self):
-        if not self.image:
+        if self.image is None:
             return
         self.controller.finish_object()
 
@@ -513,23 +513,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         height, width, channel = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
-        # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
-        self.scene.setSceneRect(0, 0, width, height)
-        # 缩放清除
-        self.canvas.scale(1 / self.canvas.zoom_all, 1 / self.canvas.zoom_all)  # 重置缩放
-        self.canvas.zoom_all = 1
+        if reset_canvas:
+            self.zoom_restart(width, height)
         self.scene.addPixmap(QPixmap(image))
-        # 最佳缩放
-        s_eps = 5e-2
-        scr_cont = [
-            self.scrollArea.width() / width - s_eps,
-            self.scrollArea.height() / height - s_eps,
-        ]
-        if scr_cont[0] * height > self.scrollArea.height():
-            self.canvas.zoom_all = scr_cont[1]
-        else:
-            self.canvas.zoom_all = scr_cont[0]
-        self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
 
@@ -541,3 +527,22 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def update_model_name(self):
         self.labModelName.setText(self.sender().text())
         self.check_click()
+
+    # 界面缩放重置
+    def zoom_restart(self, width, height):
+        # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
+        self.scene.setSceneRect(0, 0, width, height)
+        # 缩放清除
+        self.canvas.scale(1 / self.canvas.zoom_all, 1 / self.canvas.zoom_all)  # 重置缩放
+        self.canvas.zoom_all = 1
+        # 最佳缩放
+        s_eps = 5e-2
+        scr_cont = [
+            self.scrollArea.width() / width - s_eps,
+            self.scrollArea.height() / height - s_eps,
+        ]
+        if scr_cont[0] * height > self.scrollArea.height():
+            self.canvas.zoom_all = scr_cont[1]
+        else:
+            self.canvas.zoom_all = scr_cont[0]
+        self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
