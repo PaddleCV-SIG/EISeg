@@ -11,8 +11,9 @@ import cv2
 import numpy as np
 
 from controller import InteractiveController
-from ui import Ui_IANN
+from ui import Ui_IANN, Ui_Help
 from models import models
+import util
 
 __appname__ = "IANN"
 
@@ -21,10 +22,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def __init__(self, parent=None):
         super(APP_IANN, self).__init__(parent)
         self.setupUi(self)
+        # 显示帮助
+        self.help_dialog = QtWidgets.QDialog()
+        help_ui = Ui_Help()
+        help_ui.setupUi(self.help_dialog)
 
         # app变量
         self.controller = None
         self.outputDir = None  # 标签保存路径
+        self.labelFiles = None  # 保存所有从outputdir发现的标签文件路径
         self.currIdx = 0  # 标注文件夹时到第几个了
         self.filePaths = []  # 标注文件夹时所有文件路径
         self.labelList = []  # 标签列表(数字，名字，颜色)
@@ -38,42 +44,43 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 消息栏
         self.statusbar.showMessage("模型未加载")
 
+        self.initActions()
         # TODO: 按照labelme的方式用action
         ## 菜单栏点击
-        for menu_act in self.menuBar.actions():
-            if menu_act.text() == "文件":
-                for ac_act in menu_act.menu().actions():
-                    if ac_act.text() == "加载图像":
-                        ac_act.triggered.connect(self.openImage)
-                    else:
-                        ac_act.triggered.connect(self.openFolder)
-            elif menu_act.text() == "设置":
-                for ac_act in menu_act.menu().actions():
-                    if ac_act.text() == "设置保存路径":
-                        ac_act.triggered.connect(self.changeOutputDir)
-                    else:
-                        ac_act.triggered.connect(self.check_click)
-            elif menu_act.text() == "帮助":
-                for ac_act in menu_act.menu().actions():
-                    if ac_act.text() == "快速上手":
-                        ac_act.triggered.connect(self.check_click)
-                    else:
-                        ac_act.triggered.connect(self.check_click)
-
-        ## 工具栏点击
-        for tool_act in self.toolBar.actions():
-            if tool_act.text() == "完成当前":
-                tool_act.triggered.connect(self.finishObject)
-            elif tool_act.text() == "清除全部":
-                tool_act.triggered.connect(self.undoAll)
-            elif tool_act.text() == "撤销":
-                tool_act.triggered.connect(self.undoClick)
-            elif tool_act.text() == "重做":
-                tool_act.triggered.connect(self.check_click)
-            elif tool_act.text() == "上一张":
-                tool_act.triggered.connect(partial(self.turnImg, -1))
-            elif tool_act.text() == "下一张":
-                tool_act.triggered.connect(partial(self.turnImg, 1))
+        # for menu_act in self.menuBar.actions():
+        #     if menu_act.text() == "文件":
+        #         for ac_act in menu_act.menu().actions():
+        #             if ac_act.text() == "加载图像":
+        #                 ac_act.triggered.connect(self.openImage)
+        #             else:
+        #                 ac_act.triggered.connect(self.openFolder)
+        #     elif menu_act.text() == "设置":
+        #         for ac_act in menu_act.menu().actions():
+        #             if ac_act.text() == "设置保存路径":
+        #                 ac_act.triggered.connect(self.changeOutputDir)
+        #             else:
+        #                 ac_act.triggered.connect(self.check_click)
+        #     elif menu_act.text() == "帮助":
+        #         for ac_act in menu_act.menu().actions():
+        #             if ac_act.text() == "快速上手":
+        #                 ac_act.triggered.connect(self.help_dialog.show)
+        #             else:
+        #                 ac_act.triggered.connect(self.check_click)
+        #
+        # ## 工具栏点击
+        # for tool_act in self.toolBar.actions():
+        #     if tool_act.text() == "完成当前":
+        #         tool_act.triggered.connect(self.finishObject)
+        #     elif tool_act.text() == "清除全部":
+        #         tool_act.triggered.connect(self.undoAll)
+        #     elif tool_act.text() == "撤销":
+        #         tool_act.triggered.connect(self.undoClick)
+        #     elif tool_act.text() == "重做":
+        #         tool_act.triggered.connect(self.check_click)
+        #     elif tool_act.text() == "上一张":
+        #         tool_act.triggered.connect(partial(self.turnImg, -1))
+        #     elif tool_act.text() == "下一张":
+        #         tool_act.triggered.connect(partial(self.turnImg, 1))
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
@@ -89,6 +96,170 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # TODO: 打开上次关软件时用的模型
         # TODO: 在ui展示后再加载模型
 
+    def toBeImplemented(self):
+        self.statusbar.showMessage("功能尚在开发")
+        pass
+
+    def menu(self, title, actions=None):
+        menu = self.menuBar().addMenu(title)
+        if actions:
+            util.addActions(menu, actions)
+        return menu
+
+    def initActions(self):
+        action = partial(util.newAction, self)
+        shortcuts = {
+            "turn_next": "F",
+            "turn_prev": "S",
+            "open_image": "Ctrl+A",
+            "open_folder": "Shift+A",
+            "change_output_dir": "Shift+Z",
+            "finish_object": "Space",
+            "clear": "Ctrl+Shift+Z",
+            "undo": "Ctrl+Z",
+            "redo": "Ctrl+Y",
+        }
+
+        turn_next = action(
+            self.tr("&下一张"),
+            partial(self.turnImg, 1),
+            shortcuts["turn_next"],
+            "next",
+            self.tr("翻到下一张图片"),
+        )
+        turn_prev = action(
+            self.tr("&上一张"),
+            partial(self.turnImg, -1),
+            shortcuts["turn_prev"],
+            "prev",
+            self.tr("翻到上一张图片"),
+        )
+        open_image = action(
+            self.tr("&打开图像"),
+            self.openImage,
+            shortcuts["open_image"],
+            # TODO: 搞个图
+            "",
+            self.tr("打开一张图像进行标注"),
+        )
+        open_folder = action(
+            self.tr("&打开文件夹"),
+            self.openFolder,
+            shortcuts["open_folder"],
+            # TODO: 搞个图
+            "",
+            self.tr("打开一个文件夹下所有的图像进行标注"),
+        )
+        change_output_dir = action(
+            self.tr("&改变标签保存路径"),
+            self.changeOutputDir,
+            shortcuts["change_output_dir"],
+            # TODO: 搞个图
+            "",
+            self.tr("打开一个文件夹下所有的图像进行标注"),
+        )
+        quick_start = action(
+            self.tr("&快速上手"),
+            self.toBeImplemented,
+            None,
+            # TODO: 搞个图
+            "",
+            self.tr("快速上手介绍"),
+        )
+        about = action(
+            self.tr("&关于软件"),
+            self.toBeImplemented,
+            None,
+            # TODO: 搞个图
+            "",
+            self.tr("关于这个软件和开发团队"),
+        )
+        grid_ann = action(
+            self.tr("&N^2宫格标注"),
+            self.toBeImplemented,
+            None,
+            # TODO: 搞个图
+            "",
+            self.tr("使用N^2宫格进行细粒度标注"),
+        )
+        finish_object = action(
+            self.tr("&完成当前目标"),
+            self.finishObject,
+            shortcuts["finish_object"],
+            "finish",
+            self.tr("完成当前目标的标注"),
+        )
+        clear = action(
+            self.tr("&清除所有标注"),
+            self.clearMask,
+            shortcuts["clear"],
+            "clear",
+            self.tr("清除所有标注信息"),
+        )
+        undo = action(
+            self.tr("&撤销"),
+            self.undoClick,
+            shortcuts["undo"],
+            "undo",
+            self.tr("撤销一次点击"),
+        )
+        redo = action(
+            self.tr("&重做"),
+            self.toBeImplemented,
+            shortcuts["redo"],
+            "redo",
+            self.tr("重做一次点击"),
+        )
+        # finish_object = action(
+        #     self.tr("&N^2宫格标注"),
+        #     self.toBeImplemented,
+        #     None,
+        #     # TODO: 搞个图
+        #     "",
+        #     self.tr("使用N^2宫格进行细粒度标注"),
+        # )
+        # TODO: 改用manager
+        self.actions = util.struct(
+            turn_next=turn_next,
+            turn_prev=turn_prev,
+            open_image=open_image,
+            open_folder=open_folder,
+            fileMenu=(
+                open_image,
+                open_folder,
+                change_output_dir,
+                None,
+                turn_prev,
+                turn_next,
+            ),
+            helpMenu=(quick_start, about),
+            labelMenu=(grid_ann,),
+            toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
+        )
+        self.menu("文件", self.actions.fileMenu)
+        self.menu("标注", self.actions.labelMenu)
+        self.menu("帮助", self.actions.helpMenu)
+        util.addActions(self.toolBar, self.actions.toolBar)
+
+    def changeOutputDir(self, dir=None):
+        if dir is not None:
+            outputDir = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                self.tr("%s - 选择标签文件夹") % __appname__,
+                "/home/aistudio/git/paddle/iann",
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks,
+            )
+        if len(outputDir) == 0:
+            return
+
+        labelFiles = os.listdir(outputDir)
+        exts = QtGui.QImageReader.supportedImageFormats()
+        self.labelFiles = [
+            osp.join(outputDir, n) for n in labelFiles if n.split(".")[-1] in exts
+        ]
+        self.outputDir = outputDir
+
     def changeModel(self, idx):
         # TODO: 设置gpu还是cpu运行
         self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型", 5000)
@@ -99,7 +270,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 predictor_params={"brs_mode": "f-BRS-B"},
                 update_image_callback=self._update_image,
             )
-            self.controller.set_image(self.image)
+            # 这里如果直接加载模型会报错，先判断有没有图像
+            if self.image is not None:
+                self.controller.set_image(self.image)
         else:
             self.controller.reset_predictor(model)
 
@@ -112,11 +285,29 @@ class APP_IANN(QMainWindow, Ui_IANN):
         table.setRowCount(len(self.labelList))
         table.setColumnCount(3)
         for idx, lab in enumerate(self.labelList):
-            table.setItem(idx, 0, QTableWidgetItem(str(lab[0])))
+            numberItem = QTableWidgetItem(str(lab[0]))
+            numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
+            table.setItem(idx, 0, numberItem)
             table.setItem(idx, 1, QTableWidgetItem(lab[1]))
             c = lab[2]
-            table.setItem(idx, 2, QTableWidgetItem())
-            table.item(idx, 2).setBackground(QtGui.QColor(c[0], c[1], c[2]))
+            colorItem = QTableWidgetItem()
+            colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
+            colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
+            table.setItem(idx, 2, colorItem)
+
+        for idx in range(2):
+            table.resizeColumnToContents(idx)
+
+        def changeLabelColor(row, col):
+            print(row, col)
+            if col != 2:
+                return
+            color = QtWidgets.QColorDialog.getColor()
+            print(color.getRgb())
+            table.item(row, col).setBackground(color)
+            self.labelList[row][2] = color.getRgb()[:3]
+
+        table.cellDoubleClicked.connect(changeLabelColor)
 
     def openImage(self):
         formats = [
@@ -136,13 +327,20 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.imagePath = file_path
 
     def loadFile(self, path):
-        # TODO: 读取标签
         if len(path) == 0 or not osp.exists(path):
             return
-        # 解决路径含有中文，cv2.imread读取为None
-        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), -1)
+        # TODO: 在不同平台测试含中文路径
+        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
+        imgName = osp.basename(path).split(".")[0]
+        # TODO: 专门搞一个getlabel的方法
+        # if self.outputDir:
+        #     for labelName in self.labelFiles:
+        #         if osp.basename(labelName).split(".")[0] == imgName:
+        #             label = cv2.imdecode(np.fromfile(labelName, dtype=np.uint8), 1)
+        #             print(label.shape)
+        #             break
         if self.controller:
             self.controller.set_image(self.image)
         else:
@@ -179,6 +377,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.currIdx += delta
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
+            self.statusbar.showMessage(f"没有{'后一张'if delta==1 else '前一张'}图片")
             return
         if not self.controller:
             self.changeModel(0)
@@ -186,10 +385,16 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.saveLabel()
         imagePath = self.filePaths[self.currIdx]
         self.loadFile(imagePath)
+        if self.controller.is_incomplete_mask:
+            self.saveLabel()
+        # self.loadFile(imagePath)放在前面，不然不先加载模型找不到self.controller
+        # 不过这里我不清楚逻辑上是否应该if判断在前，需要修改的话再来修改
         self.imagePath = imagePath
         self.listFiles.setCurrentRow(self.currIdx)
 
     def finishObject(self):
+        if not self.image:
+            return
         self.controller.finish_object()
 
     def saveLabel(self):
@@ -197,6 +402,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
 
         if self.controller.is_incomplete_mask:
+            # TODO: 如果没选，直接esc，什么也不做
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
             msg.setWindowTitle("保存最后一个目标？")
@@ -245,7 +451,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             self.tr("%s - 选择标签保存路径") % __appname__,
-            osp.dirname(self.imagePath),
+            # osp.dirname(self.imagePath),
+            ".",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
@@ -264,12 +471,14 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self._update_image()
 
     def undoClick(self):
+        if not self.image:
+            return
         self.controller.undo_click()
 
     def undoAll(self):
         self.controller.reset_last_object()
 
-    def redo_click(self):
+    def redoClick(self):
         print("重做功能还没有实现")
 
     def canvasClick(self, x, y, isLeft):
@@ -304,7 +513,23 @@ class APP_IANN(QMainWindow, Ui_IANN):
         height, width, channel = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
+        # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
+        self.scene.setSceneRect(0, 0, width, height)
+        # 缩放清除
+        self.canvas.scale(1 / self.canvas.zoom_all, 1 / self.canvas.zoom_all)  # 重置缩放
+        self.canvas.zoom_all = 1
         self.scene.addPixmap(QPixmap(image))
+        # 最佳缩放
+        s_eps = 5e-2
+        scr_cont = [
+            self.scrollArea.width() / width - s_eps,
+            self.scrollArea.height() / height - s_eps,
+        ]
+        if scr_cont[0] * height > self.scrollArea.height():
+            self.canvas.zoom_all = scr_cont[1]
+        else:
+            self.canvas.zoom_all = scr_cont[0]
+        self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
 

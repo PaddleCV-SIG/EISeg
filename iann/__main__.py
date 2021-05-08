@@ -1,7 +1,6 @@
 import sys
 
 from qtpy.QtWidgets import QApplication  # 导入PyQt相关模块
-
 from app import APP_IANN  # 导入带槽的界面
 
 
