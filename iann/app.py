@@ -36,7 +36,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.image = None
 
         # 消息栏
-        self.statusbar.showMessage("模型未加载", 5000)
+        self.statusbar.showMessage("模型未加载")
 
         # TODO: 按照labelme的方式用action
         ## 菜单栏点击
@@ -91,7 +91,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
     def changeModel(self, idx):
         # TODO: 设置gpu还是cpu运行
-        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
+        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型", 5000)
         model = models[idx].get_model()
         if self.controller is None:
             self.controller = InteractiveController(
@@ -180,6 +180,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
             return
+        if not self.controller:
+            self.changeModel(0)
         if self.controller.is_incomplete_mask:
             self.saveLabel()
         imagePath = self.filePaths[self.currIdx]
