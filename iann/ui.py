@@ -25,12 +25,12 @@ class Canvas(QGraphicsView):
             # self.zoom += event.angleDelta().y() / 2880
             zoom = 1 + event.angleDelta().y() / 2880
             self.zoom_all *= zoom
-            oldPos = self.mapToScene(event.pos()) 
-            if self.zoom_all >= 0.1 and self.zoom_all <= 10:  # 限制缩放的倍数
+            oldPos = self.mapToScene(event.pos())
+            if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
                 # print(self.zoom_all)
                 self.scale(zoom, zoom)
             newPos = self.mapToScene(event.pos())
-            delta = newPos - oldPos 
+            delta = newPos - oldPos
             self.translate(delta.x(), delta.y())
             event.ignore()
         else:
@@ -47,18 +47,37 @@ class Canvas(QGraphicsView):
             self._startPos = ev.pos()
 
     def mouseMoveEvent(self, ev):
-        if self.middle_click and \
-           self.horizontalScrollBar().isVisible() and self.verticalScrollBar().isVisible():
-           # 放大到出现滚动条才能拖动，避免出现抖动
-            self._endPos = ev.pos() - self._startPos
+        if self.middle_click and (
+            self.horizontalScrollBar().isVisible()
+            or self.verticalScrollBar().isVisible()
+        ):
+            # 放大到出现滚动条才能拖动，避免出现抖动
+            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
+            # 这儿不写为先减后除，这样会造成速度不一致
             self.point = self.point + self._endPos
             self._startPos = ev.pos()
-            print('move', self._endPos.x(), self._endPos.y())
+            print("move", self._endPos.x(), self._endPos.y())
             self.translate(self._endPos.x(), self._endPos.y())
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.MiddleButton:
             self.middle_click = False
+
+
+class Ui_Help(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.setWindowTitle("Help")
+        Dialog.resize(650, 560)
+        Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
+        horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
+        horizontalLayout.setObjectName("horizontalLayout")
+        label = QtWidgets.QLabel(Dialog)
+        label.setText("")
+        label.setPixmap(QtGui.QPixmap("iann/resources/shortkey.jpg"))
+        label.setObjectName("label")
+        horizontalLayout.addWidget(label)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 
 class Ui_IANN(object):
@@ -71,57 +90,26 @@ class Ui_IANN(object):
         CentralWidget.setObjectName("CentralWidget")
         MainWindow.setCentralWidget(CentralWidget)
         ## -----
-        ## -- 菜单栏 --
-        p_add_menu = partial(self.add_menu, MainWindow)
-        self.menuBar = self.create_menubar(
-            MainWindow,
-            [
-                p_add_menu(
-                    "menuFile",
-                    "文件",
-                    acts=[
-                        ["actLoadImage", "加载图像", None, "Ctrl+A"],
-                        ["actOpenFolder", "打开文件夹", None, "Shift+A"],
-                    ],
-                ),
-                p_add_menu(
-                    "menuSetting",
-                    "设置",
-                    acts=[
-                        ["actSave", "设置保存路径", None, None],
-                        ["actScale", "细粒度标注", None, None],
-                    ],
-                ),
-                p_add_menu(
-                    "menuHelp",
-                    "帮助",
-                    acts=[
-                        ["actHelp", "快速上手", None, None],
-                        ["actAbout", "关于软件", None, None],
-                    ],
-                ),
-            ],
-        )
-        MainWindow.setMenuBar(self.menuBar)
-        ## -----
         ## -- 工具栏 --
-        self.toolBar = self.create_toolbar(
-            MainWindow,
-            [
-                ["actFinish", "完成当前", "iann/resources/finish.png", "Space"],
-                ["actClear", "清除全部", "iann/resources/clear.png", "Ctrl+Shift+Z"],
-                ["actUndo", "撤销", "iann/resources/undo.png", "Ctrl+Z"],
-                ["actRedo", "重做", "iann/resources/redo.png", "Ctrl+Y"],
-                ["actPrevImg", "上一张", "iann/resources/left.png", "A"],
-                ["actNextImg", "下一张", "iann/resources/right.png", "D"],
-            ],
+        toolBar = QtWidgets.QToolBar(self)
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
         )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(toolBar.sizePolicy().hasHeightForWidth())
+        toolBar.setSizePolicy(sizePolicy)
+        toolBar.setMinimumSize(QtCore.QSize(0, 33))
+        toolBar.setMovable(True)
+        toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea | QtCore.Qt.TopToolBarArea)
+        toolBar.setObjectName("toolBar")
+        self.toolBar = toolBar
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         ## -----
         ## -- 状态栏 --
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
-        self.statusbar.setStyleSheet('QStatusBar::item {border: none;}')
+        self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
         self.statusbar.addPermanentWidget(self.show_logo("iann/resources/paddle.png"))
         ## -----
@@ -129,10 +117,10 @@ class Ui_IANN(object):
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
         ImageRegion.setObjectName("ImageRegion")
         # 滑动区域
-        scrollArea = QtWidgets.QScrollArea(CentralWidget)
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setObjectName("scrollArea")
-        ImageRegion.addWidget(scrollArea)
+        self.scrollArea = QtWidgets.QScrollArea(CentralWidget)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setObjectName("scrollArea")
+        ImageRegion.addWidget(self.scrollArea)
         # 图形显示
         self.scene = QtWidgets.QGraphicsScene()
         self.scene.addPixmap(QtGui.QPixmap())
@@ -145,7 +133,7 @@ class Ui_IANN(object):
         self.canvas.setAutoFillBackground(False)
         self.canvas.setStyleSheet("background-color: White")
         self.canvas.setObjectName("canvas")
-        scrollArea.setWidget(self.canvas)
+        self.scrollArea.setWidget(self.canvas)
         ## -----
         ## -- 工作区 --
         self.dockWorker = QtWidgets.QDockWidget(MainWindow)
@@ -194,9 +182,14 @@ class Ui_IANN(object):
         self.listFiles = QtWidgets.QListWidget(CentralWidget)
         self.listFiles.setObjectName("listFiles")
         listRegion.addWidget(self.listFiles)
-        labelListLab = self.create_text(CentralWidget, "labelListLab", "标签类别")
+        # 标签列表
+        labelListLab = self.create_text(CentralWidget, "labelListLab", "标签列表")
         listRegion.addWidget(labelListLab)
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
+        self.labelListTable.horizontalHeader().hide()
+        self.labelListTable.verticalHeader().hide()
+        self.labelListTable.setColumnWidth(0, 10)
+        # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button("btnAddClass", "添加标签")
@@ -267,56 +260,56 @@ class Ui_IANN(object):
         return btn
 
     ## 添加动作
-    def add_action(self, parent, act_name, act_text="", ico_path=None, short_cut=None):
-        act = QtWidgets.QAction(parent)
-        if ico_path is not None:
-            icon = QtGui.QIcon()
-            icon.addPixmap(QtGui.QPixmap(ico_path), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-            act.setIcon(icon)
-        act.setObjectName(act_name)
-        act.setText(act_text)
-        if short_cut is not None:
-            act.setShortcut(short_cut)
-        return act
+    # def add_action(self, parent, act_name, act_text="", ico_path=None, short_cut=None):
+    #     act = QtWidgets.QAction(parent)
+    #     if ico_path is not None:
+    #         icon = QtGui.QIcon()
+    #         icon.addPixmap(QtGui.QPixmap(ico_path), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+    #         act.setIcon(icon)
+    #     act.setObjectName(act_name)
+    #     act.setText(act_text)
+    #     if short_cut is not None:
+    #         act.setShortcut(short_cut)
+    #     return act
 
     ## 创建菜单按钮
-    def add_menu(self, parent, menu_name, menu_text, acts=None):
-        menu = QtWidgets.QMenu(parent)
-        menu.setObjectName(menu_name)
-        menu.setTitle(menu_text)
-        if acts is not None:
-            for act in acts:
-                new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
-                menu.addAction(new_act)
-        return menu
+    # def add_menu(self, parent, menu_name, menu_text, acts=None):
+    #     menu = QtWidgets.QMenu(parent)
+    #     menu.setObjectName(menu_name)
+    #     menu.setTitle(menu_text)
+    #     if acts is not None:
+    #         for act in acts:
+    #             new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
+    #             menu.addAction(new_act)
+    #     return menu
 
     ## 创建菜单栏
-    def create_menubar(self, parent, menus):
-        menuBar = QtWidgets.QMenuBar(parent)
-        menuBar.setGeometry(QtCore.QRect(0, 0, 800, 26))
-        menuBar.setObjectName("menuBar")
-        for menu in menus:
-            menuBar.addAction(menu.menuAction())
-        return menuBar
+    # def create_menubar(self, parent, menus):
+    #     menuBar = QtWidgets.QMenuBar(parent)
+    #     menuBar.setGeometry(QtCore.QRect(0, 0, 800, 26))
+    #     menuBar.setObjectName("menuBar")
+    #     for menu in menus:
+    #         menuBar.addAction(menu.menuAction())
+    #     return menuBar
 
-    ## 创建工具栏
-    def create_toolbar(self, parent, acts):
-        toolBar = QtWidgets.QToolBar(parent)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
-        )
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(toolBar.sizePolicy().hasHeightForWidth())
-        toolBar.setSizePolicy(sizePolicy)
-        toolBar.setMinimumSize(QtCore.QSize(0, 33))
-        toolBar.setMovable(True)
-        toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea | QtCore.Qt.TopToolBarArea)
-        toolBar.setObjectName("toolBar")
-        for act in acts:
-            new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
-            toolBar.addAction(new_act)
-        return toolBar
+    # ## 创建工具栏
+    # def create_toolbar(self, parent, acts):
+    #     toolBar = QtWidgets.QToolBar(parent)
+    #     sizePolicy = QtWidgets.QSizePolicy(
+    #         QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
+    #     )
+    #     sizePolicy.setHorizontalStretch(0)
+    #     sizePolicy.setVerticalStretch(0)
+    #     sizePolicy.setHeightForWidth(toolBar.sizePolicy().hasHeightForWidth())
+    #     toolBar.setSizePolicy(sizePolicy)
+    #     toolBar.setMinimumSize(QtCore.QSize(0, 33))
+    #     toolBar.setMovable(True)
+    #     toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea | QtCore.Qt.TopToolBarArea)
+    #     toolBar.setObjectName("toolBar")
+    #     for act in acts:
+    #         new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
+    #         toolBar.addAction(new_act)
+    #     return toolBar
 
     ## 显示Logo
     def show_logo(self, logo_path):
