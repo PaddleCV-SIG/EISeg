@@ -45,47 +45,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.statusbar.showMessage("模型未加载")
 
         self.initActions()
-        # TODO: 按照labelme的方式用action
-        ## 菜单栏点击
-        # for menu_act in self.menuBar.actions():
-        #     if menu_act.text() == "文件":
-        #         for ac_act in menu_act.menu().actions():
-        #             if ac_act.text() == "加载图像":
-        #                 ac_act.triggered.connect(self.openImage)
-        #             else:
-        #                 ac_act.triggered.connect(self.openFolder)
-        #     elif menu_act.text() == "设置":
-        #         for ac_act in menu_act.menu().actions():
-        #             if ac_act.text() == "设置保存路径":
-        #                 ac_act.triggered.connect(self.changeOutputDir)
-        #             else:
-        #                 ac_act.triggered.connect(self.check_click)
-        #     elif menu_act.text() == "帮助":
-        #         for ac_act in menu_act.menu().actions():
-        #             if ac_act.text() == "快速上手":
-        #                 ac_act.triggered.connect(self.help_dialog.show)
-        #             else:
-        #                 ac_act.triggered.connect(self.check_click)
-        #
-        # ## 工具栏点击
-        # for tool_act in self.toolBar.actions():
-        #     if tool_act.text() == "完成当前":
-        #         tool_act.triggered.connect(self.finishObject)
-        #     elif tool_act.text() == "清除全部":
-        #         tool_act.triggered.connect(self.undoAll)
-        #     elif tool_act.text() == "撤销":
-        #         tool_act.triggered.connect(self.undoClick)
-        #     elif tool_act.text() == "重做":
-        #         tool_act.triggered.connect(self.check_click)
-        #     elif tool_act.text() == "上一张":
-        #         tool_act.triggered.connect(partial(self.turnImg, -1))
-        #     elif tool_act.text() == "下一张":
-        #         tool_act.triggered.connect(partial(self.turnImg, 1))
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
         self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择
         self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
+        self.btnAddClass.clicked.connect(self.addLabel)
 
         # 滑动
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
@@ -100,13 +65,13 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.statusbar.showMessage("功能尚在开发")
         pass
 
-    def menu(self, title, actions=None):
-        menu = self.menuBar().addMenu(title)
-        if actions:
-            util.addActions(menu, actions)
-        return menu
-
     def initActions(self):
+        def menu(title, actions=None):
+            menu = self.menuBar().addMenu(title)
+            if actions:
+                util.addActions(menu, actions)
+            return menu
+
         action = partial(util.newAction, self)
         shortcuts = {
             "turn_next": "F",
@@ -210,14 +175,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             "redo",
             self.tr("重做一次点击"),
         )
-        # finish_object = action(
-        #     self.tr("&N^2宫格标注"),
-        #     self.toBeImplemented,
-        #     None,
-        #     # TODO: 搞个图
-        #     "",
-        #     self.tr("使用N^2宫格进行细粒度标注"),
-        # )
+
         # TODO: 改用manager
         self.actions = util.struct(
             turn_next=turn_next,
@@ -236,9 +194,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
             labelMenu=(grid_ann,),
             toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
         )
-        self.menu("文件", self.actions.fileMenu)
-        self.menu("标注", self.actions.labelMenu)
-        self.menu("帮助", self.actions.helpMenu)
+        menu("文件", self.actions.fileMenu)
+        menu("标注", self.actions.labelMenu)
+        menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
     def changeOutputDir(self, dir=None):
@@ -278,9 +236,24 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
 
+    def addLabel(self):
+        table = self.labelListTable
+        table.insertRow(table.rowCount())
+        idx = table.rowCount() - 1
+        print(idx)
+        numberItem = QTableWidgetItem(str(idx + 1))
+        numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
+        table.setItem(idx, 0, numberItem)
+        table.setItem(idx, 1, QTableWidgetItem())
+        c = [255, 255, 255]
+        colorItem = QTableWidgetItem()
+        colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
+        colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
+        table.setItem(idx, 2, colorItem)
+        self.labelList.append([idx + 1, "", [255, 255, 255]])
+
     def refreshLabelList(self):
         table = self.labelListTable
-        # TODO: 添加表头
         table.clearContents()
         table.setRowCount(len(self.labelList))
         table.setColumnCount(3)
@@ -303,11 +276,25 @@ class APP_IANN(QMainWindow, Ui_IANN):
             if col != 2:
                 return
             color = QtWidgets.QColorDialog.getColor()
+            # BUG: 判断颜色没变
             print(color.getRgb())
             table.item(row, col).setBackground(color)
             self.labelList[row][2] = color.getRgb()[:3]
+            if self.controller:
+                self.controller.label_list = self.labelList
 
         table.cellDoubleClicked.connect(changeLabelColor)
+
+        def cellClicked(row, col):
+            print("cell clicked", row, col)
+            for idx in range(3):
+                table.item(row, idx).setSelected(True)
+            if self.controller:
+                print(int(table.item(row, 0).text()))
+                self.controller.change_label_num(int(table.item(row, 0).text()))
+                self.controller.label_list = self.labelList
+
+        table.cellClicked.connect(cellClicked)
 
     def openImage(self):
         formats = [
@@ -471,7 +458,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self._update_image()
 
     def undoClick(self):
-        if not self.image:
+        if self.image is None:
             return
         self.controller.undo_click()
 
@@ -488,6 +475,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
         if x < 0 or y < 0:
             return
+        if not self.controller.curr_label_number:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("未选择当前标签")
+            msg.setText("请先在标签列表中单击点选标签")
+            msg.setStandardButtons(QMessageBox.Yes)
+            res = msg.exec_()
+            return
+
         s = self.controller.img_size
         if x > s[0] or y > s[1]:
             return

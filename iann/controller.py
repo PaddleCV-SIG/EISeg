@@ -14,8 +14,9 @@ class InteractiveController:
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
-        self.object_count = 0
+        self.curr_label_number = 0
         self._result_mask = None
+        self.label_list = None  # 存标签编号和颜色的对照
 
         self.image = None
         self.image_nd = None
@@ -41,12 +42,10 @@ class InteractiveController:
         self.image_nd = input_transform(image)[0]
 
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        self.object_count = 0
+        self.curr_label_number = 0
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
-    # def change_alpha(self, alpha_blend):
-    #     self.
     def add_click(self, x, y, is_positive):
         """添加一个点
         跑推理，保存历史用于undo
@@ -114,10 +113,26 @@ class InteractiveController:
         if object_prob is None:
             return
 
-        self.object_count += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
+        # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
-        self._result_mask[object_mask] = self.object_count
+        self._result_mask[object_mask] = self.curr_label_number
         self.reset_last_object()
+
+    def change_label_num(self, number):
+        """修改当前标签的编号
+        如果当前有标注到一半的目标，改mask。
+        如果没有，下一个目标是这个数
+
+        Parameters
+        ----------
+        number : int
+            换成目标的编号
+        """
+        assert isinstance(number, int), "标签编号应为整数"
+        self.curr_label_number = number
+        if self.is_incomplete_mask:
+            pass
+            # TODO: 改当前mask的编号
 
     def reset_last_object(self, update_image=True):
         """重置控制器状态
@@ -158,6 +173,49 @@ class InteractiveController:
         if self.image_nd is not None:
             self.predictor.set_input_image(self.image_nd)
 
+    def get_visualization(self, alpha_blend, click_radius):
+        if self.image is None:
+            return None
+
+        # 1. 画当前没标完的mask
+        results_mask_for_vis = self.result_mask
+        if self.probs_history:
+            results_mask_for_vis[
+                self.current_object_prob > self.prob_thresh
+            ] = self.curr_label_number
+
+        vis = draw_with_blend_and_clicks(
+            self.image,
+            mask=results_mask_for_vis,
+            alpha=alpha_blend,
+            clicks_list=self.clicker.clicks_list,
+            radius=click_radius,
+            palette=self.palette,
+        )
+
+        # 2. 在图片和当前mask的基础上画之前标完的mask
+        if self.probs_history:
+            total_mask = self.probs_history[-1][0] > self.prob_thresh
+            results_mask_for_vis[np.logical_not(total_mask)] = 0
+            vis = draw_with_blend_and_clicks(
+                vis,
+                mask=results_mask_for_vis,
+                alpha=alpha_blend,
+                palette=self.palette,
+            )
+
+        return vis
+
+    @property
+    def palette(self):
+        if self.label_list:
+            colors = [l[2] for l in self.label_list]
+            colors.insert(0, [0, 0, 0])
+        else:
+            colors = [[0, 0, 0]]
+        print(colors)
+        return colors
+
     @property
     def current_object_prob(self):
         """获取当前推理标签"""
@@ -185,32 +243,3 @@ class InteractiveController:
     def img_size(self):
         print(self.image.shape)
         return self.image.shape[1::-1]
-
-    def get_visualization(self, alpha_blend, click_radius):
-        if self.image is None:
-            return None
-
-        # 1. 画当前没标完的mask
-        results_mask_for_vis = self.result_mask
-        if self.probs_history:
-            results_mask_for_vis[self.current_object_prob > self.prob_thresh] = (
-                self.object_count + 1
-            )
-
-        vis = draw_with_blend_and_clicks(
-            self.image,
-            mask=results_mask_for_vis,
-            alpha=alpha_blend,
-            clicks_list=self.clicker.clicks_list,
-            radius=click_radius,
-        )
-
-        # 2. 在图片和当前mask的基础上画之前标完的mask
-        if self.probs_history:
-            total_mask = self.probs_history[-1][0] > self.prob_thresh
-            results_mask_for_vis[np.logical_not(total_mask)] = 0
-            vis = draw_with_blend_and_clicks(
-                vis, mask=results_mask_for_vis, alpha=alpha_blend
-            )
-
-        return vis
