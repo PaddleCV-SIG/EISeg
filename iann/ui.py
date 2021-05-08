@@ -185,6 +185,7 @@ class Ui_IANN(object):
         # 标签列表
         labelListLab = self.create_text(CentralWidget, "labelListLab", "标签列表")
         listRegion.addWidget(labelListLab)
+        # TODO: 改成 list widget
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         self.labelListTable.verticalHeader().hide()
