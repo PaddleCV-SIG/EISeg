@@ -13,9 +13,21 @@ from albumentations import ImageOnlyTransform, DualTransform
 from albumentations.augmentations import functional as Func
 
 
+def toint(seq):
+    for idx in range(len(seq)):
+        try:
+            seq[idx] = int(seq[idx])
+        except ValueError:
+            pass
+    return seq
+
+
+# TODO: 精简这里的函数，只留推理的
+
+
 def SyncBatchNorm(*args, **kwargs):
     """In cpu environment nn.SyncBatchNorm does not have kernel so use nn.BatchNorm2D instead"""
-    if  paddle.distributed.ParallelEnv().nranks == 1:
+    if paddle.distributed.ParallelEnv().nranks == 1:
         return nn.BatchNorm2D(*args, **kwargs)
     else:
         return nn.SyncBatchNorm(*args, **kwargs)
@@ -53,8 +65,12 @@ def expand_bbox(bbox, expand_ratio, min_crop_size=None):
 
 
 def clamp_bbox(bbox, rmin, rmax, cmin, cmax):
-    return (max(rmin, bbox[0]), min(rmax, bbox[1]),
-            max(cmin, bbox[2]), min(cmax, bbox[3]))
+    return (
+        max(rmin, bbox[0]),
+        min(rmax, bbox[1]),
+        max(cmin, bbox[2]),
+        min(cmax, bbox[3]),
+    )
 
 
 def get_bbox_iou(b1, b2):
@@ -78,35 +94,39 @@ def get_dims_with_exclusion(dim, exclude=None):
     return dims
 
 
-
 def get_iou(gt_mask, pred_mask, ignore_label=-1):
     ignore_gt_mask_inv = gt_mask != ignore_label
     obj_gt_mask = gt_mask == 1
 
-    intersection = np.logical_and(np.logical_and(pred_mask, obj_gt_mask), ignore_gt_mask_inv).sum()
+    intersection = np.logical_and(
+        np.logical_and(pred_mask, obj_gt_mask), ignore_gt_mask_inv
+    ).sum()
 
-    union = np.logical_and(np.logical_or(pred_mask, obj_gt_mask), ignore_gt_mask_inv).sum()
+    union = np.logical_and(
+        np.logical_or(pred_mask, obj_gt_mask), ignore_gt_mask_inv
+    ).sum()
 
     return intersection / union
 
 
 def get_dataset(dataset_name, cfg):
-    if dataset_name == 'GrabCut':
-        dataset = GrabCutDataset('./datasets/GrabCut')
-    elif dataset_name == 'Berkeley':
-        dataset = BerkeleyDataset('./datasets/Berkeley')
-    elif dataset_name == 'DAVIS':
-        dataset = DavisDataset('./datasets/DAVIS')
-    elif dataset_name == 'COCO_MVal':
-        dataset = DavisDataset('./datasets/COCO_MVal')
-    elif dataset_name == 'SBD':
-        dataset = SBDEvaluationDataset('./datasets/SBD')
-    elif dataset_name == 'SBD_Train':
-        dataset = SBDEvaluationDataset('./datasets/SBD', split='train')
+    if dataset_name == "GrabCut":
+        dataset = GrabCutDataset("./datasets/GrabCut")
+    elif dataset_name == "Berkeley":
+        dataset = BerkeleyDataset("./datasets/Berkeley")
+    elif dataset_name == "DAVIS":
+        dataset = DavisDataset("./datasets/DAVIS")
+    elif dataset_name == "COCO_MVal":
+        dataset = DavisDataset("./datasets/COCO_MVal")
+    elif dataset_name == "SBD":
+        dataset = SBDEvaluationDataset("./datasets/SBD")
+    elif dataset_name == "SBD_Train":
+        dataset = SBDEvaluationDataset("./datasets/SBD", split="train")
     else:
         dataset = None
 
     return dataset
+
 
 def get_time_metrics(all_ious, elapsed_time):
     n_images = len(all_ious)
@@ -117,6 +137,7 @@ def get_time_metrics(all_ious, elapsed_time):
 
     return mean_spc, mean_spi
 
+
 def compute_noc_metric(all_ious, iou_thrs, max_clicks=20):
     def _get_noc(iou_arr, iou_thr):
         vals = iou_arr >= iou_thr
@@ -125,8 +146,9 @@ def compute_noc_metric(all_ious, iou_thrs, max_clicks=20):
     noc_list = []
     over_max_list = []
     for iou_thr in iou_thrs:
-        scores_arr = np.array([_get_noc(iou_arr, iou_thr)
-                               for iou_arr in all_ious], dtype=np.int)
+        scores_arr = np.array(
+            [_get_noc(iou_arr, iou_thr) for iou_arr in all_ious], dtype=np.int
+        )
 
         score = scores_arr.mean()
         over_max = (scores_arr == max_clicks).sum()
@@ -137,38 +159,50 @@ def compute_noc_metric(all_ious, iou_thrs, max_clicks=20):
     return noc_list, over_max_list
 
 
-def get_results_table(noc_list, over_max_list, brs_type, dataset_name, mean_spc, elapsed_time,
-                      n_clicks=20, model_name=None):
-    table_header = (f'|{"BRS Type":^13}|{"Dataset":^11}|'
-                    f'{"NoC@80%":^9}|{"NoC@85%":^9}|{"NoC@90%":^9}|'
-                    f'{">="+str(n_clicks)+"@85%":^9}|{">="+str(n_clicks)+"@90%":^9}|'
-                    f'{"SPC,s":^7}|{"Time":^9}|')
+def get_results_table(
+    noc_list,
+    over_max_list,
+    brs_type,
+    dataset_name,
+    mean_spc,
+    elapsed_time,
+    n_clicks=20,
+    model_name=None,
+):
+    table_header = (
+        f'|{"BRS Type":^13}|{"Dataset":^11}|'
+        f'{"NoC@80%":^9}|{"NoC@85%":^9}|{"NoC@90%":^9}|'
+        f'{">="+str(n_clicks)+"@85%":^9}|{">="+str(n_clicks)+"@90%":^9}|'
+        f'{"SPC,s":^7}|{"Time":^9}|'
+    )
     row_width = len(table_header)
 
-    header = f'Eval results for model: {model_name}\n' if model_name is not None else ''
-    header += '-' * row_width + '\n'
-    header += table_header + '\n' + '-' * row_width
+    header = f"Eval results for model: {model_name}\n" if model_name is not None else ""
+    header += "-" * row_width + "\n"
+    header += table_header + "\n" + "-" * row_width
 
     eval_time = str(timedelta(seconds=int(elapsed_time)))
-    table_row = f'|{brs_type:^13}|{dataset_name:^11}|'
-    table_row += f'{noc_list[0]:^9.2f}|'
-    table_row += f'{noc_list[1]:^9.2f}|' if len(noc_list) > 1 else f'{"?":^9}|'
-    table_row += f'{noc_list[2]:^9.2f}|' if len(noc_list) > 2 else f'{"?":^9}|'
-    table_row += f'{over_max_list[1]:^9}|' if len(noc_list) > 1 else f'{"?":^9}|'
-    table_row += f'{over_max_list[2]:^9}|' if len(noc_list) > 2 else f'{"?":^9}|'
-    table_row += f'{mean_spc:^7.3f}|{eval_time:^9}|'
+    table_row = f"|{brs_type:^13}|{dataset_name:^11}|"
+    table_row += f"{noc_list[0]:^9.2f}|"
+    table_row += f"{noc_list[1]:^9.2f}|" if len(noc_list) > 1 else f'{"?":^9}|'
+    table_row += f"{noc_list[2]:^9.2f}|" if len(noc_list) > 2 else f'{"?":^9}|'
+    table_row += f"{over_max_list[1]:^9}|" if len(noc_list) > 1 else f'{"?":^9}|'
+    table_row += f"{over_max_list[2]:^9}|" if len(noc_list) > 2 else f'{"?":^9}|'
+    table_row += f"{mean_spc:^7.3f}|{eval_time:^9}|"
 
     return header, table_row
 
+
 def get_eval_exp_name(args):
-    if ':' in args.checkpoint:
-        model_name, checkpoint_prefix = args.checkpoint.split(':')
-        model_name = model_name.split('/')[-1]
+    if ":" in args.checkpoint:
+        model_name, checkpoint_prefix = args.checkpoint.split(":")
+        model_name = model_name.split("/")[-1]
 
         return f"{model_name}_{checkpoint_prefix}"
     else:
         return Path(args.checkpoint).stem
-    
+
+
 def get_next_points(pred, gt, points, click_indx, pred_thresh=0.49):
     assert click_indx > 0
     pred = pred.numpy()[:, 0, :, :]
@@ -177,8 +211,8 @@ def get_next_points(pred, gt, points, click_indx, pred_thresh=0.49):
     fn_mask = np.logical_and(gt, pred < pred_thresh)
     fp_mask = np.logical_and(np.logical_not(gt), pred > pred_thresh)
 
-    fn_mask = np.pad(fn_mask, ((0, 0), (1, 1), (1, 1)), 'constant').astype(np.uint8)
-    fp_mask = np.pad(fp_mask, ((0, 0), (1, 1), (1, 1)), 'constant').astype(np.uint8)
+    fn_mask = np.pad(fn_mask, ((0, 0), (1, 1), (1, 1)), "constant").astype(np.uint8)
+    fp_mask = np.pad(fp_mask, ((0, 0), (1, 1), (1, 1)), "constant").astype(np.uint8)
     num_points = points.shape[1] // 2
     points = points.clone()
 
@@ -198,28 +232,39 @@ def get_next_points(pred, gt, points, click_indx, pred_thresh=0.49):
             if is_positive:
                 points[bindx, num_points - click_indx, 0] = float(coords[0])
                 points[bindx, num_points - click_indx, 1] = float(coords[1])
-                #points[bindx, num_points - click_indx, 2] = float(click_indx)
+                # points[bindx, num_points - click_indx, 2] = float(click_indx)
             else:
                 points[bindx, 2 * num_points - click_indx, 0] = float(coords[0])
                 points[bindx, 2 * num_points - click_indx, 1] = float(coords[1])
-                #points[bindx, 2 * num_points - click_indx, 2] = float(click_indx)
+                # points[bindx, 2 * num_points - click_indx, 2] = float(click_indx)
 
     return points
 
+
 class UniformRandomResize(DualTransform):
-    def __init__(self, scale_range=(0.9, 1.1), interpolation=cv2.INTER_LINEAR, always_apply=False, p=1):
+    def __init__(
+        self,
+        scale_range=(0.9, 1.1),
+        interpolation=cv2.INTER_LINEAR,
+        always_apply=False,
+        p=1,
+    ):
         super().__init__(always_apply, p)
         self.scale_range = scale_range
         self.interpolation = interpolation
 
     def get_params_dependent_on_targets(self, params):
         scale = random.uniform(*self.scale_range)
-        height = int(round(params['image'].shape[0] * scale))
-        width = int(round(params['image'].shape[1] * scale))
-        return {'new_height': height, 'new_width': width}
+        height = int(round(params["image"].shape[0] * scale))
+        width = int(round(params["image"].shape[1] * scale))
+        return {"new_height": height, "new_width": width}
 
-    def apply(self, img, new_height=0, new_width=0, interpolation=cv2.INTER_LINEAR, **params):
-        return Func.resize(img, height=new_height, width=new_width, interpolation=interpolation)
+    def apply(
+        self, img, new_height=0, new_width=0, interpolation=cv2.INTER_LINEAR, **params
+    ):
+        return Func.resize(
+            img, height=new_height, width=new_width, interpolation=interpolation
+        )
 
     def apply_to_keypoint(self, keypoint, new_height=0, new_width=0, **params):
         scale_x = new_width / params["cols"]

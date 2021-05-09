@@ -30,13 +30,13 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # app变量
         self.controller = None
         self.outputDir = None  # 标签保存路径
-        self.labelFiles = None  # 保存所有从outputdir发现的标签文件路径
+        self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
         self.currIdx = 0  # 标注文件夹时到第几个了
         self.filePaths = []  # 标注文件夹时所有文件路径
+        # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-
-        self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
-
+        # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
+        self.isDirty = False
         # 画布部分
         self.canvas.clickRequest.connect(self.canvasClick)
         self.image = None
@@ -57,13 +57,16 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
         self.refreshLabelList()
+        # 标签列表点击
+        self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
+        self.labelListTable.cellClicked.connect(self.labelListClicked)
+        self.labelListTable.cellChanged.connect(self.labelListItemChanged)
 
         # TODO: 打开上次关软件时用的模型
         # TODO: 在ui展示后再加载模型
 
     def toBeImplemented(self):
         self.statusbar.showMessage("功能尚在开发")
-        pass
 
     def initActions(self):
         def menu(title, actions=None):
@@ -111,6 +114,14 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("&打开文件夹"),
             self.openFolder,
             shortcuts["open_folder"],
+            # TODO: 搞个图
+            "",
+            self.tr("打开一个文件夹下所有的图像进行标注"),
+        )
+        open_recent = action(
+            self.tr("&最近标注"),
+            self.toBeImplemented,
+            "",
             # TODO: 搞个图
             "",
             self.tr("打开一个文件夹下所有的图像进行标注"),
@@ -175,23 +186,104 @@ class APP_IANN(QMainWindow, Ui_IANN):
             "redo",
             self.tr("重做一次点击"),
         )
-
+        save = action(
+            self.tr("&保存"),
+            self.saveLabel,
+            "",
+            "redo",
+            self.tr("保存图像标签"),
+        )
+        save_as = action(
+            self.tr("&另存为"),
+            partial(self.saveLabel, True),
+            "",
+            "redo",
+            self.tr("指定标签保存路径"),
+        )
+        auto_save = action(
+            self.tr("&自动保存"),
+            self.toggleAutoSave,
+            "",
+            None,
+            self.tr("翻页同时自动保存"),
+            checkable=True,
+        )
+        recent = action(
+            self.tr("&近期图片"),
+            self.toBeImplemented,
+            "",
+            "redo",
+            self.tr("近期打开的图片"),
+        )
+        close = action(
+            self.tr("&关闭"),
+            self.toBeImplemented,
+            "",
+            "redo",
+            self.tr("关闭当前图像"),
+        )
+        connected = action(
+            self.tr("&连通块"),
+            self.toBeImplemented,
+            "",
+            "redo",
+            self.tr(""),
+        )
+        quit = action(
+            self.tr("&退出"),
+            self.close,
+            "",
+            "redo",
+            self.tr("退出软件"),
+        )
+        save_label = action(
+            self.tr("&保存标签列表"),
+            self.saveLabelList,
+            "",
+            "redo",
+            self.tr("将标签保存成标签配置文件"),
+        )
+        load_label = action(
+            self.tr("&加载标签列表"),
+            self.loadLabelList,
+            "",
+            "redo",
+            self.tr("从标签配置文件中加载标签"),
+        )
+        clear_label = action(
+            self.tr("&清空标签列表"),
+            self.clearLabelList,
+            "",
+            "redo",
+            self.tr("清空所有的标签"),
+        )
+        shortcuts = action(
+            self.tr("&快捷键列表"),
+            self.showShortcuts,
+            "",
+            "redo",
+            self.tr("查看所有快捷键"),
+        )
         # TODO: 改用manager
         self.actions = util.struct(
-            turn_next=turn_next,
-            turn_prev=turn_prev,
-            open_image=open_image,
-            open_folder=open_folder,
+            auto_save=auto_save,
             fileMenu=(
                 open_image,
                 open_folder,
                 change_output_dir,
+                open_recent,
                 None,
-                turn_prev,
+                save,
+                save_as,
+                auto_save,
                 turn_next,
+                turn_prev,
+                close,
+                None,
+                quit,
             ),
-            helpMenu=(quick_start, about),
-            labelMenu=(grid_ann,),
+            labelMenu=(save_label, load_label, clear_label, None, grid_ann),
+            helpMenu=(quick_start, about, shortcuts),
             toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
         )
         menu("文件", self.actions.fileMenu)
@@ -199,24 +291,59 @@ class APP_IANN(QMainWindow, Ui_IANN):
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
-    def changeOutputDir(self, dir=None):
-        if dir is not None:
-            outputDir = QtWidgets.QFileDialog.getExistingDirectory(
-                self,
-                self.tr("%s - 选择标签文件夹") % __appname__,
-                "/home/aistudio/git/paddle/iann",
-                QtWidgets.QFileDialog.ShowDirsOnly
-                | QtWidgets.QFileDialog.DontResolveSymlinks,
-            )
-        if len(outputDir) == 0:
-            return
+    def showShortcuts(self):
+        pass
 
-        labelFiles = os.listdir(outputDir)
-        exts = QtGui.QImageReader.supportedImageFormats()
-        self.labelFiles = [
-            osp.join(outputDir, n) for n in labelFiles if n.split(".")[-1] in exts
-        ]
-        self.outputDir = outputDir
+    def clearMask(self):
+        self.controller.reset_last_object()
+
+    def toggleAutoSave(self, x):
+        if x and not self.outputDir:
+            self.changeOutputDir()
+        if x and not self.outputDir:
+            self.actions.auto_save.setChecked(False)
+
+    def clearLabelList(self):
+        self.labelList = []
+        if self.controller:
+            self.controller.label_list = []
+            self.controller.curr_label_number = None
+        self.labelListTable.clear()
+        self.labelListTable.setRowCount(0)
+
+    def saveLabelList(self):
+        if len(self.labelList) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("没有需要保存的标签")
+            msg.setText("请先添加标签之后再进行保存")
+            msg.setStandardButtons(QMessageBox.Yes)
+            res = msg.exec_()
+        filters = self.tr("标签配置文件 (*.txt)")
+        dlg = QtWidgets.QFileDialog(self, "保存标签配置文件", ".", filters)
+        dlg.setDefaultSuffix("txt")
+        dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
+        dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
+        savePath, _ = dlg.getSaveFileName(
+            self,
+            self.tr("保存标签配置文件"),
+            ".",
+        )
+        # print(savePath)
+        util.saveLabel(self.labelList, savePath)
+
+    def loadLabelList(self):
+        filters = self.tr("标签配置文件 (*.txt)")
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("%s - 选择标签配置文件路径") % __appname__,
+            ".",
+            filters,
+        )
+        self.labelList = util.readLabel(file_path)
+        print(self.labelList)
+        self.refreshLabelList()
 
     def changeModel(self, idx):
         # TODO: 设置gpu还是cpu运行
@@ -240,7 +367,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
-        print(idx)
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 0, numberItem)
@@ -256,7 +382,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         table = self.labelListTable
         table.clearContents()
         table.setRowCount(len(self.labelList))
-        table.setColumnCount(3)
+        table.setColumnCount(4)
         for idx, lab in enumerate(self.labelList):
             numberItem = QTableWidgetItem(str(lab[0]))
             numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
@@ -267,26 +393,42 @@ class APP_IANN(QMainWindow, Ui_IANN):
             colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
             colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 2, colorItem)
+            here = osp.dirname(osp.abspath(__file__))
+            delItem = QTableWidgetItem()
+            delItem.setIcon(util.newIcon("clear"))
+            delItem.setTextAlignment(Qt.AlignCenter)
+            delItem.setFlags(QtCore.Qt.ItemIsEnabled)
+            table.setItem(idx, 3, delItem)
 
-        for idx in range(2):
+        cols = [0, 1, 3]
+        for idx in cols:
             table.resizeColumnToContents(idx)
 
-        def changeLabelColor(row, col):
-            print(row, col)
-            if col != 2:
-                return
-            color = QtWidgets.QColorDialog.getColor()
-            # BUG: 判断颜色没变
-            print(color.getRgb())
-            table.item(row, col).setBackground(color)
-            self.labelList[row][2] = color.getRgb()[:3]
-            if self.controller:
-                self.controller.label_list = self.labelList
+    def labelListDoubleClick(self, row, col):
+        print("cell double clicked", row, col)
+        if col != 2:
+            return
+        table = self.labelListTable
+        color = QtWidgets.QColorDialog.getColor()
+        # BUG: 判断颜色没变
+        print(color.getRgb())
+        table.item(row, col).setBackground(color)
+        self.labelList[row][2] = color.getRgb()[:3]
+        if self.controller:
+            self.controller.label_list = self.labelList
 
-        table.cellDoubleClicked.connect(changeLabelColor)
+        # table.cellDoubleClicked.connect(changeLabelColor)
 
-        def cellClicked(row, col):
-            print("cell clicked", row, col)
+    def labelListClicked(self, row, col):
+        print("cell clicked", row, col)
+        table = self.labelListTable
+        if col == 3:
+            table.removeRow(row)
+            del self.labelList[row]
+        if col == 0 or col == 1:
+            for idx in range(len(self.labelList)):
+                table.item(idx, 0).setBackground(QtGui.QColor(255, 255, 255))
+            table.item(row, 0).setBackground(QtGui.QColor(48, 140, 198))
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
@@ -294,7 +436,14 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 self.controller.change_label_num(int(table.item(row, 0).text()))
                 self.controller.label_list = self.labelList
 
-        table.cellClicked.connect(cellClicked)
+        # table.cellClicked.connect(cellClicked)
+
+    def labelListItemChanged(self, row, col):
+        print("cell changed", row, col)
+        if col != 1:
+            return
+        name = self.labelListTable.item(row, col).text()
+        self.labelList[row][1] = name
 
     def openImage(self):
         formats = [
@@ -313,6 +462,23 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.loadFile(file_path)
         self.imagePath = file_path
 
+    def loadLabel(self, imgPath):
+        if imgPath == "" or len(self.labelPaths) == 0:
+            return None
+
+        def getName(path):
+            return osp.basename(path).split(".")[0]
+
+        imgName = getName(imgPath)
+        for path in self.labelPaths:
+            if getName(path) == imgName:
+                labPath = path
+                print(labPath)
+                break
+        label = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        print("label shape", label.shape)
+        return label
+
     def loadFile(self, path):
         if len(path) == 0 or not osp.exists(path):
             return
@@ -320,18 +486,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
         image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
-        imgName = osp.basename(path).split(".")[0]
-        # TODO: 专门搞一个getlabel的方法
-        # if self.outputDir:
-        #     for labelName in self.labelFiles:
-        #         if osp.basename(labelName).split(".")[0] == imgName:
-        #             label = cv2.imdecode(np.fromfile(labelName, dtype=np.uint8), 1)
-        #             print(label.shape)
-        #             break
         if self.controller:
             self.controller.set_image(self.image)
         else:
             self.changeModel(0)
+        self.controller.label_list = self.labelList
+        self.controller.set_label(self.loadLabel(path))
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -351,7 +511,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.listFiles.addItems(self.filePaths)
         self.currIdx = 0
         self.turnImg(0)
-        # self.loadFile(self.filePaths[0])
 
     def listClicked(self):
         if self.controller.is_incomplete_mask:
@@ -368,7 +527,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
         if not self.controller:
             self.changeModel(0)
-        if self.controller.is_incomplete_mask:
+        self.completeMask()
+        if self.actions.auto_save.isChecked():
             self.saveLabel()
         imagePath = self.filePaths[self.currIdx]
         self.loadFile(imagePath)
@@ -384,58 +544,65 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
         self.controller.finish_object()
 
-    def saveLabel(self):
-        if self.controller.image is None:
-            return
-
+    def completeMask(self):
         if self.controller.is_incomplete_mask:
-            # TODO: 如果没选，直接esc，什么也不做
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("保存最后一个目标？")
-            msg.setText("最后一个目标尚未完成标注，是否进行保存？")
-            # msg.setInformativeText("")
-            # msg.setDetailedText("The details are as follows:")
+            msg.setWindowTitle("完成最后一个目标？")
+            msg.setText("最后一个目标尚未完成标注，是否完成标注？")
             msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-            # msg.buttonClicked.connect()
             res = msg.exec_()
-            print(QMessageBox.Yes, res)
             if res == QMessageBox.Yes:
-                print("Yes")
                 self.finishObject()
-            else:
-                return
+                return True
+            return False
+        return True
 
-        if not self.outputDir:
-            filters = self.tr("Label files (*.png)")
-            # BUG: 默认打开路径有问题
-            dlg = QtWidgets.QFileDialog(
-                self, "保存标签文件路径", osp.dirname(self.imagePath), filters
-            )
-            dlg.setDefaultSuffix("png")
-            dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
-            dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
-            dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
-            savePath, _ = dlg.getSaveFileName(
-                self,
-                self.tr("选择标签文件保存路径"),
-                osp.basename(self.imagePath).split(".")[0] + ".png",
-            )
-            if (
-                savePath is None
-                or len(savePath) == 0
-                or not osp.exists(osp.dirname(savePath))
-            ):
-                return
-        else:
-            savePath = osp.join(
-                self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
-            )
-        print(self.controller.result_mask.shape)
+    def saveLabel(self, saveAs=False, savePath=None):
+        if not self.controller:
+            return
+        if self.controller.image is None:
+            return
+        self.completeMask()
+        if not savePath:
+            if not saveAs and self.outputDir is not None:
+                savePath = osp.join(
+                    self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
+                )
+            else:
+                filters = self.tr("Label files (*.png)")
+                # BUG: 默认打开路径有问题
+                dlg = QtWidgets.QFileDialog(
+                    self, "保存标签文件路径", osp.dirname(self.imagePath), filters
+                )
+                dlg.setDefaultSuffix("png")
+                dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+                dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
+                dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
+                savePath, _ = dlg.getSaveFileName(
+                    self,
+                    self.tr("选择标签文件保存路径"),
+                    osp.basename(self.imagePath).split(".")[0] + ".png",
+                )
+                if (
+                    savePath is None
+                    or len(savePath) == 0
+                    or not osp.exists(osp.dirname(savePath))
+                ):
+                    return
+
         cv2.imwrite(savePath, self.controller.result_mask)
+        self.setClean()
+        self.statusbar.showMessage(f"标签成功保存至 {savePath}")
+
+    def setClean(self):
+        self.isDirty = False
+
+    def setDirty(self):
+        self.isDirty = True
 
     def changeOutputDir(self):
-        self.outputDir = QtWidgets.QFileDialog.getExistingDirectory(
+        outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             self.tr("%s - 选择标签保存路径") % __appname__,
             # osp.dirname(self.imagePath),
@@ -443,6 +610,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
+        if len(outputDir) == 0 or not osp.exists(outputDir):
+            return False
+        labelPaths = os.listdir(outputDir)
+        exts = ["png"]
+        labelPaths = [n for n in labelPaths if n.split(".")[-1] in exts]
+        labelPaths = [osp.join(outputDir, n) for n in labelPaths]
+        self.outputDir = outputDir
+        self.labelPaths = labelPaths
+        return True
 
     def maskOpacityChanged(self):
         self.sldOpacity.textLab.setText(str(self.opacity))
@@ -475,7 +651,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
         if x < 0 or y < 0:
             return
-        if not self.controller.curr_label_number:
+        currLabel = self.controller.curr_label_number
+        if not currLabel or currLabel == 0:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
             msg.setWindowTitle("未选择当前标签")
@@ -489,18 +666,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return
         self.controller.add_click(x, y, isLeft)
 
-    @property
-    def opacity(self):
-        return self.sldOpacity.value() / 10
-
-    @property
-    def click_radius(self):
-        return self.sldClickRadius.value()
-
-    @property
-    def seg_thresh(self):
-        return self.sldThresh.value() / 10
-
     def _update_image(self, reset_canvas=False):
         image = self.controller.get_visualization(
             alpha_blend=self.opacity,
@@ -510,22 +675,22 @@ class APP_IANN(QMainWindow, Ui_IANN):
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
-            self.zoom_restart(width, height)
+            self.resetScene(width, height)
         self.scene.addPixmap(QPixmap(image))
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
 
-    # 确认点击
-    def check_click(self):
-        print(self.sender().text())
-
-    # 当前打开的模型名称或类别更新
-    def update_model_name(self):
-        self.labModelName.setText(self.sender().text())
-        self.check_click()
+    # # 确认点击
+    # def check_click(self):
+    #     print(self.sender().text())
+    #
+    # # 当前打开的模型名称或类别更新
+    # def update_model_name(self):
+    #     self.labModelName.setText(self.sender().text())
+    #     self.check_click()
 
     # 界面缩放重置
-    def zoom_restart(self, width, height):
+    def resetScene(self, width, height):
         # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
         self.scene.setSceneRect(0, 0, width, height)
         # 缩放清除
@@ -542,3 +707,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
         else:
             self.canvas.zoom_all = scr_cont[0]
         self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
+
+    @property
+    def opacity(self):
+        return self.sldOpacity.value() / 10
+
+    @property
+    def click_radius(self):
+        return self.sldClickRadius.value()
+
+    @property
+    def seg_thresh(self):
+        return self.sldThresh.value() / 10

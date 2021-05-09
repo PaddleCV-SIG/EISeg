@@ -77,8 +77,15 @@ class InteractiveController:
             self.probs_history.append((self.probs_history[-1][0], pred))
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
-
         self.update_image_callback()
+
+    def set_label(self, label):
+        # if label is None:
+        #     return
+        # self.probs_history.append((np.zeros_like(label), label))
+        # print("len", len(self.probs_history))
+        # self.update_image_callback()
+        pass
 
     def undo_click(self):
         """undo一步点击"""
@@ -164,7 +171,7 @@ class InteractiveController:
         predictor_params : 网络权重
             新的网络权重
         """
-        # print("resetting", self.image.shape)
+        print("palette", self.palette)
         if net is not None:
             self.net = net
         if predictor_params is not None:
