@@ -9,7 +9,7 @@ def toint(seq):
 
 def saveLabel(labelList, path):
     # labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
-    with open(path, "w") as f:
+    with open(path, "w", encoding='utf-8') as f:
         for l in labelList:
             for idx in range(2):
                 print(l[idx], end=" ", file=f)
@@ -22,7 +22,7 @@ def saveLabel(labelList, path):
 
 
 def readLabel(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding='utf-8') as f:
         labels = f.readlines()
     labelList = []
     for lab in labels:
