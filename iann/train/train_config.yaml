@@ -1,0 +1,37 @@
+iters: 100000
+batch_size: 16
+save_interval: 1000
+log_iters: 10
+worker: 4
+save_dir: model_output
+use_vdl: False
+
+dataset:
+  dataset_path: iann/train/datasets
+  image_name: img
+  label_name: gt
+
+train_dataset:
+  crop_size: [320, 480]
+  folder_name: train_data
+
+val_dataset:
+  folder_name: val_data
+
+optimizer:
+  type: adam
+
+learning_rate:
+  value_1: 5e-5
+  value_2: 5e-6
+  decay:
+    type: poly
+    steps: 1000
+    power: 0.9
+    end_lr: 0.0
+
+model:
+  type: deeplab
+  backbone: resnet18
+  is_ritm: True
+  weights: None
