@@ -5,6 +5,7 @@ __pycache__/
 dzq*
 .vscode
 .vscode/
+vis_temp.py
 
 # C extensions
 *.so
