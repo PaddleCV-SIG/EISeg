@@ -341,9 +341,10 @@ class APP_IANN(QMainWindow, Ui_IANN):
             ".",
             filters,
         )
-        self.labelList = util.readLabel(file_path)
-        print(self.labelList)
-        self.refreshLabelList()
+        if file_path != '':  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
+            self.labelList = util.readLabel(file_path)
+            print(self.labelList)
+            self.refreshLabelList()
 
     def changeModel(self, idx):
         # TODO: 设置gpu还是cpu运行
@@ -377,6 +378,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
         colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 2, colorItem)
         self.labelList.append([idx + 1, "", [255, 255, 255]])
+        # 新建加上图标
+        delItem = QTableWidgetItem()
+        delItem.setIcon(util.newIcon("clear"))
+        delItem.setTextAlignment(Qt.AlignCenter)
+        delItem.setFlags(QtCore.Qt.ItemIsEnabled)
+        table.setItem(idx, 3, delItem)
 
     def refreshLabelList(self):
         table = self.labelListTable
@@ -443,7 +450,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
-        self.labelList[row][1] = name
+        self.labelList[row-1][1] = name
 
     def openImage(self):
         formats = [

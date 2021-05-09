@@ -9,32 +9,34 @@ def toint(seq):
 
 def saveLabel(labelList, path):
     # labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
-    with open(path, "w", encoding='utf-8') as f:
-        for l in labelList:
-            for idx in range(2):
-                print(l[idx], end=" ", file=f)
-            for idx in range(3):
-                print(l[2][idx], end=" ", file=f)
-            print(file=f)
+    if path != '':  # 不加判断打开保存界面然后关闭会报错
+        with open(path, "w", encoding='utf-8') as f:
+            for l in labelList:
+                for idx in range(2):
+                    print(l[idx], end=" ", file=f)
+                for idx in range(3):
+                    print(l[2][idx], end=" ", file=f)
+                print(file=f)
 
 
 # saveLabel("label.txt")
 
 
 def readLabel(path):
-    with open(path, "r", encoding='utf-8') as f:
-        labels = f.readlines()
-    labelList = []
-    for lab in labels:
-        lab = lab.replace("\n", "").strip(" ").split(" ")
-        if len(lab) != 2 and len(lab) != 5:
-            print("标签不合法")
-            continue
-        label = toint(lab[:2])
-        label.append(toint(lab[2:]))
-        labelList.append(label)
+    if path != '':  # 同上
+        with open(path, "r", encoding='utf-8') as f:
+            labels = f.readlines()
+        labelList = []
+        for lab in labels:
+            lab = lab.replace("\n", "").strip(" ").split(" ")
+            if len(lab) != 2 and len(lab) != 5:
+                print("标签不合法")
+                continue
+            label = toint(lab[:2])
+            label.append(toint(lab[2:]))
+            labelList.append(label)
 
-    return labelList
+        return labelList
 
 
 # readLabel("label.txt")
