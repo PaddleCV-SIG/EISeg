@@ -19,7 +19,7 @@ from model.model import get_hrnet_model, DistMapsHRNetModel, get_deeplab_model, 
 from model.modeling.hrnet_ocr import HighResolutionNet
 from model.loss import *
 from data.points_sampler import MultiPointSampler
-from data.davis import DavisDataset
+from data.mdiy import MyDataset
 from util.config import cfgData
 from util.util import *
 
@@ -112,8 +112,11 @@ def train(model, cfg, model_cfg, backbone_params=None, other_params=None):
     points_sampler = MultiPointSampler(
         model_cfg.num_max_points, prob_gamma=0.7,
         merge_objects_prob=0.15, max_num_merged_objects=2)
-    trainset = DavisDataset(
-        cfg.get('train_dataset').get('dataset_path'),
+    trainset = MyDataset(
+        dataset_path=cfg.get('dataset').get('dataset_path'),
+        folder_name=cfg.get('train_dataset').get('folder_name'),
+        images_dir_name=cfg.get('dataset').get('image_name'),
+        masks_dir_name=cfg.get('dataset').get('label_name'),
         num_masks=num_masks,
         augmentator=train_augmentator,
         points_from_one_object=False,
@@ -125,8 +128,11 @@ def train(model, cfg, model_cfg, backbone_params=None, other_params=None):
         samples_scores_path=None,
         samples_scores_gamma=1.25
     )
-    valset = DavisDataset(
-        cfg.get('val_dataset').get('dataset_path'),
+    valset = MyDataset(
+        dataset_path=cfg.get('dataset').get('dataset_path'),
+        folder_name=cfg.get('val_dataset').get('folder_name'),
+        images_dir_name=cfg.get('dataset').get('image_name'),
+        masks_dir_name=cfg.get('dataset').get('label_name'),
         augmentator=val_augmentator,
         num_masks=num_masks,
         points_from_one_object=False,

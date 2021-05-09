@@ -6,12 +6,17 @@ worker: 4
 save_dir: model_output
 use_vdl: False
 
+dataset:
+  dataset_path: iann/train/datasets
+  image_name: img
+  label_name: gt
+
 train_dataset:
-  dataset_path: iann/train/datasets/egoHands
   crop_size: [320, 480]
+  folder_name: train_data
 
 val_dataset:
-  dataset_path: iann/train/datasets/testData
+  folder_name: val_data
 
 optimizer:
   type: adam
