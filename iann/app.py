@@ -167,7 +167,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
         clear = action(
             self.tr("&清除所有标注"),
-            self.clearMask,
+            self.undoAll,
             shortcuts["clear"],
             "clear",
             self.tr("清除所有标注信息"),
@@ -294,22 +294,43 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def showShortcuts(self):
         pass
 
-    def clearMask(self):
-        self.controller.reset_last_object()
-
     def toggleAutoSave(self, x):
         if x and not self.outputDir:
             self.changeOutputDir()
         if x and not self.outputDir:
             self.actions.auto_save.setChecked(False)
 
-    def clearLabelList(self):
-        self.labelList = []
-        if self.controller:
-            self.controller.label_list = []
-            self.controller.curr_label_number = None
-        self.labelListTable.clear()
-        self.labelListTable.setRowCount(0)
+    def changeModel(self, idx):
+        # TODO: 设置gpu还是cpu运行
+        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型", 5000)
+        model = models[idx].get_model()
+        if self.controller is None:
+            self.controller = InteractiveController(
+                model,
+                predictor_params={"brs_mode": "f-BRS-B"},
+                update_image_callback=self._update_image,
+            )
+            self.controller.prob_thresh = self.segThresh
+            # 这里如果直接加载模型会报错，先判断有没有图像
+            if self.image is not None:
+                self.controller.set_image(self.image)
+        else:
+            self.controller.reset_predictor(model)
+
+        self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
+
+    def loadLabelList(self):
+        filters = self.tr("标签配置文件 (*.txt)")
+        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("%s - 选择标签配置文件路径") % __appname__,
+            ".",
+            filters,
+        )
+        if file_path != "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
+            self.labelList = util.readLabel(file_path)
+            print(self.labelList)
+            self.refreshLabelList()
 
     def saveLabelList(self):
         if len(self.labelList) == 0:
@@ -333,57 +354,37 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # print(savePath)
         util.saveLabel(self.labelList, savePath)
 
-    def loadLabelList(self):
-        filters = self.tr("标签配置文件 (*.txt)")
-        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            self.tr("%s - 选择标签配置文件路径") % __appname__,
-            ".",
-            filters,
-        )
-        if file_path != '':  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
-            self.labelList = util.readLabel(file_path)
-            print(self.labelList)
-            self.refreshLabelList()
-
-    def changeModel(self, idx):
-        # TODO: 设置gpu还是cpu运行
-        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型", 5000)
-        model = models[idx].get_model()
-        if self.controller is None:
-            self.controller = InteractiveController(
-                model,
-                predictor_params={"brs_mode": "f-BRS-B"},
-                update_image_callback=self._update_image,
-            )
-            # 这里如果直接加载模型会报错，先判断有没有图像
-            if self.image is not None:
-                self.controller.set_image(self.image)
-        else:
-            self.controller.reset_predictor(model)
-
-        self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
-
     def addLabel(self):
+        c = [255, 0, 0]  # TODO: 随机生成一个颜色
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
+        self.labelList.append([idx + 1, "", c])
+
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 0, numberItem)
+
         table.setItem(idx, 1, QTableWidgetItem())
-        c = [255, 255, 255]
+
         colorItem = QTableWidgetItem()
         colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
         colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 2, colorItem)
-        self.labelList.append([idx + 1, "", [255, 255, 255]])
-        # 新建加上图标
+
         delItem = QTableWidgetItem()
         delItem.setIcon(util.newIcon("clear"))
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
+
+    def clearLabelList(self):
+        self.labelList = []
+        if self.controller:
+            self.controller.label_list = []
+            self.controller.curr_label_number = None
+        self.labelListTable.clear()
+        self.labelListTable.setRowCount(0)
 
     def refreshLabelList(self):
         table = self.labelListTable
@@ -424,8 +425,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if self.controller:
             self.controller.label_list = self.labelList
 
-        # table.cellDoubleClicked.connect(changeLabelColor)
-
     def labelListClicked(self, row, col):
         print("cell clicked", row, col)
         table = self.labelListTable
@@ -443,14 +442,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 self.controller.change_label_num(int(table.item(row, 0).text()))
                 self.controller.label_list = self.labelList
 
-        # table.cellClicked.connect(cellClicked)
-
     def labelListItemChanged(self, row, col):
         print("cell changed", row, col)
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
-        self.labelList[row-1][1] = name
+        self.labelList[row - 1][1] = name
 
     def openImage(self):
         formats = [
@@ -466,7 +463,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
         if len(file_path) == 0:
             return
-        self.loadFile(file_path)
+        self.loadImage(file_path)
         self.imagePath = file_path
 
     def loadLabel(self, imgPath):
@@ -486,7 +483,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("label shape", label.shape)
         return label
 
-    def loadFile(self, path):
+    def loadImage(self, path):
         if len(path) == 0 or not osp.exists(path):
             return
         # TODO: 在不同平台测试含中文路径
@@ -497,7 +494,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.controller.set_image(self.image)
         else:
             self.changeModel(0)
-        self.controller.label_list = self.labelList
+        # self.controller.label_list = self.labelList
         self.controller.set_label(self.loadLabel(path))
 
     def openFolder(self):
@@ -532,53 +529,66 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.currIdx -= delta
             self.statusbar.showMessage(f"没有{'后一张'if delta==1 else '前一张'}图片")
             return
-        if not self.controller:
-            self.changeModel(0)
-        self.completeMask()
-        if self.actions.auto_save.isChecked():
-            self.saveLabel()
+        self.completeLastMask()
+        if self.isDirty:
+            if self.actions.auto_save.isChecked():
+                self.saveLabel()
+            else:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Warning)
+                msg.setWindowTitle("保存标签？")
+                msg.setText("标签尚未保存，是否保存标签")
+                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+                res = msg.exec_()
+                if res == QMessageBox.Yes:
+                    self.saveLabel()
+
         imagePath = self.filePaths[self.currIdx]
-        self.loadFile(imagePath)
-        if self.controller.is_incomplete_mask:
-            self.saveLabel()
-        # self.loadFile(imagePath)放在前面，不然不先加载模型找不到self.controller
-        # 不过这里我不清楚逻辑上是否应该if判断在前，需要修改的话再来修改
+        self.loadImage(imagePath)
         self.imagePath = imagePath
         self.listFiles.setCurrentRow(self.currIdx)
+        self.setClean()
 
     def finishObject(self):
         if self.image is None:
             return
+        if not self.controller:
+            return
         self.controller.finish_object()
+        self.setDirty()
 
-    def completeMask(self):
-        if self.controller.is_incomplete_mask:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("完成最后一个目标？")
-            msg.setText("最后一个目标尚未完成标注，是否完成标注？")
-            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-            res = msg.exec_()
-            if res == QMessageBox.Yes:
-                self.finishObject()
-                return True
-            return False
-        return True
+    def completeLastMask(self):
+        # 返回最后一个标签是否完成，false就是还有带点的
+        if not self.controller:
+            return True
+        if not self.controller.is_incomplete_mask:
+            return True
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle("完成最后一个目标？")
+        msg.setText("是否完成最后一个目标的标注，不完成不会进行保存。")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        res = msg.exec_()
+        if res == QMessageBox.Yes:
+            self.finishObject()
+            self.setDirty()
+            return True
+        return False
 
     def saveLabel(self, saveAs=False, savePath=None):
         if not self.controller:
             return
         if self.controller.image is None:
             return
-        self.completeMask()
-        if not savePath:
+        self.completeLastMask()
+        if not savePath:  # 参数没传存到哪
             if not saveAs and self.outputDir is not None:
+                # 指定了标签文件夹，而且不是另存为
                 savePath = osp.join(
                     self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
                 )
             else:
                 filters = self.tr("Label files (*.png)")
-                # BUG: 默认打开路径有问题
                 dlg = QtWidgets.QFileDialog(
                     self, "保存标签文件路径", osp.dirname(self.imagePath), filters
                 )
@@ -591,12 +601,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
                     self.tr("选择标签文件保存路径"),
                     osp.basename(self.imagePath).split(".")[0] + ".png",
                 )
-                if (
-                    savePath is None
-                    or len(savePath) == 0
-                    or not osp.exists(osp.dirname(savePath))
-                ):
-                    return
+        if (
+            savePath is None
+            or len(savePath) == 0
+            or not osp.exists(osp.dirname(savePath))
+        ):
+            return
 
         cv2.imwrite(savePath, self.controller.result_mask)
         self.setClean()
@@ -632,31 +642,37 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self._update_image()
 
     def clickRadiusChanged(self):
-        self.sldClickRadius.textLab.setText(str(self.click_radius))
+        self.sldClickRadius.textLab.setText(str(self.clickRadius))
         self._update_image()
 
     def threshChanged(self):
-        self.sldThresh.textLab.setText(str(self.seg_thresh))
-        self.controller.prob_thresh = self.seg_thresh
+        self.sldThresh.textLab.setText(str(self.segThresh))
+        if self.controller:
+            self.controller.prob_thresh = self.segThresh
         self._update_image()
 
     def undoClick(self):
         if self.image is None:
             return
+        if not self.controller:
+            return
         self.controller.undo_click()
+        if not self.controller.is_incomplete_mask:
+            self.setClean()
 
     def undoAll(self):
+        if not self.controller:
+            return
         self.controller.reset_last_object()
+        self.setClean()
 
     def redoClick(self):
-        print("重做功能还没有实现")
+        self.toBeImplemented()
 
     def canvasClick(self, x, y, isLeft):
         if self.controller is None:
             return
         if self.controller.image is None:
-            return
-        if x < 0 or y < 0:
             return
         currLabel = self.controller.curr_label_number
         if not currLabel or currLabel == 0:
@@ -668,36 +684,26 @@ class APP_IANN(QMainWindow, Ui_IANN):
             res = msg.exec_()
             return
 
-        s = self.controller.img_size
-        if x > s[0] or y > s[1]:
-            return
         self.controller.add_click(x, y, isLeft)
 
     def _update_image(self, reset_canvas=False):
+        if not self.controller:
+            return
         image = self.controller.get_visualization(
             alpha_blend=self.opacity,
-            click_radius=self.click_radius,
+            click_radius=self.clickRadius,
         )
         height, width, channel = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
-            self.resetScene(width, height)
+            self.resetZoom(width, height)
         self.scene.addPixmap(QPixmap(image))
         # TODO: 研究是否有类似swap的更高效方式
         self.scene.removeItem(self.scene.items()[1])
 
-    # # 确认点击
-    # def check_click(self):
-    #     print(self.sender().text())
-    #
-    # # 当前打开的模型名称或类别更新
-    # def update_model_name(self):
-    #     self.labModelName.setText(self.sender().text())
-    #     self.check_click()
-
     # 界面缩放重置
-    def resetScene(self, width, height):
+    def resetZoom(self, width, height):
         # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
         self.scene.setSceneRect(0, 0, width, height)
         # 缩放清除
@@ -720,9 +726,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         return self.sldOpacity.value() / 10
 
     @property
-    def click_radius(self):
+    def clickRadius(self):
         return self.sldClickRadius.value()
 
     @property
-    def seg_thresh(self):
+    def segThresh(self):
         return self.sldThresh.value() / 10

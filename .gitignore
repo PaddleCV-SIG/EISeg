@@ -6,6 +6,7 @@ dzq*
 .vscode
 .vscode/
 vis_temp.py
+test.txt
 
 # C extensions
 *.so

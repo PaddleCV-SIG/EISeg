@@ -42,7 +42,7 @@ class InteractiveController:
         self.image_nd = input_transform(image)[0]
 
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        self.curr_label_number = 0
+        # self.curr_label_number = 0
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
@@ -57,7 +57,16 @@ class InteractiveController:
             Description of parameter `y`.
         is_positive : bool
             是否是正点
+
+        Returns
+            -------
+            bool
+                点击是否成功添加
         """
+        s = self.image.shape
+        if x < 0 or y < 0 or x > s[1] or y > s[0]:
+            print("点击越界")
+            return False
         self.states.append(
             {
                 "clicker": self.clicker.get_state(),
@@ -78,6 +87,7 @@ class InteractiveController:
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
         self.update_image_callback()
+        return True
 
     def set_label(self, label):
         # if label is None:
