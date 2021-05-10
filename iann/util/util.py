@@ -3,12 +3,14 @@ import paddle
 import paddle.nn as nn
 import numpy as np
 from datetime import timedelta
-from data.berkeley import BerkeleyDataset
-from data.grabcut import GrabCutDataset
-from data.davis import DavisDataset
-from data.sbd import SBDEvaluationDataset
 from pathlib import Path
 import random
+
+from iann.data.berkeley import BerkeleyDataset
+from iann.data.grabcut import GrabCutDataset
+from iann.data.davis import DavisDataset
+from iann.data.sbd import SBDEvaluationDataset
+
 from albumentations import ImageOnlyTransform, DualTransform
 from albumentations.augmentations import functional as Func
 

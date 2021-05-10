@@ -1,6 +1,10 @@
+import os.path as osp
+
 import paddle
 
-from model.model import get_hrnet_model, get_deeplab_model
+from iann.model.model import get_hrnet_model, get_deeplab_model
+
+here = osp.dirname(osp.abspath(__file__))
 
 
 class HumanSeg:
@@ -8,7 +12,9 @@ class HumanSeg:
 
     def get_model(self):
         model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
-        para_state_dict = paddle.load("./iann/weight/human_resnet/model.pdparams")
+        para_state_dict = paddle.load(
+            osp.join(here, "weight/human_resnet/model.pdparams")
+        )
         model.set_dict(para_state_dict)
         return model
 
@@ -18,7 +24,9 @@ class HumanSegCopy:
 
     def get_model(self):
         model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
-        para_state_dict = paddle.load("./iann/weight/human_resnet/model.pdparams")
+        para_state_dict = paddle.load(
+            osp.join(here, "weight/human_resnet/model.pdparams")
+        )
         model.set_dict(para_state_dict)
         return model
 

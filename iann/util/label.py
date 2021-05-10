@@ -29,7 +29,7 @@ def saveLabel(labelList, path):
 
 def readLabel(path):
     if not path or len(path) == 0 or not osp.exists(path):
-        return
+        return []
 
     with open(path, "r", encoding="utf-8") as f:
         labels = f.readlines()

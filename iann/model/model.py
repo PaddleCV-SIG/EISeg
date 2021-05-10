@@ -4,13 +4,13 @@ from paddleseg.models import OCRNet
 from paddleseg.models.backbones import HRNet_W32
 import paddleseg.transforms as T
 
-import util.util as U
-from util.util import SyncBatchNorm
-from model.dist_map import DistMaps
-from model.modeling.hrnet_ocr import HighResolutionNet
-from model.modeling.deeplab_v3 import DeepLabV3Plus
-from model.modeling.basic_blocks import SepConvHead
-from model.modeling.shufflenet import ShuffleNetV2
+import iann.util.util as U
+from iann.util.util import SyncBatchNorm
+from .dist_map import DistMaps
+from .modeling.hrnet_ocr import HighResolutionNet
+from .modeling.deeplab_v3 import DeepLabV3Plus
+from .modeling.basic_blocks import SepConvHead
+from .modeling.shufflenet import ShuffleNetV2
 
 
 def get_hrnet_model(

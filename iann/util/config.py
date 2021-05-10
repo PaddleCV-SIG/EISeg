@@ -1,9 +1,25 @@
 import yaml
+import os.path as osp
+
+
+def parseConfigs(path):
+    if not path or not osp.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.load(f.read())
+
+
+def saveConfigs(path, config):
+    if not osp.exists(osp.basename(path)):
+        print("文件夹不存在")
+        return
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.dump(config, f)
 
 
 class cfgData(object):
     def __init__(self, yaml_file):
-        with open(yaml_file, 'r', encoding="utf-8") as f:
+        with open(yaml_file, "r", encoding="utf-8") as f:
             fig_data = f.read()
             self.dicts = yaml.load(fig_data)
 
@@ -11,9 +27,9 @@ class cfgData(object):
         if key in self.dicts.keys():
             return self.dicts[key]
         else:
-            raise ValueError('Not find this keyword.')
+            raise ValueError("Not find this keyword.")
 
 
-if __name__ == '__main__':
-    cfg = cfgData('iann/train/train_config.yaml')
-    print(cfg.get('use_vdl'))
+if __name__ == "__main__":
+    cfg = cfgData("iann/train/train_config.yaml")
+    print(cfg.get("use_vdl"))

@@ -5,3 +5,4 @@ scipy
 paddleseg
 albumentations
 cython
+pyyaml

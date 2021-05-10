@@ -1,9 +1,8 @@
-
 import paddle
 import paddle.nn as nn
 import numpy as np
 
-from cython_dict import get_dist_maps
+from iann.cython_dict import get_dist_maps
 
 
 class DistMaps(nn.Layer):
@@ -18,21 +17,27 @@ class DistMaps(nn.Layer):
             coords = []
             for i in range(batchsize):
                 norm_delimeter = self.spatial_scale * self.norm_radius
-                middle = get_dist_maps(points[i].numpy().astype('float32'), rows, cols, norm_delimeter)
+                middle = get_dist_maps(
+                    points[i].numpy().astype("float32"), rows, cols, norm_delimeter
+                )
                 coords.append(middle)
-            coords = paddle.to_tensor(np.stack(coords, axis=0)).astype('float32')
+            coords = paddle.to_tensor(np.stack(coords, axis=0)).astype("float32")
 
         else:
             num_points = points.shape[1] // 2
             points = points.reshape([-1, 2])
 
             invalid_points = paddle.max(points, axis=1, keepdim=False)[0] < 0
-            row_array = paddle.arange(start=0, end=rows, step=1, dtype='float32')
-            col_array = paddle.arange(start=0, end=cols, step=1, dtype='float32')
+            row_array = paddle.arange(start=0, end=rows, step=1, dtype="float32")
+            col_array = paddle.arange(start=0, end=cols, step=1, dtype="float32")
             coord_rows, coord_cols = paddle.meshgrid(row_array, col_array)
 
-            coords = paddle.unsqueeze(paddle.stack([coord_rows, coord_cols], axis=0), axis=0).tile([points.shape[0], 1, 1, 1])
-            add_xy = (points * self.spatial_scale).reshape([points.shape[0], points.shape[1], 1, 1])
+            coords = paddle.unsqueeze(
+                paddle.stack([coord_rows, coord_cols], axis=0), axis=0
+            ).tile([points.shape[0], 1, 1, 1])
+            add_xy = (points * self.spatial_scale).reshape(
+                [points.shape[0], points.shape[1], 1, 1]
+            )
             coords = coords - add_xy
             coords = coords / (self.norm_radius * self.spatial_scale)
             coords = coords * coords

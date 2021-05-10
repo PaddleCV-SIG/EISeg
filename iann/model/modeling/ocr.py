@@ -1,7 +1,7 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from util.util import SyncBatchNorm
+from iann.util.util import SyncBatchNorm
 
 
 def is_bn(norm_layer, planes):

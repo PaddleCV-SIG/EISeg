@@ -1,8 +1,8 @@
 from .base import BasePredictor
 from .brs import InputBRSPredictor, FeatureBRSPredictor, HRNetFeatureBRSPredictor
 from .brs_functors import InputOptimizer, ScaleBiasOptimizer
-from inference.transforms import ZoomIn
-from model.model import DistMapsHRNetModel
+from iann.inference.transforms import ZoomIn
+from iann.model.model import DistMapsHRNetModel
 
 
 def get_predictor(

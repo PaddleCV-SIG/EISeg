@@ -1,0 +1,4 @@
+include iann/config/*
+include iann/resource/*
+include iann/cython_dict/*
+include iann/weight/human_resnet/*

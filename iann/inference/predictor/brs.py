@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
 from .base import BasePredictor
-from model.model import DistMapsHRNetModel
+from iann.model.model import DistMapsHRNetModel
 
 
 class BRSBasePredictor(BasePredictor):

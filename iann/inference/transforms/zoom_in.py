@@ -1,7 +1,7 @@
 import paddle
 import numpy as np
 from .clicker import Click
-from util.util import get_bbox_iou, get_bbox_from_mask, expand_bbox, clamp_bbox
+from iann.util.util import get_bbox_iou, get_bbox_from_mask, expand_bbox, clamp_bbox
 from .base import BaseTransform
 
 

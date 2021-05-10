@@ -1,10 +1,11 @@
 import time
-import numpy as np
 
-from inference import clicker
-from inference.predictor import get_predictor
-from util.vis import draw_with_blend_and_clicks
+import numpy as np
 import paddleseg.transforms as T
+
+from .inference import clicker
+from .inference.predictor import get_predictor
+from .util.vis import draw_with_blend_and_clicks
 
 
 class InteractiveController:

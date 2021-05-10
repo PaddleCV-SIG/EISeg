@@ -1,7 +1,11 @@
 import paddle
 import paddle.nn.functional as F
 
-from inference.transforms import AddHorizontalFlip, SigmoidForPred, LimitLongestSide
+from iann.inference.transforms import (
+    AddHorizontalFlip,
+    SigmoidForPred,
+    LimitLongestSide,
+)
 
 
 class BasePredictor(object):

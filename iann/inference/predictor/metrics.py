@@ -2,7 +2,7 @@ import paddle
 import paddle.nn.functional as F
 import numpy as np
 
-import util.util as U
+import iann.util.util as U
 
 
 class TrainMetric(object):

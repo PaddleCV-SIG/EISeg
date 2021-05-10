@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from scipy.io import loadmat
 
-import util.util as U
+import iann.util.util as U
 from .base import ISDataset, get_unique_labels
 
 

@@ -15,13 +15,13 @@ from albumentations import (
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-from model.model import get_hrnet_model, DistMapsHRNetModel, get_deeplab_model, get_shufflenet_model
-from model.modeling.hrnet_ocr import HighResolutionNet
-from model.loss import *
+from iann.model.model import get_hrnet_model, DistMapsHRNetModel, get_deeplab_model, get_shufflenet_model
+from iann.model.modeling.hrnet_ocr import HighResolutionNet
+from iann.model.loss import *
 from data.points_sampler import MultiPointSampler
 from data.mdiy import MyDataset
 from util.config import cfgData
-from util.util import *
+from iann.util.util import *
 
 
 def parse_args():

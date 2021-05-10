@@ -2,7 +2,7 @@ import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-import util.util as U
+import iann.util.util as U
 
 
 class NormalizedFocalLossSigmoid(nn.Layer):

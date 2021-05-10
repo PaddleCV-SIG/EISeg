@@ -1,7 +1,7 @@
 import paddle
 import paddle.nn as nn
 
-from inference.predictor.loss import SigmoidBinaryCrossEntropyLoss
+from iann.inference.predictor.loss import SigmoidBinaryCrossEntropyLoss
 
 
 class BRSMaskLoss(nn.Layer):

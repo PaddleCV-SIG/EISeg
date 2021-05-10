@@ -10,12 +10,13 @@ import paddle
 import cv2
 import numpy as np
 
-from controller import InteractiveController
-from ui import Ui_IANN, Ui_Help
-from models import models
-import util
+from .controller import InteractiveController
+from .ui import Ui_IANN, Ui_Help
+from .models import models
+import iann.util as util
 
 __appname__ = "IANN"
+here = osp.dirname(osp.abspath(__file__))
 
 
 class APP_IANN(QMainWindow, Ui_IANN):
@@ -32,11 +33,16 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
         self.currIdx = 0  # 标注文件夹时到第几个了
+        self.currentPath = None
         self.filePaths = []  # 标注文件夹时所有文件路径
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
+        self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
+        self.settings = QtCore.QSettings("PaddleCV-SIG", "IANN")
+
+        self.recentFiles = self.settings.value("recent_files", [])
         # 画布部分
         self.canvas.clickRequest.connect(self.canvasClick)
         self.image = None
@@ -56,14 +62,35 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
-        self.refreshLabelList()
+
         # 标签列表点击
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
 
+        labelListFile = self.settings.value("label_list_file")
+        print(labelListFile)
+        self.labelList = util.readLabel(labelListFile)
+        self.refreshLabelList()
+
         # TODO: 打开上次关软件时用的模型
         # TODO: 在ui展示后再加载模型
+
+    def updateFileMenu(self):
+        def exists(filename):
+            return osp.exists(str(filename))
+
+        menu = self.actions.recent_files
+        menu.clear()
+        print("recentFiles", self.recentFiles)
+        files = [f for f in self.recentFiles if f != self.currentPath and exists(f)]
+        for i, f in enumerate(files):
+            icon = util.newIcon("next")
+            action = QtWidgets.QAction(
+                icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+            )
+            action.triggered.connect(partial(self.loadImage, f))
+            menu.addAction(action)
 
     def toBeImplemented(self):
         self.statusbar.showMessage("功能尚在开发")
@@ -76,18 +103,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             return menu
 
         action = partial(util.newAction, self)
-        shortcuts = {
-            "turn_next": "F",
-            "turn_prev": "S",
-            "open_image": "Ctrl+A",
-            "open_folder": "Shift+A",
-            "change_output_dir": "Shift+Z",
-            "finish_object": "Space",
-            "clear": "Ctrl+Shift+Z",
-            "undo": "Ctrl+Z",
-            "redo": "Ctrl+Y",
-        }
-
+        shortcuts = self.config["shortcut"]
         turn_next = action(
             self.tr("&下一张"),
             partial(self.turnImg, 1),
@@ -208,6 +224,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("翻页同时自动保存"),
             checkable=True,
         )
+        auto_save.setChecked(self.config.get("auto_save", False))
+
         recent = action(
             self.tr("&近期图片"),
             self.toBeImplemented,
@@ -264,14 +282,17 @@ class APP_IANN(QMainWindow, Ui_IANN):
             "redo",
             self.tr("查看所有快捷键"),
         )
+        recent_files = QtWidgets.QMenu(self.tr("近期文件"))
+        recent_files.aboutToShow.connect(self.updateFileMenu)
         # TODO: 改用manager
         self.actions = util.struct(
             auto_save=auto_save,
+            recent_files=recent_files,
             fileMenu=(
                 open_image,
                 open_folder,
                 change_output_dir,
-                open_recent,
+                recent_files,
                 None,
                 save,
                 save_as,
@@ -291,18 +312,25 @@ class APP_IANN(QMainWindow, Ui_IANN):
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
+    def queueEvent(self, function):
+        # TODO: 研究这个东西是不是真的不影响ui
+        QtCore.QTimer.singleShot(0, function)
+
     def showShortcuts(self):
         pass
 
-    def toggleAutoSave(self, x):
-        if x and not self.outputDir:
+    def toggleAutoSave(self, save):
+        if save and not self.outputDir:
             self.changeOutputDir()
-        if x and not self.outputDir:
-            self.actions.auto_save.setChecked(False)
+        if save and not self.outputDir:
+            save = False
+        self.actions.auto_save.setChecked(save)
+        self.config["auto_save"] = save
+        util.saveConfigs(osp.join(here, "config/config.yaml"), self.config)
 
     def changeModel(self, idx):
         # TODO: 设置gpu还是cpu运行
-        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型", 5000)
+        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
         model = models[idx].get_model()
         if self.controller is None:
             self.controller = InteractiveController(
@@ -327,10 +355,12 @@ class APP_IANN(QMainWindow, Ui_IANN):
             ".",
             filters,
         )
-        if file_path != "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
-            self.labelList = util.readLabel(file_path)
-            print(self.labelList)
-            self.refreshLabelList()
+        if file_path == "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
+            return
+        self.labelList = util.readLabel(file_path)
+        print(self.labelList)
+        self.refreshLabelList()
+        self.settings.setValue("label_list_file", file_path)
 
     def saveLabelList(self):
         if len(self.labelList) == 0:
@@ -352,6 +382,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             ".",
         )
         # print(savePath)
+        self.settings.setValue("label_list_file", savePath)
         util.saveLabel(self.labelList, savePath)
 
     def addLabel(self):
@@ -401,7 +432,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
             colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
             colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 2, colorItem)
-            here = osp.dirname(osp.abspath(__file__))
             delItem = QTableWidgetItem()
             delItem.setIcon(util.newIcon("clear"))
             delItem.setTextAlignment(Qt.AlignCenter)
@@ -463,7 +493,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
         if len(file_path) == 0:
             return
-        self.loadImage(file_path)
+        self.queueEvent(partial(self.loadImage, file_path))
         self.imagePath = file_path
 
     def loadLabel(self, imgPath):
@@ -490,12 +520,17 @@ class APP_IANN(QMainWindow, Ui_IANN):
         image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
+        self.currentPath = path
         if self.controller:
             self.controller.set_image(self.image)
         else:
             self.changeModel(0)
-        # self.controller.label_list = self.labelList
         self.controller.set_label(self.loadLabel(path))
+        if path not in self.recentFiles:
+            self.recentFiles.append(path)
+            if len(self.recentFiles) > 10:
+                del self.recentFiles[0]
+            self.settings.setValue("recent_files", self.recentFiles)
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(

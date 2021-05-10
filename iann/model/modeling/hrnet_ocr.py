@@ -6,7 +6,7 @@ import paddle.nn.functional as F
 
 from .ocr import SpatialOCR_Module, SpatialGather_Module
 from .resnetv1b import BasicBlockV1b, BottleneckV1b
-from util.util import SyncBatchNorm
+from iann.util.util import SyncBatchNorm
 
 relu_inplace = True
 
