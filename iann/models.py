@@ -19,17 +19,17 @@ class HumanSeg:
         return model
 
 
-class HumanSegCopy:
-    name = "人像分割-另一个"
+class SkySeg:
+    name = "非天空分割"
 
     def get_model(self):
         model = get_deeplab_model(backbone="resnet18", is_ritm=True, cpu_dist_maps=True)
         para_state_dict = paddle.load(
-            osp.join(here, "weight/human_resnet/model.pdparams")
+            osp.join(here, "weight/sky_resnet/model.pdparams")
         )
         model.set_dict(para_state_dict)
         return model
 
 
-models = [HumanSeg(), HumanSegCopy()]
+models = [HumanSeg(), SkySeg()]
 # print(models[1].name)
