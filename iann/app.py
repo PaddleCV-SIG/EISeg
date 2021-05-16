@@ -224,7 +224,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("翻页同时自动保存"),
             checkable=True,
         )
-        auto_save.setChecked(self.config.get("auto_save", False))
+        # auto_save.setChecked(self.config.get("auto_save", False))
 
         recent = action(
             self.tr("&近期图片"),
@@ -370,6 +370,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             msg.setText("请先添加标签之后再进行保存")
             msg.setStandardButtons(QMessageBox.Yes)
             res = msg.exec_()
+            return
         filters = self.tr("标签配置文件 (*.txt)")
         dlg = QtWidgets.QFileDialog(self, "保存标签配置文件", ".", filters)
         dlg.setDefaultSuffix("txt")
@@ -381,8 +382,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("保存标签配置文件"),
             ".",
         )
-        # print(savePath)
+        print(savePath)
         self.settings.setValue("label_list_file", savePath)
+        print("calling save label")
         util.saveLabel(self.labelList, savePath)
 
     def addLabel(self):
@@ -391,7 +393,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
         self.labelList.append([idx + 1, "", c])
-
+        print("append", self.labelList)
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 0, numberItem)
@@ -418,6 +420,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.labelListTable.setRowCount(0)
 
     def refreshLabelList(self):
+        print(self.labelList)
         table = self.labelListTable
         table.clearContents()
         table.setRowCount(len(self.labelList))
@@ -477,7 +480,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
-        self.labelList[row - 1][1] = name
+        self.labelList[row][1] = name
 
     def openImage(self):
         formats = [

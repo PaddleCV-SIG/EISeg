@@ -32,4 +32,3 @@ class SkySeg:
 
 
 models = [HumanSeg(), SkySeg()]
-# print(models[1].name)

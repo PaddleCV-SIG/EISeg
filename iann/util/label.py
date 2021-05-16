@@ -13,7 +13,10 @@ def toint(seq):
 
 def saveLabel(labelList, path):
     # labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
-    if not path or len(path) == 0 or not osp.exists(osp.basename(path)):
+    print("save label", labelList, path)
+    print(osp.exists(osp.dirname(path)), osp.dirname(path))
+    if not path or len(path) == 0 or not osp.exists(osp.dirname(path)):
+        print("save label error")
         return
     with open(path, "w", encoding="utf-8") as f:
         for l in labelList:
@@ -42,8 +45,8 @@ def readLabel(path):
         label = toint(lab[:2])
         label.append(toint(lab[2:]))
         labelList.append(label)
-
-        return labelList
+    print(labelList)
+    return labelList
 
 
 # readLabel("label.txt")
