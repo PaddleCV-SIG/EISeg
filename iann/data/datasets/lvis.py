@@ -6,7 +6,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .base import ISDataset
+from data.base import ISDataset
+from data.sample import DSample
 
 
 class LvisDataset(ISDataset):
@@ -16,11 +17,13 @@ class LvisDataset(ISDataset):
         super(LvisDataset, self).__init__(**kwargs)
         dataset_path = Path(dataset_path)
         train_categories_path = dataset_path / 'train_categories.json'
-        self._split_path = dataset_path / split
+        self._train_path = dataset_path / 'train'
+        self._val_path = dataset_path / 'val'
+
         self.split = split
         self.max_overlap_ratio = max_overlap_ratio
 
-        with open(self._split_path / f'lvis_{self.split}.json', 'r') as f:
+        with open( dataset_path / split / f'lvis_{self.split}.json', 'r') as f:
             json_annotation = json.loads(f.read())
 
         self.annotations = defaultdict(list)
@@ -32,20 +35,24 @@ class LvisDataset(ISDataset):
         self.dataset_samples = [x for x in json_annotation['images']
                                 if len(self.annotations[x['id']]) > 0]
 
-    def get_sample(self, index):
+    def get_sample(self, index) -> DSample:
         image_info = self.dataset_samples[index]
-        image_id, image_filename = image_info['id'], image_info['file_name']
-        image_filename = image_filename.split('_')[-1]
+        image_id, image_url = image_info['id'], image_info['coco_url']
+        image_filename = image_url.split('/')[-1]
         image_annotations = self.annotations[image_id]
         random.shuffle(image_annotations)
 
-        image_path = self._split_path / 'images' / image_filename
+        # LVISv1 splits do not match older LVIS splits (some images in val may come from COCO train2017)
+        if 'train2017' in image_url:
+            image_path = self._train_path / 'images' / image_filename
+        else:
+            image_path = self._val_path / 'images' / image_filename
         image = cv2.imread(str(image_path))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         instances_mask = None
-        masks_info = {}
         instances_area = defaultdict(int)
+        objects_ids = []
         for indx, obj_annotation in enumerate(image_annotations):
             mask = self.get_mask_from_polygon(obj_annotation, image)
             object_mask = mask > 0
@@ -66,16 +73,10 @@ class LvisDataset(ISDataset):
             instance_id = indx + 1
             instances_mask[object_mask] = instance_id
             instances_area[instance_id] = object_area
+            objects_ids.append(instance_id)
 
-            masks_info[instance_id] = {
-                'ignore': False
-            }
+        return DSample(image, instances_mask, objects_ids=objects_ids)
 
-        return {
-            'image': image,
-            'instances_mask': instances_mask,
-            'instances_info': masks_info
-        }
 
     @staticmethod
     def get_mask_from_polygon(annotation, image):

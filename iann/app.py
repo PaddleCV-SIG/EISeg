@@ -10,10 +10,10 @@ import paddle
 import cv2
 import numpy as np
 
-from .controller import InteractiveController
-from .ui import Ui_IANN, Ui_Help
-from .models import models
-import iann.util as util
+from controller import InteractiveController
+from ui import Ui_IANN, Ui_Help
+from models import models
+import util
 
 __appname__ = "IANN"
 here = osp.dirname(osp.abspath(__file__))

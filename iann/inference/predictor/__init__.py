@@ -1,20 +1,21 @@
 from .base import BasePredictor
 from .brs import InputBRSPredictor, FeatureBRSPredictor, HRNetFeatureBRSPredictor
 from .brs_functors import InputOptimizer, ScaleBiasOptimizer
-from iann.inference.transforms import ZoomIn
-from iann.model.model import DistMapsHRNetModel
+from inference.transforms import ZoomIn
+from model.is_hrnet_model import HRNetModel
 
 
 def get_predictor(
     net,
     brs_mode,
     prob_thresh=0.49,
-    with_flip=False,
+    with_flip=True,
     zoom_in_params=dict(),
     predictor_params=None,
     brs_opt_func_params=None,
     lbfgs_params=None,
 ):
+
     lbfgs_params_ = {
         "m": 20,
         "factr": 0,
@@ -31,6 +32,7 @@ def get_predictor(
 
     if lbfgs_params is not None:
         lbfgs_params_.update(lbfgs_params)
+
     lbfgs_params_["maxiter"] = 2 * lbfgs_params_["maxfun"]
 
     if brs_opt_func_params is None:
@@ -64,13 +66,14 @@ def get_predictor(
             **brs_opt_func_params
         )
 
-        if isinstance(net, DistMapsHRNetModel):
+        if isinstance(net, HRNetModel):
             FeaturePredictor = HRNetFeatureBRSPredictor
             insertion_mode = {"after_c4": "A", "after_aspp": "A", "after_deeplab": "C"}[
                 insertion_mode
             ]
         else:
             FeaturePredictor = FeatureBRSPredictor
+
         predictor = FeaturePredictor(
             net,
             opt_functor=opt_functor,

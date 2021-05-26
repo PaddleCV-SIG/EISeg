@@ -6,7 +6,7 @@ import numpy as np
 import paddle
 
 import paddleseg.transforms as T
-from .points_sampler import SinglePointSampler
+from .points_sampler import MultiPointSampler
 
 
 def get_unique_labels(x, exclude_zero=False):
@@ -20,172 +20,76 @@ def get_unique_labels(x, exclude_zero=False):
 
 class ISDataset(paddle.io.Dataset):
     def __init__(self,
-                 points_from_one_object=True,
                  augmentator=None,
-                 num_masks=1,
-                 points_sampler=SinglePointSampler(ignore_object_prob=0.0),
-                 input_transform=None,
-                 image_rescale=None,
+                 points_sampler=MultiPointSampler(max_num_points=12),
                  min_object_area=0,
                  min_ignore_object_area=10,
                  keep_background_prob=0.0,
                  with_image_info=False,
                  samples_scores_path=None,
                  samples_scores_gamma=1.0,
-                 zoom_in=None,
-                 epoch_len=-1
-                 ):
+                 epoch_len=-1):
         super(ISDataset, self).__init__()
         self.epoch_len = epoch_len
-        self.num_masks = num_masks
-        self.points_from_one_object = points_from_one_object
-        self.input_transform = input_transform
         self.augmentator = augmentator
-        self.image_rescale = image_rescale
         self.min_object_area = min_object_area
-        self.min_ignore_object_area = min_ignore_object_area
         self.keep_background_prob = keep_background_prob
         self.points_sampler = points_sampler
         self.with_image_info = with_image_info
         self.samples_precomputed_scores = self._load_samples_scores(samples_scores_path, samples_scores_gamma)
-        self.zoom_in = zoom_in
-        if isinstance(self.image_rescale, (float, int)):
-            scale = self.image_rescale
-            self.image_rescale = lambda shape: scale
-        if input_transform is None:
-            input_transform = T.Compose([T.Normalize([.485, .456, .406], [.229, .224, .225])],to_rgb=False)
-        self.input_transform = input_transform
         self.dataset_samples = None
-        self._precise_masks = ['instances_mask']
-        self._from_dataset_mapping = None
-        self._to_dataset_mapping = None
-
-    def __getitem__(self, item):
-        if self.samples_precomputed_scores is not None:
-            index = np.random.choice(self.samples_precomputed_scores['indices'],
-                                     p=self.samples_precomputed_scores['probs'])
-        else:
-            index = random.randrange(0, len(self.dataset_samples))
-
-        #sample = self.get_sample(index)
-        sample = self.get_sample(item)
-        self.check_sample_types(sample)
-        sample = self.rescale_sample(sample)
-        sample, use_zoom_in = self.check_zoom_in(sample)
-        sample = self.augment_sample(sample, use_zoom_in=use_zoom_in)
-
-        if use_zoom_in:
-            sample = self.zoom_in(sample)
-        else:
-            sample = self.exclude_small_objects(sample)
-        sample['objects_ids'] = [obj_id for obj_id, obj_info in sample['instances_info'].items()
-                                 if not obj_info['ignore']]
-        points, masks = [], []
-        self.points_sampler.sample_object(sample)
-        for i in range(self.num_masks):
-            points.extend(self.points_sampler.sample_points())
-            masks.append(self.points_sampler.selected_mask)
-            if not self.points_from_one_object:
-                self.points_sampler.sample_object(sample)
-
-        masks = np.array(masks)
-        points = np.array(points, dtype=np.float32)
-        image = self.input_transform(sample['image'])
-
-#         output = {
-#             'images': image,
-#             'points': points.astype(np.float32),
-#             'instances': masks
-#         }
-        output = [image, points.astype(np.float32), masks]
         
+    def to_tensor(self, x):
+        if isinstance(x, np.ndarray):
+            if x.ndim == 2:
+                x = x[:,:,None]
+        #img = paddle.to_tensor(x.transpose([2,0,1])).astype('float32') / 255
+        img = x.transpose([2,0,1]).astype(np.float32) / 255
+        return img
 
+    def __getitem__(self, index):
+        
+#         if self.samples_precomputed_scores is not None:
+#             index = np.random.choice(self.samples_precomputed_scores['indices'],
+#                                      p=self.samples_precomputed_scores['probs'])
+#         else:
+#             if self.epoch_len > 0:
+#                 index = random.randrange(0, len(self.dataset_samples))
+        sample = self.get_sample(index)
+        sample = self.augment_sample(sample)
+        sample.remove_small_objects(self.min_object_area)
+        self.points_sampler.sample_object(sample)
+        points = np.array(self.points_sampler.sample_points()).astype(np.float32)
+        mask = self.points_sampler.selected_mask
+        image = self.to_tensor(sample.image)
+        ids = sample.sample_id
 
+        return image, points, mask
 
-#         if self.with_image_info and 'image_id' in sample:
-#             output['image_info'] = sample['image_id']
-#         if self.with_image_info and 'image_id' in sample:
-#             output.append(sample['image_id'])
-    
-        return image[0], points.astype(np.float32), masks
-
-    def check_sample_types(self, sample):
-        assert sample['image'].dtype == 'uint8'
-        assert sample['instances_mask'].dtype == 'int32'
-
-    def rescale_sample(self, sample):
-        if self.image_rescale is None:
+    def augment_sample(self, sample):
+        if self.augmentator is None:
             return sample
 
-        image = sample['image']
-        scale = self.image_rescale(image.shape)
-        image = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-        new_size = (image.shape[1], image.shape[0])
-        sample['image'] = image
-        for mask_name in self._precise_masks:
-            if mask_name not in sample:
-                continue
-            sample[mask_name] = cv2.resize(sample[mask_name], new_size,
-                                           interpolation=cv2.INTER_NEAREST)
-
-        return sample
-
-    def check_zoom_in(self, sample):
-        use_zoom_in = self.zoom_in is not None and random.random() < self.zoom_in.p
-        if use_zoom_in:
-            sample = self.exclude_small_objects(sample)
-            num_objects = len([x for x in sample['instances_info'].values() if not x['ignore']])
-            if num_objects == 0:
-                use_zoom_in = False
-
-        return sample, use_zoom_in
-
-    def augment_sample(self, sample, use_zoom_in=False):
-        augmentator = self.augmentator if not use_zoom_in else self.zoom_in.augmentator
-        if augmentator is None:
-            return sample
-
-        masks_to_augment = [mask_name for mask_name in self._precise_masks if mask_name in sample]
-        masks = [sample[mask_name] for mask_name in masks_to_augment]
         valid_augmentation = False
         while not valid_augmentation:
-            aug_output = augmentator(image=sample['image'], masks=masks)
-            valid_augmentation = self.check_augmented_sample(sample, aug_output, masks_to_augment)
-        
-
-        sample['image'] = aug_output['image']
-        for mask_name, mask in zip(masks_to_augment, aug_output['masks']):
-            sample[mask_name] = mask
-
-        sample_ids = set(get_unique_labels(sample['instances_mask'], exclude_zero=True))
-        instances_info = sample['instances_info']
-        instances_info = {sample_id: sample_info for sample_id, sample_info in instances_info.items()
-                          if sample_id in sample_ids}
-        sample['instances_info'] = instances_info
+            sample.augment(self.augmentator)
+            keep_sample = (self.keep_background_prob < 0.0 or
+                           random.random() < self.keep_background_prob)
+            valid_augmentation = len(sample) > 0 or keep_sample
 
         return sample
 
-    def check_augmented_sample(self, sample, aug_output, masks_to_augment):
-        if self.keep_background_prob < 0.0 or random.random() < self.keep_background_prob:
-            return True
-        aug_instances_mask = aug_output['masks'][masks_to_augment.index('instances_mask')]
-        aug_sample_ids = set(get_unique_labels(aug_instances_mask, exclude_zero=True))
-        num_objects_after_aug = len([obj_id for obj_id in aug_sample_ids
-                                     if not sample['instances_info'][obj_id]['ignore']])
+    def get_sample(self, index):
+        raise NotImplementedError
 
-        return num_objects_after_aug > 0
+    def __len__(self):
+        if self.epoch_len > 0:
+            return self.epoch_len
+        else:
+            return self.get_samples_number()
 
-    def exclude_small_objects(self, sample):
-        if self.min_object_area <= 0:
-            return sample
-
-        for obj_id, obj_info in sample['instances_info'].items():
-            if not obj_info['ignore']:
-                obj_area = (sample['instances_mask'] == obj_id).sum()
-                if obj_area < self.min_object_area:
-                    obj_info['ignore'] = True
-
-        return sample
+    def get_samples_number(self):
+        return len(self.dataset_samples)
 
     @staticmethod
     def _load_samples_scores(samples_scores_path, samples_scores_gamma):
@@ -203,12 +107,3 @@ class ISDataset(paddle.io.Dataset):
         }
         print(f'Loaded {len(probs)} weights with gamma={samples_scores_gamma}')
         return samples_scores
-
-    def get_sample(self, index):
-        raise NotImplementedError
-
-    def __len__(self):
-        if self.epoch_len > 0:
-            return self.epoch_len
-        else:
-            return len(self.dataset_samples)

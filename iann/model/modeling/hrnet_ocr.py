@@ -6,17 +6,6 @@ import paddle.nn.functional as F
 
 from .ocr import SpatialOCR_Module, SpatialGather_Module
 from .resnetv1b import BasicBlockV1b, BottleneckV1b
-from iann.util.util import SyncBatchNorm
-
-relu_inplace = True
-
-
-def is_bn(norm_layer, planes):
-    if isinstance(norm_layer, nn.BatchNorm2D):
-        bn = norm_layer(planes, use_global_stats=True)
-    else:
-        bn = norm_layer(planes)
-    return bn
 
 
 class HighResolutionModule(nn.Layer):
@@ -29,11 +18,12 @@ class HighResolutionModule(nn.Layer):
         num_channels,
         fuse_method,
         multi_scale_output=True,
-        norm_layer=SyncBatchNorm,
+        norm_layer=nn.BatchNorm2D,
         align_corners=True,
     ):
         super(HighResolutionModule, self).__init__()
         self._check_branches(num_branches, num_blocks, num_inchannels, num_channels)
+
         self.num_inchannels = num_inchannels
         self.fuse_method = fuse_method
         self.num_branches = num_branches
@@ -41,6 +31,7 @@ class HighResolutionModule(nn.Layer):
         self.align_corners = align_corners
 
         self.multi_scale_output = multi_scale_output
+
         self.branches = self._make_branches(
             num_branches, blocks, num_blocks, num_channels
         )
@@ -81,7 +72,7 @@ class HighResolutionModule(nn.Layer):
                     stride=stride,
                     bias_attr=False,
                 ),
-                is_bn(self.norm_layer, num_channels[branch_index] * block.expansion),
+                self.norm_layer(num_channels[branch_index] * block.expansion),
             )
 
         layers = []
@@ -117,6 +108,7 @@ class HighResolutionModule(nn.Layer):
     def _make_fuse_layers(self):
         if self.num_branches == 1:
             return None
+
         num_branches = self.num_branches
         num_inchannels = self.num_inchannels
         fuse_layers = []
@@ -132,7 +124,7 @@ class HighResolutionModule(nn.Layer):
                                 kernel_size=1,
                                 bias_attr=False,
                             ),
-                            is_bn(self.norm_layer, num_inchannels[i]),
+                            self.norm_layer(num_inchannels[i]),
                         )
                     )
                 elif j == i:
@@ -152,7 +144,7 @@ class HighResolutionModule(nn.Layer):
                                         padding=1,
                                         bias_attr=False,
                                     ),
-                                    is_bn(self.norm_layer, num_outchannels_conv3x3),
+                                    self.norm_layer(num_outchannels_conv3x3),
                                 )
                             )
                         else:
@@ -167,13 +159,13 @@ class HighResolutionModule(nn.Layer):
                                         padding=1,
                                         bias_attr=False,
                                     ),
-                                    is_bn(self.norm_layer, num_outchannels_conv3x3),
+                                    self.norm_layer(num_outchannels_conv3x3),
                                     nn.ReLU(),
                                 )
                             )
                     fuse_layer.append(nn.Sequential(*conv3x3s))
-            m = nn.LayerList(fuse_layer)
-            fuse_layers.append(m)
+            fuse_layers.append(nn.LayerList(fuse_layer))
+
         return nn.LayerList(fuse_layers)
 
     def get_num_inchannels(self):
@@ -182,11 +174,11 @@ class HighResolutionModule(nn.Layer):
     def forward(self, x):
         if self.num_branches == 1:
             return [self.branches[0](x[0])]
+
         for i in range(self.num_branches):
             x[i] = self.branches[i](x[i])
 
         x_fuse = []
-
         for i in range(len(self.fuse_layers)):
             y = x[0] if i == 0 else self.fuse_layers[i][0](x[0])
             for j in range(1, self.num_branches):
@@ -204,6 +196,7 @@ class HighResolutionModule(nn.Layer):
                 else:
                     y = y + self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))
+
         return x_fuse
 
 
@@ -214,7 +207,7 @@ class HighResolutionNet(nn.Layer):
         num_classes,
         ocr_width=256,
         small=False,
-        norm_layer=SyncBatchNorm,
+        norm_layer=nn.BatchNorm2D,
         align_corners=True,
     ):
         super(HighResolutionNet, self).__init__()
@@ -226,14 +219,15 @@ class HighResolutionNet(nn.Layer):
         self.conv1 = nn.Conv2D(
             3, 64, kernel_size=3, stride=2, padding=1, bias_attr=False
         )
-        self.bn1 = is_bn(norm_layer, 64)
+        self.bn1 = norm_layer(64)
         self.conv2 = nn.Conv2D(
             64, 64, kernel_size=3, stride=2, padding=1, bias_attr=False
         )
-        self.bn2 = is_bn(norm_layer, 64)
+        self.bn2 = norm_layer(64)
         self.relu = nn.ReLU()
 
         num_blocks = 2 if small else 4
+
         stage1_num_channels = 64
         self.layer1 = self._make_layer(
             BottleneckV1b, 64, stage1_num_channels, blocks=num_blocks
@@ -245,7 +239,6 @@ class HighResolutionNet(nn.Layer):
         num_inchannels = [
             num_channels[i] * BasicBlockV1b.expansion for i in range(len(num_channels))
         ]
-
         self.transition1 = self._make_transition_layer(
             [stage1_out_channel], num_inchannels
         )
@@ -293,49 +286,80 @@ class HighResolutionNet(nn.Layer):
         )
 
         last_inp_channels = np.int(np.sum(pre_stage_channels))
-        ocr_mid_channels = 2 * ocr_width
-        ocr_key_channels = ocr_width
-        self.conv3x3_ocr = nn.Sequential(
-            nn.Conv2D(
-                last_inp_channels, ocr_mid_channels, kernel_size=3, stride=1, padding=1
-            ),
-            is_bn(norm_layer, ocr_mid_channels),
-            nn.ReLU(),
-        )
-        self.ocr_gather_head = SpatialGather_Module(num_classes)
-        self.ocr_distri_head = SpatialOCR_Module(
-            in_channels=ocr_mid_channels,
-            key_channels=ocr_key_channels,
-            out_channels=ocr_mid_channels,
-            scale=1,
-            dropout=0.05,
-            norm_layer=norm_layer,
-            align_corners=align_corners,
-        )
-        self.cls_head = nn.Conv2D(
-            ocr_mid_channels,
-            num_classes,
-            kernel_size=1,
-            stride=1,
-            padding=0,
-            bias_attr=True,
-        )
+        if self.ocr_width > 0:
+            ocr_mid_channels = 2 * self.ocr_width
+            ocr_key_channels = self.ocr_width
 
-        self.aux_head = nn.Sequential(
-            nn.Conv2D(
-                last_inp_channels, last_inp_channels, kernel_size=1, stride=1, padding=0
-            ),
-            is_bn(norm_layer, last_inp_channels),
-            nn.ReLU(),
-            nn.Conv2D(
-                last_inp_channels,
+            self.conv3x3_ocr = nn.Sequential(
+                nn.Conv2D(
+                    last_inp_channels,
+                    ocr_mid_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                ),
+                norm_layer(ocr_mid_channels),
+                nn.ReLU(),
+            )
+            self.ocr_gather_head = SpatialGather_Module(num_classes)
+
+            self.ocr_distri_head = SpatialOCR_Module(
+                in_channels=ocr_mid_channels,
+                key_channels=ocr_key_channels,
+                out_channels=ocr_mid_channels,
+                scale=1,
+                dropout=0.05,
+                norm_layer=norm_layer,
+                align_corners=align_corners,
+            )
+            self.cls_head = nn.Conv2D(
+                ocr_mid_channels,
                 num_classes,
                 kernel_size=1,
                 stride=1,
                 padding=0,
                 bias_attr=True,
-            ),
-        )
+            )
+
+            self.aux_head = nn.Sequential(
+                nn.Conv2D(
+                    last_inp_channels,
+                    last_inp_channels,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                ),
+                norm_layer(last_inp_channels),
+                nn.ReLU(),
+                nn.Conv2D(
+                    last_inp_channels,
+                    num_classes,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                    bias_attr=True,
+                ),
+            )
+        else:
+            self.cls_head = nn.Sequential(
+                nn.Conv2D(
+                    last_inp_channels,
+                    last_inp_channels,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                ),
+                norm_layer(last_inp_channels),
+                nn.ReLU(),
+                nn.Conv2D(
+                    last_inp_channels,
+                    num_classes,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                    bias_attr=True,
+                ),
+            )
 
     def _make_transition_layer(self, num_channels_pre_layer, num_channels_cur_layer):
         num_branches_cur = len(num_channels_cur_layer)
@@ -355,7 +379,7 @@ class HighResolutionNet(nn.Layer):
                                 padding=1,
                                 bias_attr=False,
                             ),
-                            is_bn(self.norm_layer, num_channels_cur_layer[i]),
+                            self.norm_layer(num_channels_cur_layer[i]),
                             nn.ReLU(),
                         )
                     )
@@ -380,7 +404,7 @@ class HighResolutionNet(nn.Layer):
                                 padding=1,
                                 bias_attr=False,
                             ),
-                            is_bn(self.norm_layer, outchannels),
+                            self.norm_layer(outchannels),
                             nn.ReLU(),
                         )
                     )
@@ -399,8 +423,9 @@ class HighResolutionNet(nn.Layer):
                     stride=stride,
                     bias_attr=False,
                 ),
-                is_bn(self.norm_layer, planes * block.expansion),
+                self.norm_layer(planes * block.expansion),
             )
+
         layers = []
         layers.append(
             block(
@@ -430,6 +455,7 @@ class HighResolutionNet(nn.Layer):
     ):
         modules = []
         for i in range(num_modules):
+            # multi_scale_output is only used last module
             if not multi_scale_output and i == num_modules - 1:
                 reset_multi_scale_output = False
             else:
@@ -451,25 +477,27 @@ class HighResolutionNet(nn.Layer):
 
         return nn.Sequential(*modules), num_inchannels
 
-    def forward(self, x):
-        feats = self.compute_hrnet_feats(x)
-        # print("feat", feats.shape)
-        out_aux = self.aux_head(feats)
-        feats = self.conv3x3_ocr(feats)
+    def forward(self, x, additional_features=None):
+        feats = self.compute_hrnet_feats(x, additional_features)
 
-        context = self.ocr_gather_head(feats, out_aux)
-        feats = self.ocr_distri_head(feats, context)
-        out = self.cls_head(feats)
+        if self.ocr_width > 0:
+            out_aux = self.aux_head(feats)
+            feats = self.conv3x3_ocr(feats)
+            context = self.ocr_gather_head(feats, out_aux)
+            feats = self.ocr_distri_head(feats, context)
+            #             print('feats', feats)
+            out = self.cls_head(feats)
+            #             for name, params in self.cls_head.named_parameters():
+            #                 print(name)
+            #                 print(params)
+            #             print('out', out)
+            #             raise Exception("***************************")
+            return [out, out_aux]
+        else:
+            return [self.cls_head(feats), None]
 
-        return [out, out_aux]
-
-    def compute_hrnet_feats(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
+    def compute_hrnet_feats(self, x, additional_features):
+        x = self.compute_pre_stage_features(x, additional_features)
         x = self.layer1(x)
 
         x_list = []
@@ -502,6 +530,19 @@ class HighResolutionNet(nn.Layer):
                 x_list.append(y_list[i])
         x = self.stage4(x_list)
 
+        return self.aggregate_hrnet_features(x)
+
+    def compute_pre_stage_features(self, x, additional_features):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        if additional_features is not None:
+            x = x + additional_features
+        x = self.conv2(x)
+        x = self.bn2(x)
+        return self.relu(x)
+
+    def aggregate_hrnet_features(self, x):
         # Upsampling
         x0_h, x0_w = x[0].shape[2], x[0].shape[3]
         x1 = F.interpolate(
@@ -516,32 +557,26 @@ class HighResolutionNet(nn.Layer):
 
         return paddle.concat([x[0], x1, x2, x3], axis=1)
 
-    def load_pretrained_weights(self, pretrained_path=None):
+    def load_pretrained_weights(self, pretrained_path=""):
         model_dict = self.state_dict()
-        if pretrained_path is not None:
-            if not os.path.exists(pretrained_path):
-                print(f'\nFile "{pretrained_path}" does not exist.')
-                print(
-                    "You need to specify the correct path to the pre-trained weights.\n"
-                    "You can download the weights for HRNet from the repository:\n"
-                    "https://github.com/HRNet/HRNet-Image-Classification"
-                )
-                exit(1)
-            pretrained_dict = paddle.load(pretrained_path)
-            pretrained_dict = {
-                k.replace("last_layer", "aux_head").replace("model.", ""): v
-                for k, v in pretrained_dict.items()
-            }
+
+        if not os.path.exists(pretrained_path):
+            print(f'\nFile "{pretrained_path}" does not exist.')
             print(
-                "model_dict-pretrained_dict:",
-                sorted(list(set(model_dict) - set(pretrained_dict))),
+                "You need to specify the correct path to the pre-trained weights.\n"
+                "You can download the weights for HRNet from the repository:\n"
+                "https://github.com/HRNet/HRNet-Image-Classification"
             )
-            print(
-                "pretrained_dict-model_dict:",
-                sorted(list(set(pretrained_dict) - set(model_dict))),
-            )
-            pretrained_dict = {
-                k: v for k, v in pretrained_dict.items() if k in model_dict.keys()
-            }
-            model_dict.update(pretrained_dict)
-            self.load_state_dict(model_dict)
+            exit(1)
+        pretrained_dict = paddle.load(pretrained_path)
+        pretrained_dict = {
+            k.replace("last_layer", "aux_head").replace("model.", ""): v
+            for k, v in pretrained_dict.items()
+        }
+
+        pretrained_dict = {
+            k: v for k, v in pretrained_dict.items() if k in model_dict.keys()
+        }
+
+        model_dict.update(pretrained_dict)
+        self.set_state_dict(model_dict)

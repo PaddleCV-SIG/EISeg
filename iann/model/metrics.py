@@ -2,7 +2,7 @@ import paddle
 import paddle.nn.functional as F
 import numpy as np
 
-import iann.util.util as U
+from util import misc
 
 
 class TrainMetric(object):
@@ -28,17 +28,9 @@ class TrainMetric(object):
 
 
 class AdaptiveIoU(TrainMetric):
-    def __init__(
-        self,
-        init_thresh=0.4,
-        thresh_step=0.025,
-        thresh_beta=0.99,
-        iou_beta=0.9,
-        ignore_label=-1,
-        from_logits=True,
-        pred_output="instances",
-        gt_output="instances",
-    ):
+    def __init__(self, init_thresh=0.4, thresh_step=0.025, thresh_beta=0.99, iou_beta=0.9,
+                 ignore_label=-1, from_logits=True,
+                 pred_output='instances', gt_output='instances'):
         super().__init__(pred_outputs=(pred_output,), gt_outputs=(gt_output,))
         self._ignore_label = ignore_label
         self._from_logits = from_logits
@@ -51,11 +43,11 @@ class AdaptiveIoU(TrainMetric):
         self._epoch_batch_count = 0
 
     def update(self, pred, gt):
-        gt_mask = gt > 0
+        gt_mask = gt > 0.5
         if self._from_logits:
             pred = F.sigmoid(pred)
 
-        gt_mask_area = paddle.sum(gt_mask, axis=(1, 2)).detach().numpy()
+        gt_mask_area = paddle.sum(gt_mask.astype('float32'), axis=(1, 2)).detach().numpy()
         if np.all(gt_mask_area == 0):
             return
 
@@ -68,9 +60,7 @@ class AdaptiveIoU(TrainMetric):
                 max_iou = temp_iou
                 best_thresh = t
 
-        self._iou_thresh = (
-            self._thresh_beta * self._iou_thresh + (1 - self._thresh_beta) * best_thresh
-        )
+        self._iou_thresh = self._thresh_beta * self._iou_thresh + (1 - self._thresh_beta) * best_thresh
         self._ema_iou = self._iou_beta * self._ema_iou + (1 - self._iou_beta) * max_iou
         self._epoch_iou_sum += max_iou
         self._epoch_batch_count += 1
@@ -86,14 +76,8 @@ class AdaptiveIoU(TrainMetric):
         self._epoch_batch_count = 0
 
     def log_states(self, sw, tag_prefix, global_step):
-        sw.add_scalar(
-            tag=tag_prefix + "_ema_iou", value=self._ema_iou, global_step=global_step
-        )
-        sw.add_scalar(
-            tag=tag_prefix + "_iou_thresh",
-            value=self._iou_thresh,
-            global_step=global_step,
-        )
+        sw.add_scalar(tag_prefix + '_ema_iou', self._ema_iou, global_step)
+        sw.add_scalar(tag_prefix + '_iou_thresh', self._iou_thresh, global_step)
 
     @property
     def iou_thresh(self):
@@ -102,10 +86,11 @@ class AdaptiveIoU(TrainMetric):
 
 def _compute_iou(pred_mask, gt_mask, ignore_mask=None, keep_ignore=False):
     if ignore_mask is not None:
-        pred_mask = paddle.where(ignore_mask, paddle.zeros_like(pred_mask), pred_mask)
 
-    reduction_dims = U.get_dims_with_exclusion(len(gt_mask.shape), 0)
+        pred_mask = paddle.where(ignore_mask, paddle.zeros_like(pred_mask.astype('float32')), pred_mask.astype('float32'))
 
+    reduction_dims = misc.get_dims_with_exclusion(len(gt_mask.shape), 0)
+    pred_mask = pred_mask.astype('bool')
     m = pred_mask.numpy() | gt_mask.numpy()
     n = pred_mask.numpy() & gt_mask.numpy()
     union = np.mean(m.astype(np.float), axis=tuple(reduction_dims))
@@ -114,13 +99,10 @@ def _compute_iou(pred_mask, gt_mask, ignore_mask=None, keep_ignore=False):
     nonzero = union > 0
 
     iou = intersection[nonzero] / union[nonzero]
-    #     print("nonzero", nonzero)
-    #     print(intersection[nonzero])
-    #     print(union[nonzero])
-    #     print("iou", iou)
     if not keep_ignore:
         return iou
     else:
         result = np.full_like(intersection, -1)
         result[nonzero] = iou
         return result
+

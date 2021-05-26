@@ -4,15 +4,18 @@ import shutil
 import pprint
 from pathlib import Path
 from datetime import datetime
-
+import paddle
 import yaml
 from easydict import EasyDict as edict
+import filelock
 
+TMP_HOME = 'tmp'
 
-
-def init_experiment(args):
+def init_experiment(args, model_name):
+    nranks = paddle.distributed.ParallelEnv().nranks
+    local_rank = paddle.distributed.ParallelEnv().local_rank
     model_path = Path(args.model_path)
-    ftree = get_model_family_tree(model_path)
+    ftree = get_model_family_tree(model_path, model_name=model_name)
     if ftree is None:
         print('Models can only be located in the "models" directory in the root of the repository')
         sys.exit(1)
@@ -22,44 +25,50 @@ def init_experiment(args):
 
     experiments_path = Path(cfg.EXPS_PATH)
     exp_parent_path = experiments_path / '/'.join(ftree)
-    exp_parent_path.mkdir(parents=True, exist_ok=True)
+    lock = filelock.FileLock(os.path.join(experiments_path, '.tmp'))
+    
+    with lock:
+        if local_rank == 0:
+            exp_parent_path.mkdir(parents=True, exist_ok=True)
 
-    if cfg.resume_exp:
-        exp_path = find_resume_exp(exp_parent_path, cfg.resume_exp)
-    else:
-        last_exp_indx = find_last_exp_indx(exp_parent_path)
-        exp_name = f'{last_exp_indx:03d}'
-        if cfg.exp_name:
-            exp_name += '_' + cfg.exp_name
-        exp_path = exp_parent_path / exp_name
-        exp_path.mkdir(parents=True)
+            if cfg.resume_exp:
+                exp_path = find_resume_exp(exp_parent_path, cfg.resume_exp)
+            else:
+                last_exp_indx = find_last_exp_indx(exp_parent_path)
+                exp_name = f'{last_exp_indx:03d}'
+                if cfg.exp_name:
+                    exp_name += '_' + cfg.exp_name
+                exp_path = exp_parent_path / exp_name
+                exp_path.mkdir(parents=True)
 
-    cfg.EXP_PATH = exp_path
-    cfg.CHECKPOINTS_PATH = exp_path / 'checkpoints'
-    cfg.VIS_PATH = exp_path / 'vis'
-    cfg.LOGS_PATH = exp_path / 'logs'
+            cfg.EXP_PATH = exp_path
+            cfg.CHECKPOINTS_PATH = exp_path / 'checkpoints'
+            cfg.VIS_PATH = exp_path / 'vis'
+            cfg.LOGS_PATH = exp_path / 'logs'
 
-    cfg.LOGS_PATH.mkdir(exist_ok=True)
-    cfg.CHECKPOINTS_PATH.mkdir(exist_ok=True)
-    cfg.VIS_PATH.mkdir(exist_ok=True)
+            cfg.LOGS_PATH.mkdir(exist_ok=True)
+            cfg.CHECKPOINTS_PATH.mkdir(exist_ok=True)
+            cfg.VIS_PATH.mkdir(exist_ok=True)
 
-    dst_script_path = exp_path / (model_path.stem + datetime.strftime(datetime.today(), '_%Y-%m-%d-%H-%M-%S.py'))
-    shutil.copy(model_path, dst_script_path)
+            dst_script_path = exp_path / (model_path.stem + datetime.strftime(datetime.today(), '_%Y-%m-%d-%H-%M-%S.py'))
+            shutil.copy(model_path, dst_script_path)
 
-    if cfg.gpus != '':
-        gpu_ids = [int(id) for id in cfg.gpus.split(',')]
-    else:
-        gpu_ids = list(range(cfg.ngpus))
-        cfg.gpus = ','.join([str(id) for id in gpu_ids])
-    cfg.gpu_ids = gpu_ids
-    cfg.ngpus = len(gpu_ids)
-    cfg.multi_gpu = cfg.ngpus > 1
+            if cfg.gpus != '':
+                gpu_ids = [int(id) for id in cfg.gpus.split(',')]
+            else:
+                gpu_ids = list(range(cfg.ngpus))
+                cfg.gpus = ','.join([str(id) for id in gpu_ids])
+            cfg.gpu_ids = gpu_ids
+            cfg.ngpus = len(gpu_ids)
+            cfg.multi_gpu = cfg.ngpus > 1
 
     return cfg
 
 
-def get_model_family_tree(model_path, terminate_name='models'):
-    model_name = model_path.stem
+def get_model_family_tree(model_path, terminate_name='train_script', model_name=None):
+    if model_name is None:
+        model_name = model_path.stem
+        
     family_tree = [model_name]
     for x in model_path.parents:
         if x.stem == terminate_name:

@@ -1,36 +1,37 @@
-iters: 100000
-batch_size: 16
-save_interval: 1000
-log_iters: 10
-worker: 4
+iters: 4000
+batch_size: 1
+save_interval: 10
+log_iters: 1
+worker: 0
 save_dir: model_output
 use_vdl: False
 
 dataset:
-  dataset_path: iann/train/datasets
-  image_name: img
-  label_name: gt
+  dataset_path: /home/lin/Desktop/aorta/private/imgs/二院/
+  image_name: JPEGImages
+  label_name: new
 
 train_dataset:
-  crop_size: [320, 480]
-  folder_name: train_data
+  crop_size: [512, 512]
+  folder_name: train
 
 val_dataset:
-  folder_name: val_data
+  folder_name: eval
 
 optimizer:
   type: adam
 
 learning_rate:
-  value_1: 5e-5
+  value_1: 5e-3
   value_2: 5e-6
   decay:
     type: poly
     steps: 1000
     power: 0.9
-    end_lr: 0.0
+    end_lr: 0
 
 model:
+  # type: shufflenet
   type: deeplab
   backbone: resnet18
   is_ritm: True

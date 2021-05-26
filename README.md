@@ -24,3 +24,7 @@ python iann/__main__.py
 - 重新审查修改按键图标，确保图标完整清晰
 - 界面配色以paddle蓝色为主，同时做一个ico窗口图标
 - 标签可修改？
+
+include iann/weight/sky_resnet/*
+include iann/weight/aorta/*
+include iann/weight/human_resnet/*

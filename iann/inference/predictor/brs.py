@@ -4,7 +4,6 @@ import numpy as np
 from scipy.optimize import fmin_l_bfgs_b
 
 from .base import BasePredictor
-from iann.model.model import DistMapsHRNetModel
 
 
 class BRSBasePredictor(BasePredictor):
@@ -23,10 +22,10 @@ class BRSBasePredictor(BasePredictor):
 
     def _get_clicks_maps_nd(self, clicks_lists, image_shape, radius=1):
         pos_clicks_map = np.zeros(
-            (len(clicks_lists), 1) + tuple(image_shape), dtype=np.float32
+            [len(clicks_lists), 1] + image_shape, dtype=np.float32
         )
         neg_clicks_map = np.zeros(
-            (len(clicks_lists), 1) + tuple(image_shape), dtype=np.float32
+            [len(clicks_lists), 1] + image_shape, dtype=np.float32
         )
 
         for list_indx, clicks_list in enumerate(clicks_lists):
@@ -73,11 +72,13 @@ class FeatureBRSPredictor(BRSBasePredictor):
         else:
             raise NotImplementedError
 
-    def _get_prediction(self, image_nd, clicks_lists, is_image_changed, mask):
+    def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
         pos_mask, neg_mask = self._get_clicks_maps_nd(clicks_lists, image_nd.shape[2:])
+
         num_clicks = len(clicks_lists[0])
         bs = image_nd.shape[0] // 2 if self.with_flip else image_nd.shape[0]
+
         if (
             self.opt_data is None
             or self.opt_data.shape[0] // (2 * self.num_channels) != bs
@@ -89,7 +90,7 @@ class FeatureBRSPredictor(BRSBasePredictor):
             or is_image_changed
             or self.input_data is None
         ):
-            self.input_data = self._get_head_input(image_nd, points_nd, mask)
+            self.input_data = self._get_head_input(image_nd, points_nd)
 
         def get_prediction_logits(scale, bias):
             scale = scale.reshape([bs, -1, 1, 1])
@@ -97,6 +98,7 @@ class FeatureBRSPredictor(BRSBasePredictor):
             if self.with_flip:
                 scale = scale.tile([2, 1, 1, 1])
                 bias = bias.tile([2, 1, 1, 1])
+
             scaled_backbone_features = self.input_data * scale
             scaled_backbone_features = scaled_backbone_features + bias
             if self.insertion_mode == "after_c4":
@@ -124,11 +126,8 @@ class FeatureBRSPredictor(BRSBasePredictor):
             )
             return pred_logits
 
-        self.opt_functor.init_click(
-            get_prediction_logits, self.model, pos_mask, neg_mask
-        )
+        self.opt_functor.init_click(get_prediction_logits, pos_mask, neg_mask)
         if num_clicks > self.optimize_after_n_clicks:
-
             opt_result = fmin_l_bfgs_b(
                 func=self.opt_functor,
                 x0=self.opt_data,
@@ -145,20 +144,22 @@ class FeatureBRSPredictor(BRSBasePredictor):
 
         return opt_pred_logits
 
-    def _get_head_input(self, image_nd, points, mask=None):
+    def _get_head_input(self, image_nd, points):
         with paddle.no_grad():
-            coord_features = self.net.dist_maps(image_nd, points)
-            b, c, h, w = image_nd.shape
-            if mask is None:
-                mask = paddle.zeros([b, 1, h, w])
-            else:
-                mask = paddle.to_tensor(mask).reshape([b, 1, h, w])
+            image_nd, prev_mask = self.net.prepare_input(image_nd)
+            coord_features = self.net.get_coord_features(image_nd, prev_mask, points)
 
-            x = self.net.rgb_conv(
-                paddle.concat((image_nd, mask, coord_features), axis=1)
-            )
+            if self.net.rgb_conv is not None:
+                x = self.net.rgb_conv(paddle.concat((image_nd, coord_features), axis=1))
+                additional_features = None
+            elif hasattr(self.net, "maps_transform"):
+                x = image_nd
+                additional_features = self.net.maps_transform(coord_features)
+
             if self.insertion_mode == "after_c4" or self.insertion_mode == "after_aspp":
-                c1, _, c3, c4 = self.net.feature_extractor.backbone(x)
+                c1, _, c3, c4 = self.net.feature_extractor.backbone(
+                    x, additional_features
+                )
                 c1 = self.net.feature_extractor.skip_project(c1)
 
                 if self.insertion_mode == "after_aspp":
@@ -172,74 +173,11 @@ class FeatureBRSPredictor(BRSBasePredictor):
                     backbone_features = c4
                     self._c1_features = c1
             else:
-                backbone_features = self.net.feature_extractor(x)[0]
+                backbone_features = self.net.feature_extractor(x, additional_features)[
+                    0
+                ]
 
             return backbone_features
-
-
-class InputBRSPredictor(BRSBasePredictor):
-    def __init__(self, model, opt_functor, optimize_target="rgb", **kwargs):
-        super().__init__(model, opt_functor=opt_functor, **kwargs)
-        self.optimize_target = optimize_target
-
-    def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
-        points_nd = self.get_points_nd(clicks_lists)
-        pos_mask, neg_mask = self._get_clicks_maps_nd(clicks_lists, image_nd.shape[2:])
-        num_clicks = len(clicks_lists[0])
-
-        if self.opt_data is None or is_image_changed:
-            opt_channels = 2 if self.optimize_target == "dmaps" else 3
-            bs = image_nd.shape[0] // 2 if self.with_flip else image_nd.shape[0]
-            self.opt_data = paddle.zeros(
-                (bs, opt_channels, image_nd.shape[2], image_nd.shape[3]),
-                dtype="float64",
-            )
-
-        def get_prediction_logits(opt_bias):
-            input_image = image_nd
-            if self.optimize_target == "rgb":
-                input_image = input_image + opt_bias
-            dmaps = self.net.dist_maps(input_image, points_nd)
-            if self.optimize_target == "dmaps":
-                dmaps = dmaps + opt_bias
-
-            x = self.net.rgb_conv(paddle.concat((input_image, dmaps), axis=1))
-            if self.optimize_target == "all":
-                x = x + opt_bias
-
-            if isinstance(self.net, DistMapsHRNetModel):
-                pred_logits = self.net.feature_extractor(x)[0]
-            else:
-                backbone_features = self.net.feature_extractor(x)
-                pred_logits = self.net.head(backbone_features[0])
-            pred_logits = F.interpolate(
-                pred_logits,
-                size=image_nd.size()[2:],
-                mode="bilinear",
-                align_corners=True,
-            )
-
-            return pred_logits
-
-        self.opt_functor.init_click(
-            get_prediction_logits, pos_mask, neg_mask, shape=self.opt_data.shape
-        )
-        if num_clicks > self.optimize_after_n_clicks:
-            opt_result = fmin_l_bfgs_b(
-                func=self.opt_functor,
-                x0=self.opt_data.numpy().ravel(),
-                **self.opt_functor.optimizer_params
-            )
-
-            self.opt_data = paddle.to_tensor(opt_result[0]).reshape(self.opt_data.shape)
-
-        with paddle.no_grad():
-            if self.opt_functor.best_prediction is not None:
-                opt_pred_logits = self.opt_functor.best_prediction
-            else:
-                scale, bias, _ = self.opt_functor.unpack_opt_params(self.opt_data)
-                opt_pred_logits = get_prediction_logits(scale, bias)
-        return opt_pred_logits
 
 
 class HRNetFeatureBRSPredictor(BRSBasePredictor):
@@ -247,7 +185,7 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
         super().__init__(model, opt_functor=opt_functor, **kwargs)
         self.insertion_mode = insertion_mode
         self._c1_features = None
-        self.model = model
+        # sself.model = model
 
         if self.insertion_mode == "A":
             self.num_channels = sum(
@@ -258,8 +196,7 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
         else:
             raise NotImplementedError
 
-    def _get_prediction(self, image_nd, clicks_lists, is_image_changed, mask):
-        # print('image-nd2',image_nd.shape)
+    def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
         pos_mask, neg_mask = self._get_clicks_maps_nd(clicks_lists, image_nd.shape[2:])
         num_clicks = len(clicks_lists[0])
@@ -276,8 +213,7 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
             or is_image_changed
             or self.input_data is None
         ):
-
-            self.input_data = self._get_head_input(image_nd, points_nd, mask)
+            self.input_data = self._get_head_input(image_nd, points_nd)
 
         def get_prediction_logits(scale, bias):
             scale = scale.reshape([bs, -1, 1, 1])
@@ -290,14 +226,21 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
             scaled_backbone_features = scaled_backbone_features + bias
 
             if self.insertion_mode == "A":
-                out_aux = self.net.feature_extractor.aux_head(scaled_backbone_features)
-                out_aux.stop_gradient = False
-                feats = self.net.feature_extractor.conv3x3_ocr(scaled_backbone_features)
-                feats.stop_gradient = False
-                context = self.net.feature_extractor.ocr_gather_head(feats, out_aux)
-                context.stop_gradient = False
-                feats = self.net.feature_extractor.ocr_distri_head(feats, context)
-                feats.stop_gradient = False
+                if self.net.feature_extractor.ocr_width > 0:
+                    out_aux = self.net.feature_extractor.aux_head(
+                        scaled_backbone_features
+                    )
+                    out_aux.stop_gradient = False
+                    feats = self.net.feature_extractor.conv3x3_ocr(
+                        scaled_backbone_features
+                    )
+                    feats.stop_gradient = False
+                    context = self.net.feature_extractor.ocr_gather_head(feats, out_aux)
+                    context.stop_gradient = False
+                    feats = self.net.feature_extractor.ocr_distri_head(feats, context)
+                    feats.stop_gradient = False
+                else:
+                    feats = scaled_backbone_features
                 pred_logits = self.net.feature_extractor.cls_head(feats)
                 pred_logits.stop_gradient = False
             elif self.insertion_mode == "C":
@@ -315,11 +258,8 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
             )
             return pred_logits
 
-        self.opt_functor.init_click(
-            get_prediction_logits, self.model, pos_mask, neg_mask
-        )
+        self.opt_functor.init_click(get_prediction_logits, pos_mask, neg_mask)
         if num_clicks > self.optimize_after_n_clicks:
-            self.opt_functor(self.opt_data)
             opt_result = fmin_l_bfgs_b(
                 func=self.opt_functor,
                 x0=self.opt_data,
@@ -332,27 +272,27 @@ class HRNetFeatureBRSPredictor(BRSBasePredictor):
                 opt_pred_logits = self.opt_functor.best_prediction
             else:
                 opt_data_nd = paddle.to_tensor(self.opt_data)
-                scale, bias, _ = self.opt_functor.unpack_opt_params(opt_data_nd)
-                opt_pred_logits = get_prediction_logits(scale, bias)
+                opt_vars, _ = self.opt_functor.unpack_opt_params(opt_data_nd)
+                opt_pred_logits = get_prediction_logits(*opt_vars)
 
         return opt_pred_logits
 
-    def _get_head_input(self, image_nd, points, mask=None):
+    def _get_head_input(self, image_nd, points):
         with paddle.no_grad():
-            # print("image_nd", image_nd)
-            coord_features = self.net.dist_maps(image_nd, points)
-            # print('coord_features', coord_features)
-            b, c, h, w = image_nd.shape
+            image_nd, prev_mask = self.net.prepare_input(image_nd)
+            coord_features = self.net.get_coord_features(image_nd, prev_mask, points)
 
-            if mask is None:
-                mask = paddle.zeros([b, 1, h, w])
+            if self.net.rgb_conv is not None:
+                x = self.net.rgb_conv(paddle.concat((image_nd, coord_features), axis=1))
+                additional_features = None
             else:
-                mask = paddle.to_tensor(mask).reshape([b, 1, h, w])
+                x = image_nd
+                additional_features = self.net.maps_transform(coord_features)
 
-            x = self.net.rgb_conv(
-                paddle.concat((image_nd, mask, coord_features), axis=1)
+            feats = self.net.feature_extractor.compute_hrnet_feats(
+                x, additional_features
             )
-            feats = self.net.feature_extractor.compute_hrnet_feats(x)
+
             if self.insertion_mode == "A":
                 backbone_features = feats
             elif self.insertion_mode == "C":
@@ -380,7 +320,15 @@ class InputBRSPredictor(BRSBasePredictor):
         num_clicks = len(clicks_lists[0])
 
         if self.opt_data is None or is_image_changed:
-            opt_channels = 2 if self.optimize_target == "dmaps" else 3
+            if self.optimize_target == "dmaps":
+                opt_channels = (
+                    self.net.coord_feature_ch - 1
+                    if self.net.with_prev_mask
+                    else self.net.coord_feature_ch
+                )
+            else:
+                opt_channels = 3
+
             bs = image_nd.shape[0] // 2 if self.with_flip else image_nd.shape[0]
             self.opt_data = paddle.zeros(
                 (bs, opt_channels, image_nd.shape[2], image_nd.shape[3]),
@@ -388,25 +336,33 @@ class InputBRSPredictor(BRSBasePredictor):
             )
 
         def get_prediction_logits(opt_bias):
-            input_image = image_nd
+            input_image, prev_mask = self.net.prepare_input(image_nd)
+            dmaps = self.net.get_coord_features(input_image, prev_mask, points_nd)
+
             if self.optimize_target == "rgb":
                 input_image = input_image + opt_bias
-            dmaps = self.net.dist_maps(input_image, points_nd)
-            if self.optimize_target == "dmaps":
-                dmaps = dmaps + opt_bias
 
-            x = self.net.rgb_conv(paddle.concat((input_image, dmaps), axis=1))
-            if self.optimize_target == "all":
-                x = x + opt_bias
+            elif self.optimize_target == "dmaps":
+                if self.net.with_prev_mask:
+                    dmaps[:, 1:, :, :] = dmaps[:, 1:, :, :] + opt_bias
+                else:
+                    dmaps = dmaps + opt_bias
 
-            if isinstance(self.net, DistMapsHRNetModel):
-                pred_logits = self.net.feature_extractor(x)[0]
-            else:
-                backbone_features = self.net.feature_extractor(x)
-                pred_logits = self.net.head(backbone_features[0])
+            if self.net.rgb_conv is not None:
+                x = self.net.rgb_conv(paddle.concat((input_image, dmaps), axis=1))
+                if self.optimize_target == "all":
+                    x = x + opt_bias
+                coord_features = None
+            elif hasattr(self.net, "maps_transform"):
+                x = input_image
+                coord_features = self.net.maps_transform(dmaps)
+
+            pred_logits = self.net.backbone_forward(x, coord_features=coord_features)[
+                "instances"
+            ]
             pred_logits = F.interpolate(
                 pred_logits,
-                size=image_nd.size()[2:],
+                size=image_nd.shape[2:],
                 mode="bilinear",
                 align_corners=True,
             )

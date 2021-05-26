@@ -6,7 +6,7 @@ import paddle.nn.functional as F
 
 from .basic_blocks import SeparableConv2d
 from paddleseg.models.backbones import *
-
+from .resnet import ResNetBackbone
 
 class DeepLabV3Plus(nn.Layer):
     def __init__(self, backbone='resnet50', norm_layer=nn.BatchNorm2D,
@@ -14,7 +14,6 @@ class DeepLabV3Plus(nn.Layer):
                  ch=256,
                  project_dropout=0.5,
                  inference_mode=False,
-                 output_stride=8,
                  **kwargs):
         super(DeepLabV3Plus, self).__init__()
         if backbone_norm_layer is None:
@@ -29,21 +28,12 @@ class DeepLabV3Plus(nn.Layer):
         self.skip_project_in_channels = 256  # layer 1 out_channels
 
         self._kwargs = kwargs
-
-        if backbone == 'resnet18':
-            self.backbone = ResNet18_vd(output_stride=output_stride)
-            self.aspp_in_channels = 512
-            self.skip_project_in_channels = 64
         if backbone == 'resnet34':
-            self.backbone = ResNet34_vd(output_stride=output_stride)
             self.aspp_in_channels = 512
             self.skip_project_in_channels = 64
-        if backbone == 'resnet50':
-            self.backbone = ResNet50_vd(output_stride=output_stride)
-        if backbone == 'mobilenet':
-            self.backbone = MobileNetV3_large_x1_0()
-            self.skip_project_in_channels = 24
-            self.aspp_in_channels = 160
+
+        self.backbone = ResNetBackbone(backbone=self.backbone_name, pretrained_base=False,
+                                       norm_layer=self.backbone_norm_layer, **kwargs)
         
         
         self.head = _DeepLabHead(in_channels=ch + 32, mid_channels=ch, out_channels=ch,
@@ -58,10 +48,12 @@ class DeepLabV3Plus(nn.Layer):
         if inference_mode:
             self.set_prediction_mode()
 
-    def load_pretrained_weights(self, pretrained_path=None):
+    def load_pretrained_weights(self):
+        pretrained = ResNetBackbone(backbone=self.backbone_name, pretrained_base=True,
+                                    norm_layer=self.backbone_norm_layer, **self._kwargs)
 
         backbone_state_dict = self.backbone.state_dict()
-        pretrained_state_dict = paddle.load(pretrained_path)
+        pretrained_state_dict = pretrained.state_dict()
 
         backbone_state_dict.update(pretrained_state_dict)
         self.backbone.load_state_dict(backbone_state_dict)
@@ -74,12 +66,12 @@ class DeepLabV3Plus(nn.Layer):
         self.inference_mode = True
         self.eval()
 
-    def forward(self, x):
+    def forward(self, x, additional_features=None):
         with ExitStack() as stack:
-            # if self.inference_mode:
-            #     stack.enter_context(torch.no_grad())
+            if self.inference_mode:
+                stack.enter_context(paddle.no_grad())
 
-            c1, _, c3, c4 = self.backbone(x)
+            c1, _, c3, c4 = self.backbone(x, additional_features)
             c1 = self.skip_project(c1)
 
             x = self.aspp(c4)

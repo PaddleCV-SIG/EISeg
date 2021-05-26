@@ -2,9 +2,7 @@ import paddle
 import paddle.nn.functional as F
 import numpy as np
 
-# from paddle.fluid.dygraph.base import enable_grad
-
-from .metrics import _compute_iou
+from model.metrics import _compute_iou
 from .brs_losses import BRSMaskLoss
 
 
@@ -34,18 +32,15 @@ class BaseOptimizer:
         self._best_loss = None
         self._click_masks = None
         self._last_mask = None
-        self.flag = False
 
-    def init_click(self, get_prediction_logits, model, pos_mask, neg_mask, shape=None):
+    def init_click(self, get_prediction_logits, pos_mask, neg_mask, shape=None):
         self.best_prediction = None
         self._get_prediction_logits = get_prediction_logits
         self._click_masks = (pos_mask, neg_mask)
         self._opt_shape = shape
         self._last_mask = None
-        self.model = model
 
     def __call__(self, x):
-
         opt_params = paddle.to_tensor(x).astype("float64")
         opt_params.stop_gradient = False
         #         with enable_grad():
@@ -61,9 +56,10 @@ class BaseOptimizer:
         #             loss, f_max_pos, f_max_neg = self.brs_loss(result, pos_mask, neg_mask)
         #             loss = loss + reg_loss
 
-        scale, bias, reg_loss = self.unpack_opt_params(opt_params)
-        result_before_sigmoid = self._get_prediction_logits(scale, bias)
+        opt_vars, reg_loss = self.unpack_opt_params(opt_params)
+        result_before_sigmoid = self._get_prediction_logits(*opt_vars)
         result = F.sigmoid(result_before_sigmoid)
+
         pos_mask, neg_mask = self._click_masks
         if self.with_flip and self.flip_average:
             result, result_flipped = paddle.chunk(result, 2, axis=0)
@@ -82,10 +78,8 @@ class BaseOptimizer:
             self._best_loss = f_val
         if f_max_pos < (1 - self.prob_thresh) and f_max_neg < self.prob_thresh:
             return [f_val, np.zeros_like(x)]
-        self.flag = True
+
         current_mask = result > self.prob_thresh
-        #         print('self._last_mask', self._last_mask)
-        #         print('self.min_iou_diff', self.min_iou_diff)
         if self._last_mask is not None and self.min_iou_diff > 0:
             diff_iou = _compute_iou(current_mask, self._last_mask)
             if len(diff_iou) > 0 and diff_iou.mean() > 1 - self.min_iou_diff:
@@ -94,7 +88,6 @@ class BaseOptimizer:
 
         loss.backward()
         f_grad = opt_params.gradient().ravel().astype(np.float64)
-        # self.model.clear_gradients()
 
         return [f_val, f_grad]
 
@@ -130,4 +123,4 @@ class ScaleBiasOptimizer(BaseOptimizer):
         elif self.scale_act == "sin":
             scale = paddle.sin(scale)
 
-        return 1 + scale, bias, reg_loss
+        return (1 + scale, bias), reg_loss
