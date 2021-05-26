@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QGraphicsView
 from models import models
 from functools import partial
 
-__APPNAME__ = "IANN"
+__APPNAME__ = "IANN 0.1.2"
 
 
 class Canvas(QGraphicsView):

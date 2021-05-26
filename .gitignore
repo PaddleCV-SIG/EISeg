@@ -8,6 +8,7 @@ dzq*
 vis_temp.py
 test.txt
 *.pdparams
+output/
 
 # C extensions
 *.so
