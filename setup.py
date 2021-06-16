@@ -4,10 +4,9 @@ from Cython.Build import cythonize
 
 HERE = pathlib.Path(__file__).parent
 
-# The text of the README file
 README = (HERE / "README.md").read_text(encoding="utf-8")
 
-# This call to setup() does all the work
+
 setup(
     name="iann",
     version="0.1.2",

@@ -1,3 +1,2 @@
 include iann/config/*
 include iann/resource/*
-include iann/cython_dict/*

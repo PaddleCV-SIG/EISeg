@@ -6,3 +6,5 @@ paddleseg
 albumentations
 cython
 pyyaml
+paddlepaddle
+wget
