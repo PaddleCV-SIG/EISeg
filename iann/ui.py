@@ -75,7 +75,7 @@ class Ui_Help(object):
         horizontalLayout.setObjectName("horizontalLayout")
         label = QtWidgets.QLabel(Dialog)
         label.setText("")
-        label.setPixmap(QtGui.QPixmap("iann/resources/shortkey.jpg"))
+        # label.setPixmap(QtGui.QPixmap("iann/resources/shortkey.jpg"))
         label.setObjectName("label")
         horizontalLayout.addWidget(label)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -112,7 +112,7 @@ class Ui_IANN(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo("iann/resource/Paddle.png"))
+        self.statusbar.addPermanentWidget(self.show_logo("resource/Paddle.png"))
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
