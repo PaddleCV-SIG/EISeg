@@ -37,6 +37,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.currIdx = 0  # 标注文件夹时到第几个了
         self.currentPath = None
         self.filePaths = []  # 标注文件夹时所有文件路径
+        self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
         self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
@@ -57,8 +58,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
         self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择
-        self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
+        self.comboModelSelect.currentIndexChanged.connect(self.changeModelType)  # 模型选择
         self.btnAddClass.clicked.connect(self.addLabel)
+        self.btnParamsSelect.clicked.connect(self.changeModel)  # 模型参数选择
 
         # 滑动
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
@@ -333,10 +335,23 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.config["auto_save"] = save
         util.saveConfigs(osp.join(here, "config/config.yaml"), self.config)
 
-    def changeModel(self, idx):
+    def changeModelType(self, idx):
+        self.modelType = models[idx]
+        print('model type:', self.modelType)
+
+    def changeModel(self):
         # TODO: 设置gpu还是cpu运行
-        self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
-        model = models[idx].get_model()
+        formats = ["*.pdparams"]
+        filters = self.tr("paddle model params files (%s)") % " ".join(formats)
+        params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("%s - 选择模型参数") % __appname__,
+            "/home/lin/Desktop",
+            filters,
+        )
+        print(params_path)
+        self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
+        model = self.modelType.load_params(params_path=params_path)
         if self.controller is None:
             self.controller = InteractiveController(
                 model,
@@ -350,7 +365,26 @@ class APP_IANN(QMainWindow, Ui_IANN):
         else:
             self.controller.reset_predictor(model)
 
-        self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
+        self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+
+    # def changeModel(self, idx):
+    #     # TODO: 设置gpu还是cpu运行
+    #     self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
+    #     model = models[idx].get_model()
+    #     if self.controller is None:
+    #         self.controller = InteractiveController(
+    #             model,
+    #             predictor_params={"brs_mode": "f-BRS-B"},
+    #             update_image_callback=self._update_image,
+    #         )
+    #         self.controller.prob_thresh = self.segThresh
+    #         # 这里如果直接加载模型会报错，先判断有没有图像
+    #         if self.image is not None:
+    #             self.controller.set_image(self.image)
+    #     else:
+    #         self.controller.reset_predictor(model)
+
+    #     self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
 
     def loadLabelList(self):
         filters = self.tr("标签配置文件 (*.txt)")
@@ -532,7 +566,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if self.controller:
             self.controller.set_image(self.image)
         else:
-            self.changeModel(0)
+            # self.changeModel(0)  # 这里需不需要内置一个参数默认加载
+            print('please load model params first!')
         self.controller.set_label(self.loadLabel(path))
         if path not in self.recentFiles:
             self.recentFiles.append(path)
