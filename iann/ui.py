@@ -1,3 +1,4 @@
+from PySide2.QtGui import QIcon
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
@@ -111,7 +112,7 @@ class Ui_IANN(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo("iann/resource/paddle.png"))
+        self.statusbar.addPermanentWidget(self.show_logo("iann/resource/Paddle.png"))
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
@@ -165,13 +166,18 @@ class Ui_IANN(object):
         # 模型加载
         ModelRegion = QtWidgets.QVBoxLayout()
         ModelRegion.setObjectName("ModelRegion")
-        labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
+        labShowSet = self.create_text(CentralWidget, "labShowSet", "网络选择")
         ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
-        for model in models:
-            combo.addItem(model.name)
+        # for model in models:
+        #     combo.addItem(model.name)
+        # 网络参数
+        combo.addItems(['HRNet', 'Deeplab'])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
+        self.btnParamsSelect = p_create_button("btnParamsLoad", "加载网络参数", \
+                                               "resource/Model.png", "Ctrl+D")
+        ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         SetRegion.addLayout(ModelRegion)
         SetRegion.setStretch(0, 1)
         # 数据列表
@@ -193,7 +199,7 @@ class Ui_IANN(object):
         # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
-        self.btnAddClass = p_create_button("btnAddClass", "添加标签")
+        self.btnAddClass = p_create_button("btnAddClass", "添加标签", "resource/Label.png")
         listRegion.addWidget(self.btnAddClass)
         SetRegion.addLayout(listRegion)
         SetRegion.setStretch(1, 20)
@@ -222,7 +228,7 @@ class Ui_IANN(object):
         SetRegion.addLayout(ShowSetRegion)
         SetRegion.setStretch(2, 1)
         # 保存
-        self.btnSave = p_create_button("btnSave", "保存", "Ctrl+S")
+        self.btnSave = p_create_button("btnSave", "保存", "resource/Save.png", "Ctrl+S")
         SetRegion.addWidget(self.btnSave)
         SetRegion.setStretch(3, 1)
         # dock设置完成
@@ -242,7 +248,7 @@ class Ui_IANN(object):
         return text
 
     ## 创建按钮
-    def create_button(self, parent, btn_name, btn_text, curt=None):
+    def create_button(self, parent, btn_name, btn_text, ico_path=None, curt=None):
         # 创建和设置按钮
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
@@ -255,6 +261,8 @@ class Ui_IANN(object):
         btn.setSizePolicy(sizePolicy)
         btn.setMinimumSize(min_size)
         btn.setObjectName(btn_name)
+        if ico_path is not None:
+            btn.setIcon(QtGui.QIcon(ico_path))
         btn.setText(btn_text)
         if curt is not None:
             btn.setShortcut(curt)

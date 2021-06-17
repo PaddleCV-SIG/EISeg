@@ -2,6 +2,8 @@ import os
 import os.path as osp
 from functools import partial
 
+from PySide2.QtGui import QIcon
+
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
@@ -85,7 +87,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("recentFiles", self.recentFiles)
         files = [f for f in self.recentFiles if f != self.currentPath and exists(f)]
         for i, f in enumerate(files):
-            icon = util.newIcon("next")
+            icon = util.newIcon("File")
             action = QtWidgets.QAction(
                 icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
@@ -108,30 +110,28 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("&下一张"),
             partial(self.turnImg, 1),
             shortcuts["turn_next"],
-            "next",
+            "Next",
             self.tr("翻到下一张图片"),
         )
         turn_prev = action(
             self.tr("&上一张"),
             partial(self.turnImg, -1),
             shortcuts["turn_prev"],
-            "prev",
+            "Last",
             self.tr("翻到上一张图片"),
         )
         open_image = action(
             self.tr("&打开图像"),
             self.openImage,
             shortcuts["open_image"],
-            # TODO: 搞个图
-            "",
+            "OpenImage",
             self.tr("打开一张图像进行标注"),
         )
         open_folder = action(
             self.tr("&打开文件夹"),
             self.openFolder,
             shortcuts["open_folder"],
-            # TODO: 搞个图
-            "",
+            "OpenFolder",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         open_recent = action(
@@ -142,85 +142,88 @@ class APP_IANN(QMainWindow, Ui_IANN):
             "",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
+        # model_loader = action(
+        #     self.tr("&选择模型参数"),
+        #     self.loadModel,
+        #     shortcuts["load_model"],
+        #     "Model",
+        #     self.tr("加载一个模型参数"),
+        # )
         change_output_dir = action(
             self.tr("&改变标签保存路径"),
             self.changeOutputDir,
             shortcuts["change_output_dir"],
-            # TODO: 搞个图
-            "",
+            "ChangeLabelPath",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         quick_start = action(
             self.tr("&快速上手"),
             self.toBeImplemented,
             None,
-            # TODO: 搞个图
-            "",
+            "Use",
             self.tr("快速上手介绍"),
         )
         about = action(
             self.tr("&关于软件"),
             self.toBeImplemented,
             None,
-            # TODO: 搞个图
-            "",
+            "About",
             self.tr("关于这个软件和开发团队"),
         )
         grid_ann = action(
-            self.tr("&N^2宫格标注"),
+            self.tr("&N²宫格标注"),
             self.toBeImplemented,
             None,
-            # TODO: 搞个图
-            "",
-            self.tr("使用N^2宫格进行细粒度标注"),
+            "N2",
+            self.tr("使用N²宫格进行细粒度标注"),
         )
         finish_object = action(
             self.tr("&完成当前目标"),
             self.finishObject,
             shortcuts["finish_object"],
-            "finish",
+            "Ok",
             self.tr("完成当前目标的标注"),
         )
         clear = action(
             self.tr("&清除所有标注"),
             self.undoAll,
             shortcuts["clear"],
-            "clear",
+            "Clear",
             self.tr("清除所有标注信息"),
         )
         undo = action(
             self.tr("&撤销"),
             self.undoClick,
             shortcuts["undo"],
-            "undo",
+            "Undo",
             self.tr("撤销一次点击"),
         )
         redo = action(
             self.tr("&重做"),
             self.toBeImplemented,
             shortcuts["redo"],
-            "redo",
+            "Redo",
             self.tr("重做一次点击"),
         )
         save = action(
             self.tr("&保存"),
             self.saveLabel,
             "",
-            "redo",
+            "Save",
             self.tr("保存图像标签"),
         )
         save_as = action(
             self.tr("&另存为"),
             partial(self.saveLabel, True),
             "",
-            "redo",
+            "OtherSave",
             self.tr("指定标签保存路径"),
         )
         auto_save = action(
             self.tr("&自动保存"),
             self.toggleAutoSave,
             "",
-            None,
+            "AutoSave",
             self.tr("翻页同时自动保存"),
             checkable=True,
         )
@@ -230,56 +233,57 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.tr("&近期图片"),
             self.toBeImplemented,
             "",
-            "redo",
+            "RecentDocuments",
             self.tr("近期打开的图片"),
         )
         close = action(
             self.tr("&关闭"),
             self.toBeImplemented,
             "",
-            "redo",
+            "End",
             self.tr("关闭当前图像"),
         )
         connected = action(
             self.tr("&连通块"),
             self.toBeImplemented,
             "",
-            "redo",
+            # TODO: 搞个图
+            "",
             self.tr(""),
         )
         quit = action(
             self.tr("&退出"),
             self.close,
             "",
-            "redo",
+            "Close",
             self.tr("退出软件"),
         )
         save_label = action(
             self.tr("&保存标签列表"),
             self.saveLabelList,
             "",
-            "redo",
+            "ExportLabel",
             self.tr("将标签保存成标签配置文件"),
         )
         load_label = action(
             self.tr("&加载标签列表"),
             self.loadLabelList,
             "",
-            "redo",
+            "ImportLabel",
             self.tr("从标签配置文件中加载标签"),
         )
         clear_label = action(
             self.tr("&清空标签列表"),
             self.clearLabelList,
             "",
-            "redo",
+            "ClearLabel",
             self.tr("清空所有的标签"),
         )
         shortcuts = action(
             self.tr("&快捷键列表"),
             self.showShortcuts,
             "",
-            "redo",
+            "Shortcut",
             self.tr("查看所有快捷键"),
         )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
@@ -292,6 +296,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 open_image,
                 open_folder,
                 change_output_dir,
+                # model_loader,
                 recent_files,
                 None,
                 save,
@@ -406,7 +411,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         table.setItem(idx, 2, colorItem)
 
         delItem = QTableWidgetItem()
-        delItem.setIcon(util.newIcon("clear"))
+        delItem.setIcon(util.newIcon("Clear"))
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
@@ -770,3 +775,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
     @property
     def segThresh(self):
         return self.sldThresh.value() / 10
+
+    def loadModel(self):
+        print('load model')
