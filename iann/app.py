@@ -566,7 +566,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if self.controller:
             self.controller.set_image(self.image)
         else:
-            # self.changeModel(0)  # 这里需不需要内置一个参数默认加载
+            self.showWarning('未加载模型参数，请先加载模型参数！')
+            self.changeModel()
             print('please load model params first!')
         self.controller.set_label(self.loadLabel(path))
         if path not in self.recentFiles:
@@ -811,5 +812,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def segThresh(self):
         return self.sldThresh.value() / 10
 
-    def loadModel(self):
-        print('load model')
+    #警告框
+    def showWarning(self, str):
+	    msg_box = QMessageBox(QMessageBox.Warning, '警告', str)
+	    msg_box.exec_()

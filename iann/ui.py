@@ -356,5 +356,19 @@ class Ui_IANN(object):
         sld.setProperty("value", default_value)
         sld.setOrientation(QtCore.Qt.Horizontal)
         sld.setObjectName(sld_name)
+        sld.setStyleSheet(
+            """
+            QSlider::sub-page:horizontal {
+                background: #9999F1
+            }
+
+            QSlider::handle:horizontal 
+            {
+                background: #3334E3;
+                width: 12px;
+                border-radius: 4px;
+            }
+            """
+        )
         sld.textLab = labShow
         return sld, Region
