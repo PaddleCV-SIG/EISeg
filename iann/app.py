@@ -111,7 +111,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             action = QtWidgets.QAction(
                 icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
-            action.triggered.connect(partial(self.changeModel, f))
+            action.triggered.connect(partial(self.load_model_params, f))
             menu.addAction(action)
 
     def toBeImplemented(self):
@@ -361,42 +361,42 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.modelType = models[idx]
         print('model type:', self.modelType)
 
-    def changeModel(self, f_path=None):
+    def changeModel(self):
         # TODO: 设置gpu还是cpu运行
-        if osp.exists(f_path):
-            formats = ["*.pdparams"]
-            filters = self.tr("paddle model params files (%s)") % " ".join(formats)
-            params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-                self,
-                self.tr("%s - 选择模型参数") % __appname__,
-                "/home/lin/Desktop",
-                filters,
-            )
-        else:
-            params_path = f_path
+        formats = ["*.pdparams"]
+        filters = self.tr("paddle model params files (%s)") % " ".join(formats)
+        params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            self.tr("%s - 选择模型参数") % __appname__,
+            "/home/lin/Desktop",
+            filters,
+        )
         print(params_path)
         if osp.exists(params_path):
-            self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
-            model = self.modelType.load_params(params_path=params_path)
-            if self.controller is None:
-                self.controller = InteractiveController(
-                    model,
-                    predictor_params={"brs_mode": "f-BRS-B"},
-                    update_image_callback=self._update_image,
-                )
-                self.controller.prob_thresh = self.segThresh
-                # 这里如果直接加载模型会报错，先判断有没有图像
-                if self.image is not None:
-                    self.controller.set_image(self.image)
-            else:
-                self.controller.reset_predictor(model)
-            self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+            self.load_model_params(params_path)
             # 最近参数
             if params_path not in self.recentParams:
                 self.recentParams.append(params_path)
                 if len(self.recentParams) > 10:
                     del self.recentParams[0]
                 self.settings.setValue("recent_params", self.recentParams)
+
+    def load_model_params(self, params_path):
+        self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
+        model = self.modelType.load_params(params_path=params_path)
+        if self.controller is None:
+            self.controller = InteractiveController(
+                model,
+                predictor_params={"brs_mode": "f-BRS-B"},
+                update_image_callback=self._update_image,
+            )
+            self.controller.prob_thresh = self.segThresh
+            # 这里如果直接加载模型会报错，先判断有没有图像
+            if self.image is not None:
+                self.controller.set_image(self.image)
+        else:
+            self.controller.reset_predictor(model)
+        self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
