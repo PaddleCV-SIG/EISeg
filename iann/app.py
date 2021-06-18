@@ -44,8 +44,10 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
         self.settings = QtCore.QSettings("PaddleCV-SIG", "IANN")
+        print(self.settings.fileName())
 
         self.recentFiles = self.settings.value("recent_files", [])
+        self.recentParams = self.settings.value("recent_params", [])
         # 画布部分
         self.canvas.clickRequest.connect(self.canvasClick)
         self.image = None
@@ -94,6 +96,22 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
             action.triggered.connect(partial(self.loadImage, f))
+            menu.addAction(action)
+
+    def updateParamsMenu(self):
+        def exists(filename):
+            return osp.exists(str(filename))
+
+        menu = self.actions.recent_params
+        menu.clear()
+        print("recentParams", self.recentParams)
+        files = [f for f in self.recentParams if exists(f)]
+        for i, f in enumerate(files):
+            icon = util.newIcon("Model")
+            action = QtWidgets.QAction(
+                icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+            )
+            action.triggered.connect(partial(self.changeModel, f))
             menu.addAction(action)
 
     def toBeImplemented(self):
@@ -290,16 +308,20 @@ class APP_IANN(QMainWindow, Ui_IANN):
         )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateFileMenu)
+        recent_params = QtWidgets.QMenu(self.tr("近期模型参数"))
+        recent_params.aboutToShow.connect(self.updateParamsMenu)
         # TODO: 改用manager
         self.actions = util.struct(
             auto_save=auto_save,
             recent_files=recent_files,
+            recent_params=recent_params,
             fileMenu=(
                 open_image,
                 open_folder,
                 change_output_dir,
                 # model_loader,
                 recent_files,
+                recent_params,
                 None,
                 save,
                 save_as,
@@ -339,33 +361,42 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.modelType = models[idx]
         print('model type:', self.modelType)
 
-    def changeModel(self):
+    def changeModel(self, f_path=None):
         # TODO: 设置gpu还是cpu运行
-        formats = ["*.pdparams"]
-        filters = self.tr("paddle model params files (%s)") % " ".join(formats)
-        params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            self.tr("%s - 选择模型参数") % __appname__,
-            "/home/lin/Desktop",
-            filters,
-        )
-        print(params_path)
-        self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
-        model = self.modelType.load_params(params_path=params_path)
-        if self.controller is None:
-            self.controller = InteractiveController(
-                model,
-                predictor_params={"brs_mode": "f-BRS-B"},
-                update_image_callback=self._update_image,
+        if osp.exists(f_path):
+            formats = ["*.pdparams"]
+            filters = self.tr("paddle model params files (%s)") % " ".join(formats)
+            params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                self.tr("%s - 选择模型参数") % __appname__,
+                "/home/lin/Desktop",
+                filters,
             )
-            self.controller.prob_thresh = self.segThresh
-            # 这里如果直接加载模型会报错，先判断有没有图像
-            if self.image is not None:
-                self.controller.set_image(self.image)
         else:
-            self.controller.reset_predictor(model)
-
-        self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+            params_path = f_path
+        print(params_path)
+        if osp.exists(params_path):
+            self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
+            model = self.modelType.load_params(params_path=params_path)
+            if self.controller is None:
+                self.controller = InteractiveController(
+                    model,
+                    predictor_params={"brs_mode": "f-BRS-B"},
+                    update_image_callback=self._update_image,
+                )
+                self.controller.prob_thresh = self.segThresh
+                # 这里如果直接加载模型会报错，先判断有没有图像
+                if self.image is not None:
+                    self.controller.set_image(self.image)
+            else:
+                self.controller.reset_predictor(model)
+            self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+            # 最近参数
+            if params_path not in self.recentParams:
+                self.recentParams.append(params_path)
+                if len(self.recentParams) > 10:
+                    del self.recentParams[0]
+                self.settings.setValue("recent_params", self.recentParams)
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
@@ -569,6 +600,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             self.showWarning('未加载模型参数，请先加载模型参数！')
             self.changeModel()
             print('please load model params first!')
+            return 0
         self.controller.set_label(self.loadLabel(path))
         if path not in self.recentFiles:
             self.recentFiles.append(path)
