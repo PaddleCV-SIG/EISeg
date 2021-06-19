@@ -2,8 +2,6 @@ import os
 import os.path as osp
 from functools import partial
 
-from PySide2.QtGui import QIcon
-
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
