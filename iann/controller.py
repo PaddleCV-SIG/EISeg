@@ -159,6 +159,7 @@ class InteractiveController:
 
         # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
+        print('curr_label_number:', self.curr_label_number)
         self._result_mask[object_mask] = self.curr_label_number
         self.reset_last_object()
 
@@ -192,7 +193,6 @@ class InteractiveController:
             Description of returned object.
 
         """
-
         self.states = []
         self.probs_history = []
         self.clicker.reset_clicks()

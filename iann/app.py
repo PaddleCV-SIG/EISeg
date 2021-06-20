@@ -52,9 +52,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.canvas.clickRequest.connect(self.canvasClick)
         self.image = None
 
-        # 消息栏
-        self.statusbar.showMessage("模型未加载")
-
         self.initActions()
 
         ## 按钮点击
@@ -81,6 +78,13 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         # TODO: 打开上次关软件时用的模型
         # TODO: 在ui展示后再加载模型
+        # 在run中异步加载近期吗，模型参数
+
+        # 消息栏（放到load_recent_params不会显示）
+        if self.recentParams[-1] is None:
+            self.statusbar.showMessage("模型参数未加载")
+        else:
+            self.statusbar.showMessage("正在加载最近模型参数")
 
     def updateFileMenu(self):
         def exists(filename):
@@ -398,6 +402,11 @@ class APP_IANN(QMainWindow, Ui_IANN):
         else:
             self.controller.reset_predictor(model)
         self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+
+    def load_recent_params(self):
+        # TODO: 感觉整个模型加载需要判断一下网络是否匹配吗？
+        if self.recentParams[-1] is not None:
+            self.load_model_params(self.recentParams[-1])
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
@@ -724,6 +733,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         # cv2.imwrite(savePath, self.controller.result_mask)
         # 保存路径带有中文
+        print(np.max(self.controller.result_mask))
         cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
         self.setClean()
         self.statusbar.showMessage(f"标签成功保存至 {savePath}")
