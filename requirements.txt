@@ -8,3 +8,4 @@ cython
 pyyaml
 paddlepaddle
 wget
+qpt==1.0a6
