@@ -96,6 +96,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
             action.triggered.connect(partial(self.loadImage, f))
+            self.imagePath = f  # 修复使用近期文件的图像保存label报错
             menu.addAction(action)
 
     def updateParamsMenu(self):
