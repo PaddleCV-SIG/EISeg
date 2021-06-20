@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 from functools import partial
+from util.colormap import ColorMask
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -39,6 +40,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
         self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
+        self.maskColormap = ColorMask()
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
         self.settings = QtCore.QSettings("PaddleCV-SIG", "IANN")
@@ -456,7 +458,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         util.saveLabel(self.labelList, savePath)
 
     def addLabel(self):
-        c = [255, 0, 0]  # TODO: 随机生成一个颜色
+        # c = [255, 0, 0]
+        # 可以在配色表中预制多种容易分辨的颜色，直接随机生成恐怕生成类似的颜色不好区分
+        c = self.maskColormap.get_color()  # 从配色表取颜色
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
