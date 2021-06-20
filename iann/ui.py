@@ -2,7 +2,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
-from models import models
+# from models import models
 from functools import partial
 
 __APPNAME__ = "IANN 0.1.2"

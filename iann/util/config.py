@@ -6,7 +6,7 @@ def parseConfigs(path):
     if not path or not osp.exists(path):
         return
     with open(path, "r", encoding="utf-8") as f:
-        return yaml.load(f.read())
+        return yaml.load(f.read(), Loader=yaml.FullLoader)
 
 
 def saveConfigs(path, config):
