@@ -77,13 +77,11 @@ class InteractiveController:
             Description of parameter `y`.
         is_positive : bool
             是否是正点
-
         Returns
             -------
             bool
                 点击是否成功添加
         """
-
         s = self.image.shape
         if x < 0 or y < 0 or x > s[1] or y > s[0]:
             print("点击越界")
@@ -167,7 +165,6 @@ class InteractiveController:
         """修改当前标签的编号
         如果当前有标注到一半的目标，改mask。
         如果没有，下一个目标是这个数
-
         Parameters
         ----------
         number : int
@@ -181,12 +178,10 @@ class InteractiveController:
 
     def reset_last_object(self, update_image=True):
         """重置控制器状态
-
         Parameters
         ----------
         update_image : bool
             Description of parameter `update_image`.
-
         Returns
         -------
         type
@@ -203,7 +198,6 @@ class InteractiveController:
 
     def reset_predictor(self, net=None, predictor_params=None):
         """重置推理器，可以换权重
-
         Parameters
         ----------
         predictor_params : 网络权重
