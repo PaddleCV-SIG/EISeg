@@ -10,6 +10,7 @@ from qtpy.QtCore import Qt
 import paddle
 import cv2
 import numpy as np
+from PIL import Image
 
 from controller import InteractiveController
 from ui import Ui_IANN, Ui_Help
@@ -100,7 +101,6 @@ class APP_IANN(QMainWindow, Ui_IANN):
                 icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
             action.triggered.connect(partial(self.loadImage, f))
-            self.imagePath = f  # 修复使用近期文件的图像保存label报错
             menu.addAction(action)
 
     def updateParamsMenu(self):
@@ -579,7 +579,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         if len(file_path) == 0:
             return
         self.queueEvent(partial(self.loadImage, file_path))
-        self.imagePath = file_path
+        # self.imagePath = file_path
 
     def loadLabel(self, imgPath):
         if imgPath == "" or len(self.labelPaths) == 0:
@@ -619,6 +619,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
             if len(self.recentFiles) > 10:
                 del self.recentFiles[0]
             self.settings.setValue("recent_files", self.recentFiles)
+        self.imagePath = path  # 修复使用近期文件的图像保存label报错
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
@@ -733,8 +734,14 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
         # cv2.imwrite(savePath, self.controller.result_mask)
         # 保存路径带有中文
-        print(np.max(self.controller.result_mask))
-        cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
+        # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
+        # 保存带有调色板的
+        mask_pil = Image.fromarray(self.controller.result_mask, 'P')
+        mask_map = [0, 0, 0]
+        for lb in self.labelList:
+            mask_map += lb[2]
+        mask_pil.putpalette(mask_map)
+        mask_pil.save(savePath)
         self.setClean()
         self.statusbar.showMessage(f"标签成功保存至 {savePath}")
 
