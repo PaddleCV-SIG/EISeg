@@ -1,5 +1,9 @@
 import time
 
+# 没有定义还是不用？
+import paddle
+from tkinter import messagebox
+
 import numpy as np
 import paddleseg.transforms as T
 
