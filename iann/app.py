@@ -717,7 +717,9 @@ class APP_IANN(QMainWindow, Ui_IANN):
         ):
             return
 
-        cv2.imwrite(savePath, self.controller.result_mask)
+        # cv2.imwrite(savePath, self.controller.result_mask)
+        # 保存路径带有中文
+        cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
         self.setClean()
         self.statusbar.showMessage(f"标签成功保存至 {savePath}")
 
