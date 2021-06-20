@@ -1,4 +1,3 @@
-from PySide2.QtGui import QIcon
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
