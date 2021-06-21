@@ -30,7 +30,7 @@ iann
 
 
 ## Windows exe
-IANN采用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。从[百度云盘](https://pan.baidu.com/s/1d-L6awVijLazLz0d1BUOKw)（提取码：zvma）下载目前最新的IANN，解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
+IANN采用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。从[百度云盘](https://pan.baidu.com/s/10ZSZuVzNqQlfhqTaMG_3gQ)（提取码：82z9）下载目前最新的IANN，解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
 
 ## 运行代码
 
