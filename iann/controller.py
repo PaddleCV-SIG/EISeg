@@ -2,7 +2,7 @@ import time
 
 # 没有定义还是不用？
 import paddle
-from tkinter import messagebox
+# from tkinter import messagebox
 
 import numpy as np
 import paddleseg.transforms as T
@@ -51,12 +51,12 @@ class InteractiveController:
         self.update_image_callback(reset_canvas=True)
 
     def set_mask(self, mask):
-        if self.image.shape[:2] != mask.shape[:2]:
-            messagebox.showwarning(
-                "Warning",
-                "A segmentation mask must have the same sizes as the current image!",
-            )
-            return
+        # if self.image.shape[:2] != mask.shape[:2]:
+        #     messagebox.showwarning(
+        #         "Warning",
+        #         "A segmentation mask must have the same sizes as the current image!",
+        #     )
+        #     return
 
         if len(self.probs_history) > 0:
             self.reset_last_object()
