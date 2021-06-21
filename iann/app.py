@@ -82,7 +82,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 在run中异步加载近期吗，模型参数
 
         # 消息栏（放到load_recent_params不会显示）
-        if self.recentParams[-1] is None:
+        if len(self.recentParams) != 0:
             self.statusbar.showMessage("模型参数未加载")
         else:
             self.statusbar.showMessage("正在加载最近模型参数")
@@ -405,7 +405,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
 
     def load_recent_params(self):
         # TODO: 感觉整个模型加载需要判断一下网络是否匹配吗？
-        if self.recentParams[-1] is not None:
+        if len(self.recentParams) != 0:
             self.load_model_params(self.recentParams[-1])
 
     # def changeModel(self, idx):
