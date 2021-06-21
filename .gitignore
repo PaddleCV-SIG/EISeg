@@ -137,3 +137,6 @@ dmypy.json
 
 # vscode
 .vscode/*
+
+# exe
+out/
