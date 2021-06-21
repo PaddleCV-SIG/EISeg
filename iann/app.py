@@ -82,10 +82,15 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # 在run中异步加载近期吗，模型参数
 
         # 消息栏（放到load_recent_params不会显示）
-        if len(self.recentParams) != 0:
+        if len(self.recentParams) == 0:
             self.statusbar.showMessage("模型参数未加载")
         else:
-            self.statusbar.showMessage("正在加载最近模型参数")
+            if osp.exists(self.recentParams[-1]):
+                # TODO: 能不能删除注册表中找不到的路径
+                self.statusbar.showMessage("正在加载最近模型参数")
+            else:
+                self.statusbar.showMessage("最近参数不存在，请重新加载参数")
+
 
     def updateFileMenu(self):
         def exists(filename):
@@ -96,12 +101,13 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("recentFiles", self.recentFiles)
         files = [f for f in self.recentFiles if f != self.currentPath and exists(f)]
         for i, f in enumerate(files):
-            icon = util.newIcon("File")
-            action = QtWidgets.QAction(
-                icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
-            )
-            action.triggered.connect(partial(self.loadImage, f))
-            menu.addAction(action)
+            if osp.exists(f):
+                icon = util.newIcon("File")
+                action = QtWidgets.QAction(
+                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+                )
+                action.triggered.connect(partial(self.loadImage, f))
+                menu.addAction(action)
 
     def updateParamsMenu(self):
         def exists(filename):
@@ -112,12 +118,13 @@ class APP_IANN(QMainWindow, Ui_IANN):
         print("recentParams", self.recentParams)
         files = [f for f in self.recentParams if exists(f)]
         for i, f in enumerate(files):
-            icon = util.newIcon("Model")
-            action = QtWidgets.QAction(
-                icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
-            )
-            action.triggered.connect(partial(self.load_model_params, f))
-            menu.addAction(action)
+            if osp.exists(f):
+                icon = util.newIcon("Model")
+                action = QtWidgets.QAction(
+                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+                )
+                action.triggered.connect(partial(self.load_model_params, f))
+                menu.addAction(action)
 
     def toBeImplemented(self):
         self.statusbar.showMessage("功能尚在开发")
@@ -406,7 +413,8 @@ class APP_IANN(QMainWindow, Ui_IANN):
     def load_recent_params(self):
         # TODO: 感觉整个模型加载需要判断一下网络是否匹配吗？
         if len(self.recentParams) != 0:
-            self.load_model_params(self.recentParams[-1])
+            if osp.exists(self.recentParams[-1]):
+                self.load_model_params(self.recentParams[-1])
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
