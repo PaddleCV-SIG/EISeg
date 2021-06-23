@@ -22,4 +22,3 @@ class ColorMask(object):
     def to_list(self, color):
         r, g, b = color.split(',')
         return [int(r), int(g), int(b)]
-

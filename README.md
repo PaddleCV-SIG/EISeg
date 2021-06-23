@@ -18,7 +18,7 @@ pip会自动安装依赖。安装完成后命令行输入
 ```shell
 iseg
 ```
-软件即开始执行。
+即可运行软件。
 
 ## Conda
 首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
