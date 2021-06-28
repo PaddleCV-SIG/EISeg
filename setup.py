@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="EISeg",
-    version="0.1.2",
+    version="0.1.4",
     description="交互式标注软件",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -38,7 +38,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "EISeg=EISeg.__main__:main",
+            "eiseg=eiseg.run:main",
         ]
     },
 )

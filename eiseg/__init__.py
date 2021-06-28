@@ -1,12 +1,12 @@
 import sys
 import os.path as osp
 
+pjpath = osp.dirname(osp.realpath(__file__))
+sys.path.append(pjpath)
 
-sys.path.append(osp.dirname(osp.realpath(__file__)))
 
+from run import main
 from models import models
-
-print(sys.path)
 
 
 __APPNAME__ = "EISeg"
