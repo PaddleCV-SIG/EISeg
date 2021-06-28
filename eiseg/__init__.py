@@ -9,4 +9,4 @@ from models import models
 print(sys.path)
 
 
-__APPNAME__ = "IANN"
+__APPNAME__ = "EISeg"

@@ -1,2 +1,2 @@
-include iann/config/*
-include iann/resource/*
+include EISeg/config/*
+include EISeg/resource/*

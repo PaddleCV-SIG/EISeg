@@ -7,7 +7,7 @@ import hashlib
 
 
 def model_path(name, refresh=False):
-    local_path = Path.home() / Path(".iann/model", name, name + ".pdparams")
+    local_path = Path.home() / Path(".EISeg/model", name, name + ".pdparams")
     print(local_path)
 
     if local_path.exists():

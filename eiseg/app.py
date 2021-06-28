@@ -13,17 +13,17 @@ import numpy as np
 from PIL import Image
 
 from controller import InteractiveController
-from ui import Ui_IANN, Ui_Help
+from ui import Ui_EISeg, Ui_Help
 from models import models
 import util
 
-__appname__ = "IANN"
+__appname__ = "EISeg"
 here = osp.dirname(osp.abspath(__file__))
 
 
-class APP_IANN(QMainWindow, Ui_IANN):
+class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
-        super(APP_IANN, self).__init__(parent)
+        super(APP_EISeg, self).__init__(parent)
         self.setupUi(self)
         # 显示帮助
         self.help_dialog = QtWidgets.QDialog()
@@ -44,7 +44,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
-        self.settings = QtCore.QSettings("PaddleCV-SIG", "IANN")
+        self.settings = QtCore.QSettings("PaddleCV-SIG", "EISeg")
         print(self.settings.fileName())
 
         self.recentFiles = self.settings.value("recent_files", [])
