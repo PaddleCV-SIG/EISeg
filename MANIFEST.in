@@ -1,2 +1,2 @@
-include EISeg/config/*
-include EISeg/resource/*
+include eiseg/config/*
+include eiseg/resource/*
