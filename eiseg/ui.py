@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QGraphicsView
 # from models import models
 from functools import partial
 
-__APPNAME__ = "IANN 0.1.2"
+__APPNAME__ = "EISeg 0.1.2"
 
 
 class Canvas(QGraphicsView):
@@ -74,13 +74,13 @@ class Ui_Help(object):
         horizontalLayout.setObjectName("horizontalLayout")
         label = QtWidgets.QLabel(Dialog)
         label.setText("")
-        # label.setPixmap(QtGui.QPixmap("iann/resources/shortkey.jpg"))
+        # label.setPixmap(QtGui.QPixmap("EISeg/resources/shortkey.jpg"))
         label.setObjectName("label")
         horizontalLayout.addWidget(label)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 
-class Ui_IANN(object):
+class Ui_EISeg(object):
     def setupUi(self, MainWindow):
         ## -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")

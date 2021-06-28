@@ -1,4 +1,4 @@
-# 训练iann可用的自定义模型
+# 训练EISeg可用的自定义模型
 
 目前已经可以通过简单的配置完成模型训练了，但其中有些设置还不能通过配置文件进行修改。
 
@@ -43,7 +43,7 @@ save_dir: model_output  # 保存路径
 use_vdl: False  # 是否使用vdl
 
 dataset:
-  dataset_path: iann/train/datasets  # 数据集所在路径
+  dataset_path: EISeg/train/datasets  # 数据集所在路径
   image_name: img  # 图像文件夹的名称
   label_name: gt  # 标签文件夹的名称
 

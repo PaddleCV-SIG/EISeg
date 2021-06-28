@@ -31,5 +31,5 @@ class cfgData(object):
 
 
 if __name__ == "__main__":
-    cfg = cfgData("iann/train/train_config.yaml")
+    cfg = cfgData("EISeg/train/train_config.yaml")
     print(cfg.get("use_vdl"))
