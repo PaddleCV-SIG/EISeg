@@ -91,7 +91,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 self.statusbar.showMessage("最近参数不存在，请重新加载参数")
 
-
     def updateFileMenu(self):
         def exists(filename):
             return osp.exists(str(filename))
@@ -138,19 +137,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         shortcuts = self.config["shortcut"]
+        turn_prev = action(
+            self.tr("&上一张"),
+            partial(self.turnImg, -1),
+            shortcuts["turn_prev"],
+            "Prev",
+            self.tr("翻到上一张图片"),
+        )
         turn_next = action(
             self.tr("&下一张"),
             partial(self.turnImg, 1),
             shortcuts["turn_next"],
             "Next",
             self.tr("翻到下一张图片"),
-        )
-        turn_prev = action(
-            self.tr("&上一张"),
-            partial(self.turnImg, -1),
-            shortcuts["turn_prev"],
-            "Last",
-            self.tr("翻到上一张图片"),
         )
         open_image = action(
             self.tr("&打开图像"),
@@ -371,7 +370,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeModelType(self, idx):
         self.modelType = models[idx]
-        print('model type:', self.modelType)
+        print("model type:", self.modelType)
 
     def changeModel(self):
         # TODO: 设置gpu还是cpu运行
@@ -617,9 +616,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.controller:
             self.controller.set_image(self.image)
         else:
-            self.showWarning('未加载模型参数，请先加载模型参数！')
+            self.showWarning("未加载模型参数，请先加载模型参数！")
             self.changeModel()
-            print('please load model params first!')
+            print("please load model params first!")
             return 0
         self.controller.set_label(self.loadLabel(path))
         if path not in self.recentFiles:
@@ -709,8 +708,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def saveLabel(self, saveAs=False, savePath=None):
         if not self.controller:
+            print("on controller")
             return
         if self.controller.image is None:
+            print("no image")
             return
         self.completeLastMask()
         if not savePath:  # 参数没传存到哪
@@ -733,6 +734,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.tr("选择标签文件保存路径"),
                     osp.basename(self.imagePath).split(".")[0] + ".png",
                 )
+        print("++", savePath)
         if (
             savePath is None
             or len(savePath) == 0
@@ -740,17 +742,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         ):
             return
 
-        # cv2.imwrite(savePath, self.controller.result_mask)
+        cv2.imwrite(savePath, self.controller.result_mask)
         # 保存路径带有中文
         # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
         # 保存带有调色板的
-        mask_pil = Image.fromarray(self.controller.result_mask, 'P')
-        mask_map = [0, 0, 0]
-        for lb in self.labelList:
-            mask_map += lb[2]
-        mask_pil.putpalette(mask_map)
-        mask_pil.save(savePath)
-        self.setClean()
+        # mask_pil = Image.fromarray(self.controller.result_mask, "P")
+        # mask_map = [0, 0, 0]
+        # for lb in self.labelList:
+        #     mask_map += lb[2]
+        # mask_pil.putpalette(mask_map)
+        # mask_pil.save(savePath)
+        # self.setClean()
         self.statusbar.showMessage(f"标签成功保存至 {savePath}")
 
     def setClean(self):
@@ -874,7 +876,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def segThresh(self):
         return self.sldThresh.value() / 10
 
-    #警告框
+    # 警告框
     def showWarning(self, str):
-	    msg_box = QMessageBox(QMessageBox.Warning, '警告', str)
-	    msg_box.exec_()
+        msg_box = QMessageBox(QMessageBox.Warning, "警告", str)
+        msg_box.exec_()
