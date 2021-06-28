@@ -41,7 +41,7 @@ class APP_IANN(QMainWindow, Ui_IANN):
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
         self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
-        self.maskColormap = ColorMask()
+        self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
         self.settings = QtCore.QSettings("PaddleCV-SIG", "IANN")
