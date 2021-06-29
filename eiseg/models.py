@@ -3,14 +3,14 @@ import os.path as osp
 import paddle
 
 from model.is_hrnet_model import HRNetModel
-from model.is_deeplab_model import DeeplabModel
+# from model.is_deeplab_model import DeeplabModel
 # from util import model_path
 
 here = osp.dirname(osp.abspath(__file__))
 
 
-class HRNet:
-    name = "HRNetModel"
+class HRNet18_OCR48:
+    name = "HRNet18_OCR48"
 
     def load_params(self, params_path):
         model = HRNetModel(
@@ -29,25 +29,32 @@ class HRNet:
         model.set_dict(para_state_dict)
         return model
 
-class Deeplab:
-    name = "DeeplabModel"
-    # 下面的参数没有进行调整
+
+class HRNet18_OCR64:
+    name = "HRNet18_OCR64"
+
     def load_params(self, params_path):
-        model = DeeplabModel(
+        model = HRNetModel(
             width=18,
-            ocr_width=48,
-            small=True,
+            ocr_width=64,
+            small=False,
             with_aux_output=True,
             use_rgb_conv=False,
             use_leaky_relu=True,
             use_disks=True,
             with_prev_mask=True,
             norm_radius=5,
-            cpu_dist_maps=False,
+            cpu_dist_maps=True,
         )
         para_state_dict = paddle.load(params_path)
         model.set_dict(para_state_dict)
         return model
 
 
-models = [HRNet(), Deeplab()]
+models = [HRNet18_OCR48(), HRNet18_OCR64()]
+
+
+def findModelbyName(model_name):
+    for idx, mt in enumerate(models):
+        if model_name == mt.name:
+            return models[idx], idx

@@ -5,6 +5,8 @@ from qtpy.QtWidgets import QGraphicsView
 # from models import models
 from functools import partial
 
+from models import models
+
 __APPNAME__ = "EISeg 0.1.2"
 
 
@@ -111,7 +113,7 @@ class Ui_EISeg(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo("resource/Paddle.png"))
+        self.statusbar.addPermanentWidget(self.show_logo("eiseg/resource/Paddle.png"))
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
@@ -171,11 +173,11 @@ class Ui_EISeg(object):
         # for model in models:
         #     combo.addItem(model.name)
         # 网络参数
-        combo.addItems(['HRNet', 'Deeplab'])
+        combo.addItems([m.name for m in models])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
         self.btnParamsSelect = p_create_button("btnParamsLoad", "加载网络参数", \
-                                               "resource/Model.png", "Ctrl+D")
+                                               "eiseg/resource/Model.png", "Ctrl+D")
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         SetRegion.addLayout(ModelRegion)
         SetRegion.setStretch(0, 1)
@@ -198,7 +200,7 @@ class Ui_EISeg(object):
         # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
-        self.btnAddClass = p_create_button("btnAddClass", "添加标签", "resource/Label.png")
+        self.btnAddClass = p_create_button("btnAddClass", "添加标签", "eiseg/resource/Label.png")
         listRegion.addWidget(self.btnAddClass)
         SetRegion.addLayout(listRegion)
         SetRegion.setStretch(1, 20)
@@ -227,7 +229,7 @@ class Ui_EISeg(object):
         SetRegion.addLayout(ShowSetRegion)
         SetRegion.setStretch(2, 1)
         # 保存
-        self.btnSave = p_create_button("btnSave", "保存", "resource/Save.png", "Ctrl+S")
+        self.btnSave = p_create_button("btnSave", "保存", "eiseg/resource/Save.png", "Ctrl+S")
         SetRegion.addWidget(self.btnSave)
         SetRegion.setStretch(3, 1)
         # dock设置完成
