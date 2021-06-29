@@ -1,11 +1,10 @@
 import os.path as osp
 import random
-from eiseg import pjpath
 
 
 class ColorMask(object):
     def __init__(
-        self, color_path=osp.join(pjpath, "config/colormap.txt"), shuffle=False
+        self, color_path, shuffle=False
     ):
         self.color_maps = []
         self.index = 0

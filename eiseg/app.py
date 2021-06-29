@@ -14,7 +14,7 @@ from PIL import Image
 
 from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help
-from models import models
+from models import models, findModelbyName
 import util
 
 __appname__ = "EISeg"
@@ -85,7 +85,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.recentParams) == 0:
             self.statusbar.showMessage("模型参数未加载")
         else:
-            if osp.exists(self.recentParams[-1]):
+            if osp.exists(self.recentParams[-1]["path"]):
                 # TODO: 能不能删除注册表中找不到的路径
                 self.statusbar.showMessage("正在加载最近模型参数")
             else:
@@ -115,14 +115,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu = self.actions.recent_params
         menu.clear()
         print("recentParams", self.recentParams)
-        files = [f for f in self.recentParams if exists(f)]
+        files = [f for f in self.recentParams if exists(f["path"])]
         for i, f in enumerate(files):
-            if osp.exists(f):
+            if osp.exists(f["path"]):
                 icon = util.newIcon("Model")
                 action = QtWidgets.QAction(
-                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f["path"]).fileName()), self
                 )
-                action.triggered.connect(partial(self.load_model_params, f))
+                action.triggered.connect(partial(self.load_model_params, f["path"], f["type"]))
                 menu.addAction(action)
 
     def toBeImplemented(self):
@@ -386,13 +386,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if osp.exists(params_path):
             self.load_model_params(params_path)
             # 最近参数
-            if params_path not in self.recentParams:
-                self.recentParams.append(params_path)
+            model_dict = {"path": params_path, "type": self.modelType.name}
+            if model_dict not in self.recentParams:
+                self.recentParams.append(model_dict)
                 if len(self.recentParams) > 10:
                     del self.recentParams[0]
                 self.settings.setValue("recent_params", self.recentParams)
 
-    def load_model_params(self, params_path):
+    def load_model_params(self, params_path, model_type=None):
+        if model_type is not None:
+            self.modelType, idx = findModelbyName(model_type)
+            self.comboModelSelect.setCurrentIndex(idx)
         self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
         model = self.modelType.load_params(params_path=params_path)
         if self.controller is None:
@@ -407,13 +411,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.set_image(self.image)
         else:
             self.controller.reset_predictor(model)
-        self.statusbar.showMessage(f"{self.modelType.name} 模型加载完成", 5000)
+        self.statusbar.showMessage(f"{osp.basename(params_path)} 模型加载完成", 5000)
 
     def load_recent_params(self):
         # TODO: 感觉整个模型加载需要判断一下网络是否匹配吗？
         if len(self.recentParams) != 0:
-            if osp.exists(self.recentParams[-1]):
-                self.load_model_params(self.recentParams[-1])
+            if osp.exists(self.recentParams[-1]["path"]):
+                self.modelType, idx = findModelbyName(self.recentParams[-1]["type"])
+                self.comboModelSelect.setCurrentIndex(idx)
+                self.load_model_params(self.recentParams[-1]["path"])
+                
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
