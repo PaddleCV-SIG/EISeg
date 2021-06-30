@@ -144,3 +144,6 @@ out/
 # test
 test_output/
 *.npy
+
+# qsetting
+*.ini
