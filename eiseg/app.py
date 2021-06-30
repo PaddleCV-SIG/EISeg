@@ -44,7 +44,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
-        self.settings = QtCore.QSettings("PaddleCV-SIG", "EISeg")
+        self.settings = QtCore.QSettings(osp.join(here, "config/setting.ini"), \
+                                         QtCore.QSettings.IniFormat)
         print(self.settings.fileName())
 
         self.recentFiles = self.settings.value("recent_files", [])
