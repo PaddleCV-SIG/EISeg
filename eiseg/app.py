@@ -610,6 +610,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(file_path) == 0:
             return
         self.queueEvent(partial(self.loadImage, file_path))
+        self.listFiles.addItems([file_path])
+        self.filePaths.append(file_path)
         # self.imagePath = file_path
 
     def loadLabel(self, imgPath):
@@ -666,8 +668,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         exts = QtGui.QImageReader.supportedImageFormats()
         filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
-        self.filePaths = filePaths
-        self.listFiles.addItems(self.filePaths)
+        self.filePaths += filePaths
+        self.listFiles.addItems(filePaths)
         self.currIdx = 0
         self.turnImg(0)
 
