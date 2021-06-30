@@ -400,9 +400,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
         model = self.modelType.load_params(params_path=params_path)
         if self.controller is None:
+            limit_longest_size = 400
             self.controller = InteractiveController(
                 model,
-                predictor_params={"brs_mode": "f-BRS-B"},
+                predictor_params={
+                    # 'brs_mode': 'f-BRS-B',
+                    'brs_mode': 'NoBRS',
+                    'prob_thresh': 0.5, 
+                    'zoom_in_params': {
+                        'skip_clicks': -1, 
+                        'target_size': (400, 400), 
+                        'expansion_ratio': 1.4
+                    }, 
+                    'predictor_params': {
+                        'net_clicks_limit': None, 
+                        'max_size': 800
+                    }, 
+                    'brs_opt_func_params': {'min_iou_diff': 0.001}, 
+                    'lbfgs_params': {'maxfun': 20}
+                },
                 update_image_callback=self._update_image,
             )
             self.controller.prob_thresh = self.segThresh
