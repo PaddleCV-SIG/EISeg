@@ -1,6 +1,5 @@
 import time
 
-# 没有定义还是不用？
 import paddle
 # from tkinter import messagebox
 
@@ -96,6 +95,7 @@ class InteractiveController:
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
         self.clicker.add_click(click)
         start = time.time()
+        print(self.predictor)
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
         if self._init_mask is not None and len(self.clicker) == 1:
             pred = self.predictor.get_prediction(
@@ -203,7 +203,7 @@ class InteractiveController:
         predictor_params : 网络权重
             新的网络权重
         """
-        print("palette", self.palette)
+        # print("palette", self.palette)
         if net is not None:
             self.net = net
         if predictor_params is not None:

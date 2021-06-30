@@ -14,19 +14,20 @@ class HRNet18_OCR48:
 
     def load_params(self, params_path):
         model = HRNetModel(
-            width=18,
-            ocr_width=48,
-            small=True,
-            with_aux_output=True,
+            width=18, 
+            ocr_width=48, 
+            small=True, 
+            with_aux_output=True, 
             use_rgb_conv=False,
-            use_leaky_relu=True,
-            use_disks=True,
-            with_prev_mask=True,
-            norm_radius=5,
-            cpu_dist_maps=False,
+            use_leaky_relu=True, 
+            use_disks=True, 
+            with_prev_mask=True, 
+            norm_radius=5, 
+            cpu_dist_maps=False
         )
         para_state_dict = paddle.load(params_path)
         model.set_dict(para_state_dict)
+        model.eval()
         return model
 
 
@@ -35,19 +36,20 @@ class HRNet18_OCR64:
 
     def load_params(self, params_path):
         model = HRNetModel(
-            width=18,
-            ocr_width=64,
-            small=False,
-            with_aux_output=True,
-            use_rgb_conv=False,
+            width=18, 
+            ocr_width=64, 
+            small=False, 
+            with_aux_output=True, 
             use_leaky_relu=True,
-            use_disks=True,
+            use_rgb_conv=False,
+            use_disks=True, 
+            norm_radius=5, 
             with_prev_mask=True,
-            norm_radius=5,
-            cpu_dist_maps=True,
+            cpu_dist_maps=True
         )
         para_state_dict = paddle.load(params_path)
         model.set_dict(para_state_dict)
+        model.eval()
         return model
 
 

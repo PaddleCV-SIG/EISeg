@@ -140,3 +140,7 @@ dmypy.json
 
 # exe
 out/
+
+# test
+test_output/
+*.npy
