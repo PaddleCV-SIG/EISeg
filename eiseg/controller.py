@@ -82,7 +82,7 @@ class InteractiveController:
                 点击是否成功添加
         """
         s = self.image.shape
-        if x < 0 or y < 0 or x > s[1] or y > s[0]:
+        if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
             print("点击越界")
             return False
         self.states.append(
