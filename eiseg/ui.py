@@ -195,6 +195,8 @@ class Ui_EISeg(object):
         # TODO: 改成 list widget
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
+        # 自适应填充
+        self.labelListTable.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
         self.labelListTable.verticalHeader().hide()
         self.labelListTable.setColumnWidth(0, 10)
         # self.labelListTable.setMinimumWidth()
