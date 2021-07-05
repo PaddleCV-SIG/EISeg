@@ -7,7 +7,7 @@ from functools import partial
 
 from models import models
 
-__APPNAME__ = "EISeg 0.1.2"
+__APPNAME__ = "EISeg 0.1.5"
 
 
 class Canvas(QGraphicsView):

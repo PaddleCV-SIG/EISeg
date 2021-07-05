@@ -106,7 +106,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 action = QtWidgets.QAction(
                     icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
                 )
-                action.triggered.connect(partial(self.loadImage, f))
+                action.triggered.connect(partial(self.loadImage, f, True))
                 menu.addAction(action)
 
     def updateParamsMenu(self):
@@ -631,7 +631,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("label shape", label.shape)
         return label
 
-    def loadImage(self, path):
+    def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
             return
         # TODO: 在不同平台测试含中文路径
@@ -653,6 +653,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del self.recentFiles[0]
             self.settings.setValue("recent_files", self.recentFiles)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
+        if update_list:
+            self.listFiles.addItems([path])
+            self.filePaths.append(path)
+        
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(

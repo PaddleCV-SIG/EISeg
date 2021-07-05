@@ -140,6 +140,7 @@ dmypy.json
 
 # exe
 out/
+eiseg/requirements_with_opt.txt
 
 # test
 test_output/
