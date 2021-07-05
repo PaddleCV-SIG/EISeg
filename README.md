@@ -31,7 +31,7 @@ eiseg
 
 ## Windows exe
 
-eiseg[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。从[百度云盘](https://pan.baidu.com/s/13Ac_LA2yxPT-tnRqUaYMsQ)（提取码：82z9）下载目前最新的iseg，解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
+eiseg[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。从[百度云盘](https://pan.baidu.com/s/1K7cbNnlCtfEXcuiamdxjWA)（提取码：82z9）下载目前最新的iseg，解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
 
 ## 运行代码
 
