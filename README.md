@@ -50,9 +50,9 @@ python -m eiseg
 # 开发者
 [JueYing Hao]()
 
-[Lin Han](https://github.com/linhandev/)
-
 [YiZhou Chen](https://github.com/geoyee)
+
+[Lin Han](https://github.com/linhandev/)
 
 [GT](https://github.com/GT-ZhangAcer)
 

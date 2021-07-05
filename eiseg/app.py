@@ -1,7 +1,6 @@
 import os
 import os.path as osp
 from functools import partial
-from util.colormap import ColorMask
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -12,12 +11,15 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from util.colormap import ColorMask
 from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help
 from models import models, findModelbyName
 import util
 
-__appname__ = "EISeg"
+# from . import pjpath, __APPNAME__
+
+__APPNAME__ = "EISeg"
 here = osp.dirname(osp.abspath(__file__))
 
 
@@ -40,12 +42,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-        self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
+        self.config = util.parseConfigs(osp.join(pjpath, "config/config.yaml"))
         self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
-        self.settings = QtCore.QSettings(osp.join(here, "config/setting.ini"), \
-                                         QtCore.QSettings.IniFormat)
+        self.settings = QtCore.QSettings(
+            osp.join(here, "config/setting.ini"), QtCore.QSettings.IniFormat
+        )
         print(self.settings.fileName())
 
         self.recentFiles = self.settings.value("recent_files", [])
@@ -121,9 +124,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if osp.exists(f["path"]):
                 icon = util.newIcon("Model")
                 action = QtWidgets.QAction(
-                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f["path"]).fileName()), self
+                    icon,
+                    "&%d %s" % (i + 1, QtCore.QFileInfo(f["path"]).fileName()),
+                    self,
                 )
-                action.triggered.connect(partial(self.load_model_params, f["path"], f["type"]))
+                action.triggered.connect(
+                    partial(self.load_model_params, f["path"], f["type"])
+                )
                 menu.addAction(action)
 
     def toBeImplemented(self):
@@ -313,7 +320,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         shortcuts = action(
             self.tr("&快捷键列表"),
-            self.showShortcuts,
+            self.toBeImplemented,
             "",
             "Shortcut",
             self.tr("查看所有快捷键"),
@@ -358,7 +365,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         QtCore.QTimer.singleShot(0, function)
 
     def showShortcuts(self):
-        pass
+        self.toBeImplemented()
 
     def toggleAutoSave(self, save):
         if save and not self.outputDir:
@@ -379,7 +386,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = self.tr("paddle model params files (%s)") % " ".join(formats)
         params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择模型参数") % __appname__,
+            self.tr("%s - 选择模型参数") % __APPNAME__,
             "/home/lin/Desktop",
             filters,
         )
@@ -406,19 +413,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 model,
                 predictor_params={
                     # 'brs_mode': 'f-BRS-B',
-                    'brs_mode': 'NoBRS',
-                    'prob_thresh': 0.5, 
-                    'zoom_in_params': {
-                        'skip_clicks': -1, 
-                        'target_size': (400, 400), 
-                        'expansion_ratio': 1.4
-                    }, 
-                    'predictor_params': {
-                        'net_clicks_limit': None, 
-                        'max_size': 800
-                    }, 
-                    'brs_opt_func_params': {'min_iou_diff': 0.001}, 
-                    'lbfgs_params': {'maxfun': 20}
+                    "brs_mode": "NoBRS",
+                    "prob_thresh": 0.5,
+                    "zoom_in_params": {
+                        "skip_clicks": -1,
+                        "target_size": (400, 400),
+                        "expansion_ratio": 1.4,
+                    },
+                    "predictor_params": {"net_clicks_limit": None, "max_size": 800},
+                    "brs_opt_func_params": {"min_iou_diff": 0.001},
+                    "lbfgs_params": {"maxfun": 20},
                 },
                 update_image_callback=self._update_image,
             )
@@ -437,7 +441,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.modelType, idx = findModelbyName(self.recentParams[-1]["type"])
                 self.comboModelSelect.setCurrentIndex(idx)
                 self.load_model_params(self.recentParams[-1]["path"])
-                
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
@@ -462,7 +465,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = self.tr("标签配置文件 (*.txt)")
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择标签配置文件路径") % __appname__,
+            self.tr("%s - 选择标签配置文件路径") % __APPNAME__,
             ".",
             filters,
         )
@@ -603,7 +606,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = self.tr("Image & Label files (%s)") % " ".join(formats)
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择待标注图片") % __appname__,
+            self.tr("%s - 选择待标注图片") % __APPNAME__,
             "/home/lin/Desktop",
             filters,
         )
@@ -656,12 +659,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if update_list:
             self.listFiles.addItems([path])
             self.filePaths.append(path)
-        
 
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            self.tr("%s - 选择待标注图片文件夹") % __appname__,
+            self.tr("%s - 选择待标注图片文件夹") % __APPNAME__,
             "/home/lin/Desktop",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
@@ -794,7 +796,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeOutputDir(self):
         outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            self.tr("%s - 选择标签保存路径") % __appname__,
+            self.tr("%s - 选择标签保存路径") % __APPNAME__,
             # osp.dirname(self.imagePath),
             ".",
             QtWidgets.QFileDialog.ShowDirsOnly
@@ -812,16 +814,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def maskOpacityChanged(self):
         self.sldOpacity.textLab.setText(str(self.opacity))
+        if not self.controller or self.controller.image is None:
+            return
         self._update_image()
 
     def clickRadiusChanged(self):
         self.sldClickRadius.textLab.setText(str(self.clickRadius))
+        if not self.controller or self.controller.image is None:
+            return
+
         self._update_image()
 
     def threshChanged(self):
         self.sldThresh.textLab.setText(str(self.segThresh))
-        if self.controller:
-            self.controller.prob_thresh = self.segThresh
+        if not self.controller or self.controller.image is None:
+            return
+        self.controller.prob_thresh = self.segThresh
         self._update_image()
 
     def undoClick(self):
@@ -834,7 +842,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.setClean()
 
     def undoAll(self):
-        if not self.controller:
+        if not self.controller or self.controller.image is None:
             return
         self.controller.reset_last_object()
         self.setClean()
