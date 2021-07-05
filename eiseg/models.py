@@ -45,7 +45,7 @@ class HRNet18_OCR64:
             use_disks=True, 
             norm_radius=5, 
             with_prev_mask=True,
-            cpu_dist_maps=True
+            cpu_dist_maps=False  # 目前打包cython有些问题，先默认用False
         )
         para_state_dict = paddle.load(params_path)
         model.set_dict(para_state_dict)
