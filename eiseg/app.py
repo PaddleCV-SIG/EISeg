@@ -17,7 +17,6 @@ from ui import Ui_EISeg, Ui_Help
 from models import models, findModelbyName
 import util
 
-# from . import pjpath, __APPNAME__
 
 __APPNAME__ = "EISeg"
 here = osp.dirname(osp.abspath(__file__))
@@ -42,7 +41,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-        self.config = util.parseConfigs(osp.join(pjpath, "config/config.yaml"))
+        self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
         self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
@@ -72,6 +71,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldThresh.valueChanged.connect(self.threshChanged)
 
         # 标签列表点击
+        # TODO: 更换标签颜色之后重绘所有已有标签
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
