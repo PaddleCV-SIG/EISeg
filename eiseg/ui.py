@@ -1,52 +1,57 @@
+from enum import Enum
+from functools import partial
+
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
-# from models import models
-from functools import partial
-
 from models import models
-
-__APPNAME__ = "EISeg 0.1.5"
+from eiseg import __APPNAME__
+from util import Instructions
 
 
 class Canvas(QGraphicsView):
-    clickRequest = QtCore.Signal(int, int, bool)
+    # clickRequest = QtCore.Signal(int, int, bool)
 
     def __init__(self, *args):
         super(Canvas, self).__init__(*args)
+        self.setRenderHints(
+            QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform
+        )
+        self.setMouseTracking(True)
         self.setTransformationAnchor(QGraphicsView.NoAnchor)
         self.setResizeAnchor(QGraphicsView.NoAnchor)
         self.point = QtCore.QPoint(0, 0)
         self.middle_click = False
         self.zoom_all = 1
 
-    def wheelEvent(self, event):
-        if event.modifiers() & QtCore.Qt.ControlModifier:
-            print(event.angleDelta().x(), event.angleDelta().y())
-            # self.zoom += event.angleDelta().y() / 2880
-            zoom = 1 + event.angleDelta().y() / 2880
+    def wheelEvent(self, ev):
+        if ev.modifiers() & QtCore.Qt.ControlModifier:
+            print(ev.angleDelta().x(), ev.angleDelta().y())
+            # self.zoom += ev.angleDelta().y() / 2880
+            zoom = 1 + ev.angleDelta().y() / 2880
             self.zoom_all *= zoom
-            oldPos = self.mapToScene(event.pos())
+            oldPos = self.mapToScene(ev.pos())
             if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
-                # print(self.zoom_all)
                 self.scale(zoom, zoom)
-            newPos = self.mapToScene(event.pos())
+            newPos = self.mapToScene(ev.pos())
             delta = newPos - oldPos
             self.translate(delta.x(), delta.y())
-            event.ignore()
+            ev.ignore()
         else:
-            super(Canvas, self).wheelEvent(event)
+            super(Canvas, self).wheelEvent(ev)
 
-    def mousePressEvent(self, ev):
-        print("view pos", ev.pos().x(), ev.pos().y())
-        print("scene pos", self.mapToScene(ev.pos()))
-        pos = self.mapToScene(ev.pos())
-        if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-            self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-        elif ev.buttons() == Qt.MiddleButton:
-            self.middle_click = True
-            self._startPos = ev.pos()
+    # def mousePressEvent(self, ev):
+    #     # print("view pos", ev.pos().x(), ev.pos().y())
+    #     # print("scene pos", self.mapToScene(ev.pos()))
+    #     pos = self.mapToScene(ev.pos())
+    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+    #     elif ev.buttons() == Qt.MiddleButton:
+    #         self.middle_click = True
+    #         self._startPos = ev.pos()
+    #
+    #     super(Canvas, self).mousePressEvent(ev)
 
     def mouseMoveEvent(self, ev):
         if self.middle_click and (
@@ -60,10 +65,182 @@ class Canvas(QGraphicsView):
             self._startPos = ev.pos()
             print("move", self._endPos.x(), self._endPos.y())
             self.translate(self._endPos.x(), self._endPos.y())
+        super(Canvas, self).mouseMoveEvent(ev)
+
+    # def mousePressEvent(self, ev):
+    #     pos = self.mapToScene(ev.pos())
+    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+    #     elif ev.buttons() == Qt.MiddleButton:
+    #         self.middle_click = True
+    #         self._startPos = ev.pos()
+    #
+    #     super(Canvas, self).mousePressEvent(ev)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.MiddleButton:
             self.middle_click = False
+        super(Canvas, self).mouseReleaseEvent(ev)
+
+
+class GripItem(QtWidgets.QGraphicsPathItem):
+    circle = QtGui.QPainterPath()
+    circle.addEllipse(QtCore.QRectF(-3, -3, 6, 6))
+    square = QtGui.QPainterPath()
+    square.addRect(QtCore.QRectF(-3, -3, 6, 6))
+
+    def __init__(self, annotation_item, index):
+        super(GripItem, self).__init__()
+        self.m_annotation_item = annotation_item
+        self.m_index = index
+
+        self.setPath(GripItem.circle)
+        self.setBrush(QtGui.QColor("green"))
+        self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setAcceptHoverEvents(True)
+        self.setZValue(11)
+        self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+
+    def hoverEnterEvent(self, ev):
+        self.setPath(GripItem.square)
+        self.setBrush(QtGui.QColor("red"))
+        super(GripItem, self).hoverEnterEvent(ev)
+
+    def hoverLeaveEvent(self, ev):
+        self.setPath(GripItem.circle)
+        self.setBrush(QtGui.QColor("green"))
+        super(GripItem, self).hoverLeaveEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        self.setSelected(False)
+        super(GripItem, self).mouseReleaseEvent(ev)
+
+    def itemChange(self, change, value):
+        if change == QtWidgets.QGraphicsItem.ItemPositionChange and self.isEnabled():
+            self.m_annotation_item.movePoint(self.m_index, value)
+        return super(GripItem, self).itemChange(change, value)
+
+
+class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
+    def __init__(self, setHovering, parent=None):
+        super(PolygonAnnotation, self).__init__(parent)
+        self.hovering = False
+        self.m_points = []
+        self.setZValue(10)
+        self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
+        self.setAcceptHoverEvents(True)
+
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+
+        self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+
+        self.m_items = []
+
+    def number_of_points(self):
+        return len(self.m_items)
+
+    def addPoint(self, p):
+        self.m_points.append(p)
+        self.setPolygon(QtGui.QPolygonF(self.m_points))
+        item = GripItem(self, len(self.m_points) - 1)
+        self.scene().addItem(item)
+        self.m_items.append(item)
+        item.setPos(p)
+
+    def removeLastPoint(self):
+        if self.m_points:
+            self.m_points.pop()
+            self.setPolygon(QtGui.QPolygonF(self.m_points))
+            it = self.m_items.pop()
+            self.scene().removeItem(it)
+            del it
+
+    def movePoint(self, i, p):
+        if 0 <= i < len(self.m_points):
+            self.m_points[i] = self.mapFromScene(p)
+            print("+_+_+_+", self.m_points[i])
+            self.setPolygon(QtGui.QPolygonF(self.m_points))
+
+    def move_item(self, index, pos):
+        if 0 <= index < len(self.m_items):
+            item = self.m_items[index]
+            item.setEnabled(False)
+            item.setPos(pos)
+            item.setEnabled(True)
+
+    def itemChange(self, change, value):
+        if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
+            for i, point in enumerate(self.m_points):
+                self.move_item(i, self.mapToScene(point))
+        return super(PolygonAnnotation, self).itemChange(change, value)
+
+    def hoverEnterEvent(self, ev):
+        self.setBrush(QtGui.QColor(255, 0, 0, 100))
+        self.hovering = True
+        super(PolygonAnnotation, self).hoverEnterEvent(ev)
+
+    def hoverLeaveEvent(self, ev):
+        self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        self.hovering = False
+        super(PolygonAnnotation, self).hoverLeaveEvent(ev)
+
+
+class AnnotationScene(QtWidgets.QGraphicsScene):
+    clickRequest = QtCore.Signal(int, int, bool)
+
+    def __init__(self, parent=None):
+        super(AnnotationScene, self).__init__(parent)
+        self.current_instruction = Instructions.No_Instruction
+        self.polygon_item = PolygonAnnotation(self.setCurrentInstruction())
+
+        self.addItem(self.polygon_item)
+
+    def setCurrentInstruction(self, instruction=Instructions.Polygon_Instruction):
+        self.current_instruction = instruction
+
+    # def mousePressEvent(self, ev):
+    #     # print("view pos", ev.pos().x(), ev.pos().y())
+    #     # print("scene pos", self.mapToScene(ev.pos()))
+    #     pos = self.mapToScene(ev.pos())
+    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+    #     elif ev.buttons() == Qt.MiddleButton:
+    #         self.middle_click = True
+    #         self._startPos = ev.pos()
+    #
+    #     super(Canvas, self).mousePressEvent(ev)
+
+    def mousePressEvent(self, ev):
+        pos = ev.scenePos()
+        print(self.current_instruction)
+        if (
+            self.current_instruction == Instructions.No_Instruction
+            and not self.polygon_item.hovering
+        ):
+            if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
+                print("in here")
+                self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+            elif ev.buttons() == Qt.MiddleButton:
+                self.middle_click = True
+                self._startPos = ev.pos()
+        else:
+            self.polygon_item.removeLastPoint()
+            self.polygon_item.addPoint(ev.scenePos())
+            # movable element
+            self.polygon_item.addPoint(ev.scenePos())
+        super(AnnotationScene, self).mousePressEvent(ev)
+
+    def mouseMoveEvent(self, ev):
+        if self.current_instruction == Instructions.Polygon_Instruction:
+            self.polygon_item.movePoint(
+                self.polygon_item.number_of_points() - 1, ev.scenePos()
+            )
+        super(AnnotationScene, self).mouseMoveEvent(ev)
 
 
 class Ui_Help(object):
@@ -124,7 +301,17 @@ class Ui_EISeg(object):
         self.scrollArea.setObjectName("scrollArea")
         ImageRegion.addWidget(self.scrollArea)
         # 图形显示
-        self.scene = QtWidgets.QGraphicsScene()
+        # self.scene = QtWidgets.QGraphicsScene()
+        self.scene = AnnotationScene()
+
+        QtWidgets.QShortcut(
+            QtCore.Qt.Key_Escape,
+            self,
+            activated=partial(
+                self.scene.setCurrentInstruction, Instructions.No_Instruction
+            ),
+        )
+
         self.scene.addPixmap(QtGui.QPixmap())
         self.canvas = Canvas(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
