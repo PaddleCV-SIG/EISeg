@@ -1,22 +1,27 @@
 import os
 import os.path as osp
 from functools import partial
+import sys
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
-from qtpy.QtGui import QImage, QPixmap
+from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
 from qtpy.QtCore import Qt
 import paddle
 import cv2
 import numpy as np
 from PIL import Image
+import matplotlib.pyplot as plt
 
 from util.colormap import ColorMask
 from controller import InteractiveController
-from ui import Ui_EISeg, Ui_Help
+from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
 from models import models, findModelbyName
 import util
 from eiseg import pjpath, __APPNAME__
+
+# DEBUG:
+np.set_printoptions(threshold=sys.maxsize)
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -39,7 +44,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-        self.config = util.parseConfigs(osp.join(pjpath, "config/config.yaml"))
+        self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.maskColormap = ColorMask(
             color_path=osp.join(pjpath, "config/colormap.txt")
         )
@@ -57,7 +62,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.initActions()
 
         # 画布部分
-        self.canvas.clickRequest.connect(self.canvasClick)
+        self.scene.clickRequest.connect(self.canvasClick)
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
@@ -375,7 +380,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             save = False
         self.actions.auto_save.setChecked(save)
         self.config["auto_save"] = save
-        util.saveConfigs(osp.join(pjpath, "config/config.yaml"), self.config)
+        util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
 
     def changeModelType(self, idx):
         self.modelType = models[idx]
@@ -493,10 +498,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
         dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
         savePath, _ = dlg.getSaveFileName(
-            self,
-            self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__,
-            ".",
-            filters
+            self, self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__, ".", filters
         )
         print(savePath)
         self.settings.setValue("label_list_file", savePath)
@@ -504,7 +506,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         util.saveLabel(self.labelList, savePath)
 
     def addLabel(self):
-        # c = [255, 0, 0]
         # 可以在配色表中预制多种容易分辨的颜色，直接随机生成恐怕生成类似的颜色不好区分
         c = self.maskColormap.get_color()  # 从配色表取颜色
         table = self.labelListTable
@@ -715,12 +716,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setClean()
 
     def finishObject(self):
-        if self.image is None:
+        if not self.controller or self.image is None:
             return
-        if not self.controller:
-            return
-        self.controller.finish_object()
-        self.setDirty()
+        current_mask = self.controller.finish_object()
+        if current_mask is not None:
+            current_mask = current_mask.astype(np.uint8) * 255
+            points = util.get_polygon(current_mask)
+            print(points)
+            self.setDirty()
+            self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
+            w, h = self.controller.image.shape[:2]
+            self.scene.setSceneRect(0, 0, w, h)
+            for p in points:
+                self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
@@ -741,11 +749,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         return False
 
     def saveLabel(self, saveAs=False, savePath=None):
-        if not self.controller:
-            print("on controller")
-            return
-        if self.controller.image is None:
-            print("no image")
+        if not self.controller or self.controller.image is None:
             return
         self.completeLastMask()
         if not savePath:  # 参数没传存到哪
@@ -768,7 +772,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.tr("选择标签文件保存路径"),
                     osp.basename(self.imagePath).split(".")[0] + ".png",
                 )
-        print("++", savePath)
         if (
             savePath is None
             or len(savePath) == 0
@@ -881,9 +884,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
             self.resetZoom(width, height)
-        self.scene.addPixmap(QPixmap(image))
+        # self.scene.addPixmap(QPixmap(image))
+        img_item = QtWidgets.QGraphicsPixmapItem(QPixmap(image))
+        self.scene.addItem(img_item)
+
         # TODO: 研究是否有类似swap的更高效方式
-        self.scene.removeItem(self.scene.items()[1])
+        # self.scene.removeItem(self.scene.items()[1])
 
     # 界面缩放重置
     def resetZoom(self, width, height):

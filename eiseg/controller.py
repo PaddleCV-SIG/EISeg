@@ -1,6 +1,7 @@
 import time
 
 import paddle
+
 # from tkinter import messagebox
 
 import numpy as np
@@ -153,13 +154,13 @@ class InteractiveController:
         """结束当前物体标注，准备标下一个"""
         object_prob = self.current_object_prob
         if object_prob is None:
-            return
-
+            return None
         # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
-        print('curr_label_number:', self.curr_label_number)
+        print("curr_label_number:", self.curr_label_number)
         self._result_mask[object_mask] = self.curr_label_number
         self.reset_last_object()
+        return object_mask
 
     def change_label_num(self, number):
         """修改当前标签的编号
