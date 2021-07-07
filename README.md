@@ -22,6 +22,7 @@ eiseg
 即可运行软件。
 
 ## Conda
+
 首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
 ```shell
 conda create -n eiseg python=3.8
@@ -32,7 +33,7 @@ eiseg
 
 ## Windows exe
 
-EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘](https://pan.baidu.com/s/1K7cbNnlCtfEXcuiamdxjWA)（提取码：82z9）下载目前最新的EISeg，也可从[Releases](https://github.com/PaddleCV-SIG/EISeg/releases)中进行下载。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
+EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘](https://pan.baidu.com/s/1K7cbNnlCtfEXcuiamdxjWA)（提取码：82z9）下载目前最新的EISeg，也可从[Releases](https://github.com/PaddleCV-SIG/EISeg/releases/tag/v1.0.5)中进行下载。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
 
 ## 运行代码
 
