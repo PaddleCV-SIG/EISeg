@@ -16,10 +16,7 @@ from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help
 from models import models, findModelbyName
 import util
-
-
-__APPNAME__ = "EISeg"
-here = osp.dirname(osp.abspath(__file__))
+from eiseg import pjpath, __APPNAME__
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -33,6 +30,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # app变量
         self.controller = None
+        self.image = None
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
         self.currIdx = 0  # 标注文件夹时到第几个了
@@ -41,26 +39,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-        self.config = util.parseConfigs(osp.join(here, "config/config.yaml"))
-        self.maskColormap = ColorMask(color_path=osp.join(here, "config/colormap.txt"))
+        self.config = util.parseConfigs(osp.join(pjpath, "config/config.yaml"))
+        self.maskColormap = ColorMask(
+            color_path=osp.join(pjpath, "config/colormap.txt")
+        )
+        # DEBUG:
         # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
         self.isDirty = False
         self.settings = QtCore.QSettings(
-            osp.join(here, "config/setting.ini"), QtCore.QSettings.IniFormat
+            osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        print(self.settings.fileName())
-
+        # DEBUG:
+        # print(self.settings.fileName())
         self.recentFiles = self.settings.value("recent_files", [])
         self.recentParams = self.settings.value("recent_params", [])
-        # 画布部分
-        self.canvas.clickRequest.connect(self.canvasClick)
-        self.image = None
 
         self.initActions()
 
+        # 画布部分
+        self.canvas.clickRequest.connect(self.canvasClick)
+
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
-        self.listFiles.itemDoubleClicked.connect(self.listClicked)  # list选择
+        self.listFiles.itemDoubleClicked.connect(self.listClicked)  # 标签列表点击
         self.comboModelSelect.currentIndexChanged.connect(self.changeModelType)  # 模型选择
         self.btnAddClass.clicked.connect(self.addLabel)
         self.btnParamsSelect.clicked.connect(self.changeModel)  # 模型参数选择
@@ -374,7 +375,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             save = False
         self.actions.auto_save.setChecked(save)
         self.config["auto_save"] = save
-        util.saveConfigs(osp.join(here, "config/config.yaml"), self.config)
+        util.saveConfigs(osp.join(pjpath, "config/config.yaml"), self.config)
 
     def changeModelType(self, idx):
         self.modelType = models[idx]
@@ -904,7 +905,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     @property
     def opacity(self):
-        return self.sldOpacity.value() / 10
+        return self.sldOpacity.value() / 100
 
     @property
     def clickRadius(self):
@@ -912,7 +913,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     @property
     def segThresh(self):
-        return self.sldThresh.value() / 10
+        return self.sldThresh.value() / 100
 
     # 警告框
     def showWarning(self, str):
