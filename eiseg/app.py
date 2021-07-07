@@ -493,8 +493,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
         savePath, _ = dlg.getSaveFileName(
             self,
-            self.tr("保存标签配置文件"),
+            self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__,
             ".",
+            filters
         )
         print(savePath)
         self.settings.setValue("label_list_file", savePath)
