@@ -176,8 +176,9 @@ class Ui_EISeg(object):
         combo.addItems([m.name for m in models])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
-        self.btnParamsSelect = p_create_button("btnParamsLoad", "加载网络参数", \
-                                               "eiseg/resource/Model.png", "Ctrl+D")
+        self.btnParamsSelect = p_create_button(
+            "btnParamsLoad", "加载网络参数", "eiseg/resource/Model.png", "Ctrl+D"
+        )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         SetRegion.addLayout(ModelRegion)
         SetRegion.setStretch(0, 1)
@@ -196,13 +197,17 @@ class Ui_EISeg(object):
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 自适应填充
-        self.labelListTable.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.ResizeToContents
+        )
         self.labelListTable.verticalHeader().hide()
         self.labelListTable.setColumnWidth(0, 10)
         # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
-        self.btnAddClass = p_create_button("btnAddClass", "添加标签", "eiseg/resource/Label.png")
+        self.btnAddClass = p_create_button(
+            "btnAddClass", "添加标签", "eiseg/resource/Label.png"
+        )
         listRegion.addWidget(self.btnAddClass)
         SetRegion.addLayout(listRegion)
         SetRegion.setStretch(1, 20)
@@ -231,7 +236,9 @@ class Ui_EISeg(object):
         SetRegion.addLayout(ShowSetRegion)
         SetRegion.setStretch(2, 1)
         # 保存
-        self.btnSave = p_create_button("btnSave", "保存", "eiseg/resource/Save.png", "Ctrl+S")
+        self.btnSave = p_create_button(
+            "btnSave", "保存", "eiseg/resource/Save.png", "Ctrl+S"
+        )
         SetRegion.addWidget(self.btnSave)
         SetRegion.setStretch(3, 1)
         # dock设置完成
@@ -343,9 +350,9 @@ class Ui_EISeg(object):
         sld_name,
         text_name,
         text,
-        default_value=5,
-        max_value=10,
-        text_rate=0.1,
+        default_value=50,
+        max_value=100,
+        text_rate=0.01,
     ):
         Region = QtWidgets.QHBoxLayout()
         lab = self.create_text(parent, None, text)
@@ -364,8 +371,7 @@ class Ui_EISeg(object):
             QSlider::sub-page:horizontal {
                 background: #9999F1
             }
-
-            QSlider::handle:horizontal 
+            QSlider::handle:horizontal
             {
                 background: #3334E3;
                 width: 12px;
