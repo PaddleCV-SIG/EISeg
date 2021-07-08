@@ -6,7 +6,7 @@ import cv2
 class Instructions(Enum):
     No_Instruction = 0
     Polygon_Instruction = 1
-    Moving = 2
+    # Moving = 2
 
 
 def get_polygon(label, sample=2):
