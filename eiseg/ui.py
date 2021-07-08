@@ -11,8 +11,6 @@ from util import Instructions
 
 
 class Canvas(QGraphicsView):
-    # clickRequest = QtCore.Signal(int, int, bool)
-
     def __init__(self, *args):
         super(Canvas, self).__init__(*args)
         self.setRenderHints(
@@ -41,18 +39,6 @@ class Canvas(QGraphicsView):
         else:
             super(Canvas, self).wheelEvent(ev)
 
-    # def mousePressEvent(self, ev):
-    #     # print("view pos", ev.pos().x(), ev.pos().y())
-    #     # print("scene pos", self.mapToScene(ev.pos()))
-    #     pos = self.mapToScene(ev.pos())
-    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-    #     elif ev.buttons() == Qt.MiddleButton:
-    #         self.middle_click = True
-    #         self._startPos = ev.pos()
-    #
-    #     super(Canvas, self).mousePressEvent(ev)
-
     def mouseMoveEvent(self, ev):
         if self.middle_click and (
             self.horizontalScrollBar().isVisible()
@@ -67,15 +53,11 @@ class Canvas(QGraphicsView):
             self.translate(self._endPos.x(), self._endPos.y())
         super(Canvas, self).mouseMoveEvent(ev)
 
-    # def mousePressEvent(self, ev):
-    #     pos = self.mapToScene(ev.pos())
-    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-    #     elif ev.buttons() == Qt.MiddleButton:
-    #         self.middle_click = True
-    #         self._startPos = ev.pos()
-    #
-    #     super(Canvas, self).mousePressEvent(ev)
+    def mousePressEvent(self, ev):
+        if ev.buttons() == Qt.MiddleButton:
+            self.middle_click = True
+            self._startPos = ev.pos()
+        super(Canvas, self).mousePressEvent(ev)
 
     def mouseReleaseEvent(self, ev):
         if ev.button() == Qt.MiddleButton:
@@ -107,11 +89,13 @@ class GripItem(QtWidgets.QGraphicsPathItem):
     def hoverEnterEvent(self, ev):
         self.setPath(GripItem.square)
         self.setBrush(QtGui.QColor("red"))
+        self.m_annotation_item.item_hovering = True
         super(GripItem, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
         self.setPath(GripItem.circle)
         self.setBrush(QtGui.QColor("green"))
+        self.m_annotation_item.item_hovering = False
         super(GripItem, self).hoverLeaveEvent(ev)
 
     def mouseReleaseEvent(self, ev):
@@ -125,9 +109,10 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
 
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
-    def __init__(self, setHovering, parent=None):
+    def __init__(self, parent=None):
         super(PolygonAnnotation, self).__init__(parent)
-        self.hovering = False
+        self.item_hovering = False
+        self.polygon_hovering = False
         self.m_points = []
         self.setZValue(10)
         self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
@@ -163,7 +148,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def movePoint(self, i, p):
         if 0 <= i < len(self.m_points):
             self.m_points[i] = self.mapFromScene(p)
-            print("+_+_+_+", self.m_points[i])
             self.setPolygon(QtGui.QPolygonF(self.m_points))
 
     def move_item(self, index, pos):
@@ -180,13 +164,13 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         return super(PolygonAnnotation, self).itemChange(change, value)
 
     def hoverEnterEvent(self, ev):
+        self.polygon_hovering = True
         self.setBrush(QtGui.QColor(255, 0, 0, 100))
-        self.hovering = True
         super(PolygonAnnotation, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
+        self.polygon_hovering = False
         self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
-        self.hovering = False
         super(PolygonAnnotation, self).hoverLeaveEvent(ev)
 
 
@@ -196,39 +180,25 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
     def __init__(self, parent=None):
         super(AnnotationScene, self).__init__(parent)
         self.current_instruction = Instructions.No_Instruction
-        self.polygon_item = PolygonAnnotation(self.setCurrentInstruction())
+        self.polygon_item = PolygonAnnotation()
 
         self.addItem(self.polygon_item)
 
     def setCurrentInstruction(self, instruction=Instructions.Polygon_Instruction):
         self.current_instruction = instruction
 
-    # def mousePressEvent(self, ev):
-    #     # print("view pos", ev.pos().x(), ev.pos().y())
-    #     # print("scene pos", self.mapToScene(ev.pos()))
-    #     pos = self.mapToScene(ev.pos())
-    #     if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-    #         self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-    #     elif ev.buttons() == Qt.MiddleButton:
-    #         self.middle_click = True
-    #         self._startPos = ev.pos()
-    #
-    #     super(Canvas, self).mousePressEvent(ev)
-
     def mousePressEvent(self, ev):
         pos = ev.scenePos()
-        print(self.current_instruction)
+        print(self.current_instruction, self.polygon_item.item_hovering)
         if (
             self.current_instruction == Instructions.No_Instruction
-            and not self.polygon_item.hovering
+            and not self.polygon_item.item_hovering
+            and not self.polygon_item.polygon_hovering
         ):
             if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-                print("in here")
                 self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-            elif ev.buttons() == Qt.MiddleButton:
-                self.middle_click = True
-                self._startPos = ev.pos()
-        else:
+
+        elif self.current_instruction == Instructions.Polygon_Instruction:
             self.polygon_item.removeLastPoint()
             self.polygon_item.addPoint(ev.scenePos())
             # movable element
