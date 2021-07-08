@@ -7,7 +7,7 @@ EISeg(Efficient Interactive Segmentation)高效交互式分割标注软件
 
 # 安装
 
-交互式标注过程中需要用到深度学习模型推理，[模型权重文件](./doc/WEIGHT.md)目前需要单独下载。EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#conda安装)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
+交互式标注过程中需要用到深度学习模型推理，[模型权重文件](./doc/weight.md)目前需要单独下载。EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#conda安装)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
 
 ## PIP
 
