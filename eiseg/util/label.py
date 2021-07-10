@@ -43,6 +43,7 @@ def readLabel(path):
             print("标签不合法")
             continue
         label = toint(lab[:2])
+        label[1] = str(label[1])  # 数字标签显示
         label.append(toint(lab[2:]))
         labelList.append(label)
     print(labelList)

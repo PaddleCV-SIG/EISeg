@@ -1,3 +1,4 @@
+import os.path as osp
 from enum import Enum
 from functools import partial
 
@@ -6,7 +7,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
 from models import models
-from eiseg import __APPNAME__
+from eiseg import pjpath, __APPNAME__
 from util import Instructions
 
 
@@ -259,7 +260,7 @@ class Ui_EISeg(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo("eiseg/resource/Paddle.png"))
+        self.statusbar.addPermanentWidget(self.show_logo(osp.join(pjpath, "resource/Paddle.png")))
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
@@ -333,7 +334,7 @@ class Ui_EISeg(object):
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
         self.btnParamsSelect = p_create_button(
-            "btnParamsLoad", "加载网络参数", "eiseg/resource/Model.png", "Ctrl+D"
+            "btnParamsLoad", "加载网络参数", osp.join(pjpath, "resource/Model.png"), "Ctrl+D"
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         SetRegion.addLayout(ModelRegion)
@@ -362,7 +363,7 @@ class Ui_EISeg(object):
         self.labelListTable.setObjectName("labelListTable")
         listRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button(
-            "btnAddClass", "添加标签", "eiseg/resource/Label.png"
+            "btnAddClass", "添加标签", osp.join(pjpath, "resource/Label.png")
         )
         listRegion.addWidget(self.btnAddClass)
         SetRegion.addLayout(listRegion)
@@ -393,7 +394,7 @@ class Ui_EISeg(object):
         SetRegion.setStretch(2, 1)
         # 保存
         self.btnSave = p_create_button(
-            "btnSave", "保存", "eiseg/resource/Save.png", "Ctrl+S"
+            "btnSave", "保存", osp.join(pjpath, "resource/Save.png"), "Ctrl+S"
         )
         SetRegion.addWidget(self.btnSave)
         SetRegion.setStretch(3, 1)
