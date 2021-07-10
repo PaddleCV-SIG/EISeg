@@ -10,61 +10,6 @@ from eiseg import __APPNAME__
 from util import Instructions
 
 
-class Canvas(QGraphicsView):
-    def __init__(self, *args):
-        super(Canvas, self).__init__(*args)
-        self.setRenderHints(
-            QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform
-        )
-        self.setMouseTracking(True)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.point = QtCore.QPoint(0, 0)
-        self.middle_click = False
-        self.zoom_all = 1
-
-    def wheelEvent(self, ev):
-        if ev.modifiers() & QtCore.Qt.ControlModifier:
-            print(ev.angleDelta().x(), ev.angleDelta().y())
-            # self.zoom += ev.angleDelta().y() / 2880
-            zoom = 1 + ev.angleDelta().y() / 2880
-            self.zoom_all *= zoom
-            oldPos = self.mapToScene(ev.pos())
-            if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
-                self.scale(zoom, zoom)
-            newPos = self.mapToScene(ev.pos())
-            delta = newPos - oldPos
-            self.translate(delta.x(), delta.y())
-            ev.ignore()
-        else:
-            super(Canvas, self).wheelEvent(ev)
-
-    def mouseMoveEvent(self, ev):
-        if self.middle_click and (
-            self.horizontalScrollBar().isVisible()
-            or self.verticalScrollBar().isVisible()
-        ):
-            # 放大到出现滚动条才能拖动，避免出现抖动
-            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
-            # 这儿不写为先减后除，这样会造成速度不一致
-            self.point = self.point + self._endPos
-            self._startPos = ev.pos()
-            print("move", self._endPos.x(), self._endPos.y())
-            self.translate(self._endPos.x(), self._endPos.y())
-        super(Canvas, self).mouseMoveEvent(ev)
-
-    def mousePressEvent(self, ev):
-        if ev.buttons() == Qt.MiddleButton:
-            self.middle_click = True
-            self._startPos = ev.pos()
-        super(Canvas, self).mousePressEvent(ev)
-
-    def mouseReleaseEvent(self, ev):
-        if ev.button() == Qt.MiddleButton:
-            self.middle_click = False
-        super(Canvas, self).mouseReleaseEvent(ev)
-
-
 class GripItem(QtWidgets.QGraphicsPathItem):
     circle = QtGui.QPainterPath()
     circle.addEllipse(QtCore.QRectF(-3, -3, 6, 6))
@@ -213,6 +158,60 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         super(AnnotationScene, self).mouseMoveEvent(ev)
 
 
+class AnnotationView(QGraphicsView):
+    def __init__(self, *args):
+        super(AnnotationView, self).__init__(*args)
+        self.setRenderHints(
+            QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform
+        )
+        self.setMouseTracking(True)
+        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setResizeAnchor(QGraphicsView.NoAnchor)
+        self.point = QtCore.QPoint(0, 0)
+        self.middle_click = False
+        self.zoom_all = 1
+
+    def wheelEvent(self, ev):
+        if ev.modifiers() & QtCore.Qt.ControlModifier:
+            print(ev.angleDelta().x(), ev.angleDelta().y())
+            zoom = 1 + ev.angleDelta().y() / 2880
+            self.zoom_all *= zoom
+            oldPos = self.mapToScene(ev.pos())
+            if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
+                self.scale(zoom, zoom)
+            newPos = self.mapToScene(ev.pos())
+            delta = newPos - oldPos
+            self.translate(delta.x(), delta.y())
+            ev.ignore()
+        else:
+            super(AnnotationView, self).wheelEvent(ev)
+
+    def mouseMoveEvent(self, ev):
+        if self.middle_click and (
+            self.horizontalScrollBar().isVisible()
+            or self.verticalScrollBar().isVisible()
+        ):
+            # 放大到出现滚动条才允许拖动，避免出现抖动
+            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
+            # 这儿不写为先减后除，这样会造成速度不一致
+            self.point = self.point + self._endPos
+            self._startPos = ev.pos()
+            print("move", self._endPos.x(), self._endPos.y())
+            self.translate(self._endPos.x(), self._endPos.y())
+        super(AnnotationView, self).mouseMoveEvent(ev)
+
+    def mousePressEvent(self, ev):
+        if ev.buttons() == Qt.MiddleButton:
+            self.middle_click = True
+            self._startPos = ev.pos()
+        super(AnnotationView, self).mousePressEvent(ev)
+
+    def mouseReleaseEvent(self, ev):
+        if ev.button() == Qt.MiddleButton:
+            self.middle_click = False
+        super(AnnotationView, self).mouseReleaseEvent(ev)
+
+
 class Ui_Help(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -283,7 +282,7 @@ class Ui_EISeg(object):
         )
 
         self.scene.addPixmap(QtGui.QPixmap())
-        self.canvas = Canvas(self.scene, self)
+        self.canvas = AnnotationView(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
