@@ -66,6 +66,7 @@ def findModelByName(model_name):
     for idx, mt in enumerate(models):
         if model_name == mt.name:
             return models[idx], idx
+    return None, -1
 
 
 def checkParamsAndNet(model, params):
