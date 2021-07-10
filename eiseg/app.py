@@ -1,7 +1,6 @@
 import os
 import os.path as osp
 from functools import partial
-from pickle import NONE
 import sys
 
 from qtpy import QtGui, QtCore, QtWidgets
