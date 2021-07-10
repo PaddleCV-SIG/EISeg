@@ -102,7 +102,7 @@ class BasePredictor(object):
         is_image_changed = False
         for t in self.transforms:
             image_nd, clicks_lists = t.transform(image_nd, clicks_lists)
-            print("trans:", image_nd.shape, '  t:', t)
+            # print("trans:", image_nd.shape, '  t:', t)
             is_image_changed |= t.image_changed
 
         return image_nd, clicks_lists, is_image_changed

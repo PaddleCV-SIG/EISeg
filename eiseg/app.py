@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from util.colormap import ColorMask
 from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
-from models import models, findModelbyName
+from models import models, findModelByName
 import util
 from eiseg import pjpath, __APPNAME__
 
@@ -90,8 +90,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList = util.readLabel(labelListFile)
         self.refreshLabelList()
 
-        # TODO: 打开上次关软件时用的模型
-        # TODO: 在ui展示后再加载模型
+        # 打开上次关软件时用的模型
         # 在run中异步加载近期吗，模型参数
 
         # FIXME: 消息传到模型那去
@@ -399,53 +398,64 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         print(params_path)
         if osp.exists(params_path):
-            self.load_model_params(params_path)
-            # 最近参数
-            model_dict = {"path": params_path, "type": self.modelType.name}
-            if model_dict not in self.recentParams:
-                self.recentParams.append(model_dict)
-                if len(self.recentParams) > 10:
-                    del self.recentParams[0]
-                self.settings.setValue("recent_params", self.recentParams)
+            if self.load_model_params(params_path):
+                # 最近参数
+                model_dict = {"path": params_path, "type": self.modelType.name}
+                if model_dict not in self.recentParams:
+                    self.recentParams.append(model_dict)
+                    if len(self.recentParams) > 10:
+                        del self.recentParams[0]
+                    self.settings.setValue("recent_params", self.recentParams)
 
     def load_model_params(self, params_path, model_type=None):
         if model_type is not None:
-            self.modelType, idx = findModelbyName(model_type)
+            self.modelType, idx = findModelByName(model_type)
             self.comboModelSelect.setCurrentIndex(idx)
         self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
         model = self.modelType.load_params(params_path=params_path)
-        if self.controller is None:
-            limit_longest_size = 400
-            self.controller = InteractiveController(
-                model,
-                predictor_params={
-                    # 'brs_mode': 'f-BRS-B',
-                    "brs_mode": "NoBRS",
-                    "prob_thresh": 0.5,
-                    "zoom_in_params": {
-                        "skip_clicks": -1,
-                        "target_size": (400, 400),
-                        "expansion_ratio": 1.4,
+        if model is not None:
+            if self.controller is None:
+                limit_longest_size = 400
+                self.controller = InteractiveController(
+                    model,
+                    predictor_params={
+                        # 'brs_mode': 'f-BRS-B',
+                        "brs_mode": "NoBRS",
+                        "prob_thresh": 0.5,
+                        "zoom_in_params": {
+                            "skip_clicks": -1,
+                            "target_size": (400, 400),
+                            "expansion_ratio": 1.4,
+                        },
+                        "predictor_params": {"net_clicks_limit": None, "max_size": 800},
+                        "brs_opt_func_params": {"min_iou_diff": 0.001},
+                        "lbfgs_params": {"maxfun": 20},
                     },
-                    "predictor_params": {"net_clicks_limit": None, "max_size": 800},
-                    "brs_opt_func_params": {"min_iou_diff": 0.001},
-                    "lbfgs_params": {"maxfun": 20},
-                },
-                update_image_callback=self._update_image,
-            )
-            self.controller.prob_thresh = self.segThresh
-            # 这里如果直接加载模型会报错，先判断有没有图像
-            if self.image is not None:
-                self.controller.set_image(self.image)
-        else:
-            self.controller.reset_predictor(model)
-        self.statusbar.showMessage(f"{osp.basename(params_path)} 模型加载完成", 5000)
+                    update_image_callback=self._update_image,
+                )
+                self.controller.prob_thresh = self.segThresh
+                # 这里如果直接加载模型会报错，先判断有没有图像
+                if self.image is not None:
+                    self.controller.set_image(self.image)
+            else:
+                self.controller.reset_predictor(model)
+            self.statusbar.showMessage(f"{osp.basename(params_path)} 模型加载完成", 5000)
+            return True
+        else:  # 模型和参数不匹配
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setWindowTitle("模型和参数不匹配")
+            msg.setText("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
+            msg.setStandardButtons(QMessageBox.Yes)
+            res = msg.exec_()
+            self.statusbar.showMessage("模型和参数不匹配，请重新加载", 5000)
+            self.controller = None  # 清空controller
+            return False
 
     def load_recent_params(self):
-        # TODO: 感觉整个模型加载需要判断一下网络是否匹配吗？
         if len(self.recentParams) != 0:
             if osp.exists(self.recentParams[-1]["path"]):
-                self.modelType, idx = findModelbyName(self.recentParams[-1]["type"])
+                self.modelType, idx = findModelByName(self.recentParams[-1]["type"])
                 self.comboModelSelect.setCurrentIndex(idx)
                 self.load_model_params(self.recentParams[-1]["path"])
 
@@ -723,11 +733,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             points = util.get_polygon(current_mask)
-            print(points)
+            # print('points:', points)
             self.setDirty()
             self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
             w, h = self.controller.image.shape[:2]
-            self.scene.setSceneRect(0, 0, w, h)
+            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
             for p in points:
                 self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
 

@@ -9,8 +9,8 @@ from model.is_hrnet_model import HRNetModel
 here = osp.dirname(osp.abspath(__file__))
 
 
-class HRNet18_OCR48:
-    name = "HRNet18_OCR48"
+class HRNet18s_OCR48:
+    name = "HRNet18s_OCR48"
 
     def load_params(self, params_path):
         model = HRNetModel(
@@ -26,9 +26,12 @@ class HRNet18_OCR48:
             cpu_dist_maps=False
         )
         para_state_dict = paddle.load(params_path)
-        model.set_dict(para_state_dict)
-        model.eval()
-        return model
+        if checkParamsAndNet(model, para_state_dict):
+            model.set_dict(para_state_dict)
+            model.eval()
+            return model
+        else:
+            return None
 
 
 class HRNet18_OCR64:
@@ -48,15 +51,29 @@ class HRNet18_OCR64:
             cpu_dist_maps=False  # 目前打包cython有些问题，先默认用False
         )
         para_state_dict = paddle.load(params_path)
-        model.set_dict(para_state_dict)
-        model.eval()
-        return model
+        if checkParamsAndNet(model, para_state_dict):
+            model.set_dict(para_state_dict)
+            model.eval()
+            return model
+        else:
+            return None
 
 
-models = [HRNet18_OCR48(), HRNet18_OCR64()]
+models = [HRNet18s_OCR48(), HRNet18_OCR64()]
 
 
-def findModelbyName(model_name):
+def findModelByName(model_name):
     for idx, mt in enumerate(models):
         if model_name == mt.name:
             return models[idx], idx
+
+
+def checkParamsAndNet(model, params):
+    pkeys = params.keys()
+    mkeys = model.named_parameters()
+    if len(pkeys) != len(list(mkeys)):
+        return False
+    for p, m in zip(pkeys, mkeys):
+        if p != m[0]:
+            return False
+    return True
