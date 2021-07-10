@@ -25,22 +25,22 @@ np.set_printoptions(threshold=sys.maxsize)
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
+    IDILE, ANNING, EDITING = 0, 1, 2
+
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
-        self.setupUi(self)
-        # 显示帮助
-        self.help_dialog = QtWidgets.QDialog()
-        help_ui = Ui_Help()
-        help_ui.setupUi(self.help_dialog)
 
         # app变量
+        self.status = self.IDILE
         self.controller = None
-        self.image = None
+        self.image = None  # 可能先加载图片后加载模型，暂村图片用
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
-        self.currIdx = 0  # 标注文件夹时到第几个了
-        self.currentPath = None
         self.filePaths = []  # 标注文件夹时所有文件路径
+        self.currIdx = 0  # 打开文件夹时当前图片下标
+        self.currentPath = None
+        self.isDirty = False
+        # TODO: 默认上次model
         self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
@@ -48,20 +48,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.maskColormap = ColorMask(
             color_path=osp.join(pjpath, "config/colormap.txt")
         )
-        # DEBUG:
-        # self.labelList = [[1, "人", [0, 0, 0]], [2, "车", [128, 128, 128]]]
-        self.isDirty = False
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        # DEBUG:
-        # print(self.settings.fileName())
         self.recentFiles = self.settings.value("recent_files", [])
         self.recentParams = self.settings.value("recent_params", [])
 
+        # 初始化界面
+        self.setupUi(self)
+
+        # 帮助界面
+        self.help_dialog = QtWidgets.QDialog()
+        help_ui = Ui_Help()
+        help_ui.setupUi(self.help_dialog)
+
+        # 初始化action
         self.initActions()
 
-        # 画布部分
+        ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
 
         ## 按钮点击
@@ -71,19 +75,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.btnAddClass.clicked.connect(self.addLabel)
         self.btnParamsSelect.clicked.connect(self.changeModel)  # 模型参数选择
 
-        # 滑动
+        ## 滑动
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
 
-        # 标签列表点击
+        ## 标签列表点击
         # TODO: 更换标签颜色之后重绘所有已有标签
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
 
         labelListFile = self.settings.value("label_list_file")
-        print(labelListFile)
         self.labelList = util.readLabel(labelListFile)
         self.refreshLabelList()
 
@@ -91,6 +94,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO: 在ui展示后再加载模型
         # 在run中异步加载近期吗，模型参数
 
+        # FIXME: 消息传到模型那去
         # 消息栏（放到load_recent_params不会显示）
         if len(self.recentParams) == 0:
             self.statusbar.showMessage("模型参数未加载")
@@ -138,9 +142,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     partial(self.load_model_params, f["path"], f["type"])
                 )
                 menu.addAction(action)
-
-    def toBeImplemented(self):
-        self.statusbar.showMessage("功能尚在开发")
 
     def initActions(self):
         def menu(title, actions=None):
@@ -926,3 +927,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def showWarning(self, str):
         msg_box = QMessageBox(QMessageBox.Warning, "警告", str)
         msg_box.exec_()
+
+    def toBeImplemented(self):
+        self.statusbar.showMessage("功能尚在开发")
