@@ -410,6 +410,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def load_model_params(self, params_path, model_type=None):
         if model_type is not None:
             self.modelType, idx = findModelByName(model_type)
+            if self.modelType is None:
+                self.statusbar.showMessage(f"未找到 {self.modelType.name} 模型")
+                return
             self.comboModelSelect.setCurrentIndex(idx)
         self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
         model = self.modelType.load_params(params_path=params_path)
@@ -455,9 +458,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def load_recent_params(self):
         if len(self.recentParams) != 0:
             if osp.exists(self.recentParams[-1]["path"]):
-                self.modelType, idx = findModelByName(self.recentParams[-1]["type"])
-                self.comboModelSelect.setCurrentIndex(idx)
-                self.load_model_params(self.recentParams[-1]["path"])
+                self.modelType, idx = findModelByName(self.recentParams[-1]["type"])  # 问题
+                if self.modelType is not None:
+                    self.comboModelSelect.setCurrentIndex(idx)
+                    self.load_model_params(self.recentParams[-1]["path"])
 
     # def changeModel(self, idx):
     #     # TODO: 设置gpu还是cpu运行
