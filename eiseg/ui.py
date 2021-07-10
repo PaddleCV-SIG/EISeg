@@ -1,3 +1,4 @@
+import os.path as osp
 from enum import Enum
 from functools import partial
 
@@ -6,7 +7,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
 from models import models
-from eiseg import __APPNAME__
+from eiseg import pjpath, __APPNAME__
 from util import Instructions
 
 
@@ -260,7 +261,7 @@ class Ui_EISeg(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo("eiseg/resource/Paddle.png"))
+        self.statusbar.addPermanentWidget(self.show_logo(osp.join(pjpath, "resource/Paddle.png")))
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)

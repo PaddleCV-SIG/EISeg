@@ -452,7 +452,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller = None  # 清空controller
             return False
 
-
     def load_recent_params(self):
         if len(self.recentParams) != 0:
             if osp.exists(self.recentParams[-1]["path"]):
