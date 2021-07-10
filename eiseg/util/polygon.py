@@ -15,7 +15,7 @@ def get_polygon(label, sample=2):
     )
     points = []
     count = 0
-    for p in contours[1][0]:
+    for p in contours[0][0]:  # 0索引显示的边界
         if count == sample:
             points.append(p[0])
             count = 0

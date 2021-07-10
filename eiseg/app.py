@@ -87,8 +87,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList = util.readLabel(labelListFile)
         self.refreshLabelList()
 
-        # TODO: 打开上次关软件时用的模型
-        # TODO: 在ui展示后再加载模型
+        # 打开上次关软件时用的模型
         # 在run中异步加载近期吗，模型参数
 
         # 消息栏（放到load_recent_params不会显示）
@@ -733,11 +732,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             points = util.get_polygon(current_mask)
-            print(points)
+            # print('points:', points)
             self.setDirty()
             self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
             w, h = self.controller.image.shape[:2]
-            self.scene.setSceneRect(0, 0, w, h)
+            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
             for p in points:
                 self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
 
