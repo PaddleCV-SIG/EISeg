@@ -20,6 +20,7 @@ from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
 from eiseg import pjpath, __APPNAME__
 import util
 from util.colormap import ColorMask
+from util.label import Labeler
 from util import MODELS
 
 # DEBUG:
@@ -47,8 +48,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.currentPath = None
         self.isDirty = False
-        # TODO: labelList用一个class实现
-        self.labelList = []  # 标签列表(数字，名字，颜色)
+        self.labelList = Labeler()
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
@@ -92,7 +92,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
         labelListFile = self.settings.value("label_list_file")
-        self.labelList = util.readLabel(labelListFile)
+        self.labelList.readLabel(labelListFile)
         self.refreshLabelList()
 
     def updateFileMenu(self):
@@ -495,7 +495,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if file_path == "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
             return
-        self.labelList = util.readLabel(file_path)
+        self.labelList.readLabel(file_path)
         # print(self.labelList)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
@@ -521,7 +521,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print(savePath)
         self.settings.setValue("label_list_file", savePath)
         print("calling save label")
-        util.saveLabel(self.labelList, savePath)
+        self.labelList.saveLabel(savePath)
 
     def addLabel(self):
         # 可以在配色表中预制多种容易分辨的颜色，直接随机生成恐怕生成类似的颜色不好区分
@@ -529,7 +529,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
-        self.labelList.append([idx + 1, "", c])
+        self.labelList.add(idx + 1, "", c)
         print("append", self.labelList)
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
@@ -549,7 +549,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table.setItem(idx, 3, delItem)
 
     def clearLabelList(self):
-        self.labelList = []
+        self.labelList.clear()
         if self.controller:
             self.controller.label_list = []
             self.controller.curr_label_number = None
@@ -563,11 +563,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table.setRowCount(len(self.labelList))
         table.setColumnCount(4)
         for idx, lab in enumerate(self.labelList):
-            numberItem = QTableWidgetItem(str(lab[0]))
+            numberItem = QTableWidgetItem(str(lab.idx))
             numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 0, numberItem)
-            table.setItem(idx, 1, QTableWidgetItem(lab[1]))
-            c = lab[2]
+            table.setItem(idx, 1, QTableWidgetItem(lab.note))
+            c = lab.color
             colorItem = QTableWidgetItem()
             colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
             colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
@@ -591,7 +591,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # BUG: 判断颜色没变
         print(color.getRgb())
         table.item(row, col).setBackground(color)
-        self.labelList[row][2] = color.getRgb()[:3]
+        self.labelList[row].color = color.getRgb()[:3]
         if self.controller:
             self.controller.label_list = self.labelList
 
@@ -600,7 +600,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table = self.labelListTable
         if col == 3:
             table.removeRow(row)
-            del self.labelList[row]
+            self.labelList.remove(row)
         if col == 0 or col == 1:
             for idx in range(len(self.labelList)):
                 table.item(idx, 0).setBackground(QtGui.QColor(255, 255, 255))
@@ -617,7 +617,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
-        self.labelList[row][1] = name
+        self.labelList[row].note = name
 
     def openImage(self):
         formats = [
@@ -743,8 +743,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             # print('points:', points)
             self.setDirty()
             # self.scene.set(util.Instructions.Polygon_Instruction)
-            # # w, h = self.controller.image.shape[:2]
-            # # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
+            # w, h = self.controller.image.shape[:2]
+            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
             poly = PolygonAnnotation()
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)

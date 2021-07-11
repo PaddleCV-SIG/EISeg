@@ -283,7 +283,7 @@ class InteractiveController:
     @property
     def palette(self):
         if self.label_list:
-            colors = [l[2] for l in self.label_list]
+            colors = [ml.color for ml in self.label_list]
             colors.insert(0, [0, 0, 0])
         else:
             colors = [[0, 0, 0]]
