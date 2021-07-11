@@ -598,6 +598,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
 
+        self.adjustTableSize()
+
+    def adjustTableSize(self):
+        self.labelListTable.horizontalHeader().setDefaultSectionSize(25)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            3, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            2, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.setColumnWidth(2, 50)
+        
+
     def clearLabelList(self):
         self.labelList.clear()
         if self.controller:
