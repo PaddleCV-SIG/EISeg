@@ -12,6 +12,7 @@ from eiseg import pjpath, __APPNAME__
 from util import Instructions
 
 
+# BUG: item 不能移出图片的范围，需要限制起来
 class GripItem(QtWidgets.QGraphicsPathItem):
     circle = QtGui.QPainterPath()
     circle.addEllipse(QtCore.QRectF(-3, -3, 6, 6))
