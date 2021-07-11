@@ -10,6 +10,8 @@ vis_temp.py
 test.txt
 *.pdparams
 output/
+temp*
+temp/
 
 # C extensions
 *.so

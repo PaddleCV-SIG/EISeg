@@ -56,12 +56,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", [])
         self.recentModels = self.settings.value("recent_models", [])
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
-        print(self.recentModels)
+        # print(self.recentModels)
 
         # 初始化action
         self.initActions()
 
-        # 更新模型记录
+        # 更新模型使用记录
         self.updateModelsMenu()
 
         # 帮助界面
@@ -71,6 +71,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
+        self.img_item = QtWidgets.QGraphicsPixmapItem()
+        self.scene.addItem(self.img_item)
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
@@ -96,8 +98,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateFileMenu(self):
         menu = self.actions.recent_files
         menu.clear()
-        print("recentFiles", self.recentFiles)
-        files = [f for f in self.recentFiles if f != self.currentPath and osp.exists(f)]
+        # print("recentFiles", self.recentFiles)
+        files = [f for f in self.recentFiles if osp.exists(f)]
+        if self.currentPath in files:
+            files.remove(self.currentPath)
         for i, f in enumerate(files):
             if osp.exists(f):
                 icon = util.newIcon("File")
@@ -110,7 +114,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateModelsMenu(self):
         menu = self.actions.recent_params
         menu.clear()
-        print("recentModels", self.recentModels)
+        # print("recentModels", self.recentModels)
 
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
@@ -379,7 +383,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeModel(self, idx):
         self.modelClass = MODELS[idx]
-        # self.settings.setValue("recent_model", self.modelClass.__name__)
         print("model class:", self.modelClass)
 
     def changeParam(self):
@@ -493,7 +496,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if file_path == "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
             return
         self.labelList = util.readLabel(file_path)
-        print(self.labelList)
+        # print(self.labelList)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
 
@@ -554,7 +557,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.setRowCount(0)
 
     def refreshLabelList(self):
-        print(self.labelList)
+        # print(self.labelList)
         table = self.labelListTable
         table.clearContents()
         table.setRowCount(len(self.labelList))
@@ -605,7 +608,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
-                print(int(table.item(row, 0).text()))
+                # print(int(table.item(row, 0).text()))
                 self.controller.change_label_num(int(table.item(row, 0).text()))
                 self.controller.label_list = self.labelList
 
@@ -739,6 +742,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             points = util.get_polygon(current_mask)
             # print('points:', points)
             self.setDirty()
+<<<<<<< HEAD
             self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
             # w, h = self.controller.image.shape[:2]
             # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
@@ -749,6 +753,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for p in points:
                 # self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
                 obj_poly.addPoint(QtCore.QPointF(p[0], p[1]))
+=======
+            # self.scene.set(util.Instructions.Polygon_Instruction)
+            # w, h = self.controller.image.shape[:2]
+            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
+            poly = PolygonAnnotation()
+            self.scene.addItem(poly)
+            self.scene.polygon_items.append(poly)
+            for p in points:
+                poly.addPoint(QtCore.QPointF(p[0], p[1]))
+>>>>>>> cf96df522fc0b47b55b4f1442190991bbfd231e2
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
@@ -904,12 +918,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
             self.resetZoom(width, height)
-        # self.scene.addPixmap(QPixmap(image))
-        img_item = QtWidgets.QGraphicsPixmapItem(QPixmap(image))
-        self.scene.addItem(img_item)
+        self.img_item.setPixmap(QPixmap(image))
 
-        # TODO: 研究是否有类似swap的更高效方式
-        # self.scene.removeItem(self.scene.items()[1])
+        # BUG: 一直有两张图片在scene里，研究是为什么
+        # print(self.scene.items())
 
     # 界面缩放重置
     def resetZoom(self, width, height):
