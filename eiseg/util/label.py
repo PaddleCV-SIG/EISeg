@@ -23,7 +23,7 @@ def _saveLabel(labelList, path):
     with open(path, "w", encoding="utf-8") as f:
         for ml in labelList:
             print(ml.idx, end=" ", file=f)
-            print(ml.note, end=" ", file=f)
+            print(ml.name, end=" ", file=f)
             for idx in range(3):
                 print(ml.color[idx], end=" ", file=f)
             print(file=f)
@@ -46,19 +46,19 @@ def _readLabel(path):
     return labelList
 
 
-class _MaskLabel():
-    def __init__(self, idx=None, note=None, color=None):
+class _MaskLabel:
+    def __init__(self, idx=None, name=None, color=None):
         self.idx = idx
-        self.note = note
+        self.name = name
         self.color = color
 
 
 class Labeler(object):
     def __init__(self):
         self.list = []
-    
-    def add(self, idx, note, color):
-        self.list.append(_MaskLabel(idx, note, color))
+
+    def add(self, idx, name, color):
+        self.list.append(_MaskLabel(idx, name, color))
 
     def remove(self, index):
         del self.list[index]
