@@ -4,3 +4,4 @@ from .config import parse_configs, save_configs
 from .network import model_path
 from .colormap import ColorMask
 from .polygon import get_polygon, Instructions
+from .manager import MODELS
