@@ -19,7 +19,7 @@ class ColorMask(object):
         diffs = [0 for _ in range(len(self))]
         for colorIdx in range(len(self)):
             for lab in labelList:
-                lab = lab[2]
+                lab = lab.color
                 print(lab)
                 if self.colors[colorIdx] == lab:
                     diffs[colorIdx] = 0
