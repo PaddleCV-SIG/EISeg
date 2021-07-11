@@ -62,8 +62,8 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
 
 首先clone本项目到本地。
 ```shell
-git clone https://github.com/PaddlePaddle/PaddleSeg
-cd PaddleSeg/contrib/eiseg
+git clone https://github.com/PaddleCV-SIG/EISeg.git
+cd EISeg
 pip install -r requirements.txt
 python -m eiseg
 ```
