@@ -57,6 +57,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         return super(GripItem, self).itemChange(change, value)
 
 
+# TODO: 添加一个点
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
         self,
@@ -99,7 +100,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def removeFocusPoint(self):
         focusIdx = None
         for idx, item in enumerate(self.m_items):
-            print(item.hasFocus())
             if item.hasFocus():
                 focusIdx = idx
                 break
@@ -107,23 +107,9 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.scene().removeItem(self.m_items[focusIdx])
             del self.m_items[idx]
             del self.m_points[idx]
-            for item in self.m_items:
-                print(item.m_index)
-
             for item in self.m_items[focusIdx:]:
                 item.m_index -= 1
             self.setPolygon(QtGui.QPolygonF(self.m_points))
-
-            # for item in self.m_items:
-            #     self.scene().removeItem(item)
-            # del self.m_points[idx]
-            # points = self.m_points
-            # self.m_points = []
-            # self.m_items = []
-            # for p in points:
-            #     print(p)
-            #     self.addPoint(p)
-            # print("finish")
 
     def focusInEvent(self, ev):
         self.setBrush(self.insideColor)
