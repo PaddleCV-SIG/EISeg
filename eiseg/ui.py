@@ -126,26 +126,20 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
 
     def __init__(self, parent=None):
         super(AnnotationScene, self).__init__(parent)
-        self.current_instruction = Instructions.No_Instruction
-        self.polygon_item = PolygonAnnotation()
+        self.creating = False
+        self.polygon_items = []  # = PolygonAnnotation()
+        # self.addItem(self.polygon_item)
 
-        self.addItem(self.polygon_item)
-
-    def setCurrentInstruction(self, instruction=Instructions.Polygon_Instruction):
-        self.current_instruction = instruction
+    def setCreating(self, creating=True):
+        self.creating = creating
 
     def mousePressEvent(self, ev):
         pos = ev.scenePos()
-        print(self.current_instruction, self.polygon_item.item_hovering)
-        if (
-            self.current_instruction == Instructions.No_Instruction
-            and not self.polygon_item.item_hovering
-            and not self.polygon_item.polygon_hovering
-        ):
+        print(self.creating, self.item_hovering)
+        if not self.creating and not self.hovering:
             if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
                 self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
-
-        elif self.current_instruction == Instructions.Polygon_Instruction:
+        elif self.creating:
             self.polygon_item.removeLastPoint()
             self.polygon_item.addPoint(ev.scenePos())
             # movable element
@@ -153,11 +147,30 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         super(AnnotationScene, self).mousePressEvent(ev)
 
     def mouseMoveEvent(self, ev):
-        if self.current_instruction == Instructions.Polygon_Instruction:
+        if self.creating:
             self.polygon_item.movePoint(
                 self.polygon_item.number_of_points() - 1, ev.scenePos()
             )
         super(AnnotationScene, self).mouseMoveEvent(ev)
+
+    @property
+    def item_hovering(self):
+        for poly in self.polygon_items:
+            if poly.item_hovering:
+                return True
+        return False
+
+    @property
+    def polygon_hovering(self):
+        for poly in self.polygon_items:
+            if poly.polygon_hovering:
+                return True
+        return False
+
+    @property
+    def hovering(self):
+        print(self.item_hovering, self.polygon_hovering)
+        return self.item_hovering or self.polygon_hovering
 
 
 class AnnotationView(QGraphicsView):
@@ -281,7 +294,9 @@ class Ui_EISeg(object):
             QtCore.Qt.Key_Escape,
             self,
             activated=partial(
-                self.scene.setCurrentInstruction, Instructions.No_Instruction
+                # self.scene.setCurrentInstruction, Instructions.No_Instruction
+                self.scene.setCreating,
+                False,
             ),
         )
 

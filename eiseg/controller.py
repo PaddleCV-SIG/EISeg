@@ -1,9 +1,6 @@
 import time
 
 import paddle
-
-# from tkinter import messagebox
-
 import numpy as np
 import paddleseg.transforms as T
 
