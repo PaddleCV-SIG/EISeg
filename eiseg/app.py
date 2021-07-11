@@ -584,7 +584,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             numberItem = QTableWidgetItem(str(lab.idx))
             numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 0, numberItem)
-            table.setItem(idx, 1, QTableWidgetItem(lab.note))
+            table.setItem(idx, 1, QTableWidgetItem(lab.name))
             c = lab.color
             colorItem = QTableWidgetItem()
             colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
@@ -639,7 +639,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
-        self.labelList[row].note = name
+        self.labelList[row].name = name
 
     def openImage(self):
         formats = [
@@ -763,7 +763,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             current_mask = current_mask.astype(np.uint8) * 255
             points = util.get_polygon(current_mask)
             self.setDirty()
-            color = self.labelList[self.currLabelIdx][2]
+            color = self.labelList[self.currLabelIdx].color
             poly = PolygonAnnotation(color, color, self.opacity)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
