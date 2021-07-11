@@ -1,15 +1,16 @@
 import time
 
 import paddle
-
-# from tkinter import messagebox
-
 import numpy as np
 import paddleseg.transforms as T
+from skimage.measure import label
 
 from inference import clicker
 from inference.predictor import get_predictor
 from util.vis import draw_with_blend_and_clicks
+
+# DEBUG:
+import matplotlib.pyplot as plt
 
 
 class InteractiveController:
@@ -157,6 +158,7 @@ class InteractiveController:
             return None
         # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
+        object_mask = self.largestCC(object_mask)
         print("curr_label_number:", self.curr_label_number)
         self._result_mask[object_mask] = self.curr_label_number
         self.reset_last_object()
@@ -238,6 +240,13 @@ class InteractiveController:
             )
         return result_mask
 
+    def largestCC(self, mask):
+        mask = label(mask)
+        if mask.max() == 0:
+            return mask
+        mask = mask == np.argmax(np.bincount(mask.flat)[1:]) + 1
+        return mask
+
     def get_visualization(self, alpha_blend, click_radius):
         if self.image is None:
             return None
@@ -248,7 +257,7 @@ class InteractiveController:
             results_mask_for_vis[
                 self.current_object_prob > self.prob_thresh
             ] = self.curr_label_number
-
+        results_mask_for_vis = self.largestCC(results_mask_for_vis)
         vis = draw_with_blend_and_clicks(
             self.image,
             mask=results_mask_for_vis,
@@ -258,16 +267,16 @@ class InteractiveController:
             palette=self.palette,
         )
 
-        # 2. 在图片和当前mask的基础上画之前标完的mask
-        if self.probs_history:
-            total_mask = self.probs_history[-1][0] > self.prob_thresh
-            results_mask_for_vis[np.logical_not(total_mask)] = 0
-            vis = draw_with_blend_and_clicks(
-                vis,
-                mask=results_mask_for_vis,
-                alpha=alpha_blend,
-                palette=self.palette,
-            )
+        # # 2. 在图片和当前mask的基础上画之前标完的mask
+        # if self.probs_history:
+        #     total_mask = self.probs_history[-1][0] > self.prob_thresh
+        #     results_mask_for_vis[np.logical_not(total_mask)] = 0
+        #     vis = draw_with_blend_and_clicks(
+        #         vis,
+        #         mask=results_mask_for_vis,
+        #         alpha=alpha_blend,
+        #         palette=self.palette,
+        #     )
 
         return vis
 
