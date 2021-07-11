@@ -566,7 +566,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.saveLabel(savePath)
 
     def addLabel(self):
-        c = self.maskColormap.get_color(self.labelList)
+        c = self.maskColormap.get_color()
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
