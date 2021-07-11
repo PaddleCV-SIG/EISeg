@@ -29,6 +29,7 @@ class InteractiveController:
         self.predictor = None
         self.update_image_callback = update_image_callback
         self.predictor_params = predictor_params
+        self.filterLargestCC = False
         self.reset_predictor()
 
     def set_image(self, image):
@@ -158,7 +159,8 @@ class InteractiveController:
             return None
         # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
-        object_mask = self.largestCC(object_mask)
+        if self.filterLargestCC:
+            object_mask = self.getLargestCC(object_mask)
         print("curr_label_number:", self.curr_label_number)
         self._result_mask[object_mask] = self.curr_label_number
         self.reset_last_object()
@@ -240,7 +242,8 @@ class InteractiveController:
             )
         return result_mask
 
-    def largestCC(self, mask):
+    def getLargestCC(self, mask):
+        # TODO: 从所有正点开始找，漫水到所有包括正点的联通块
         mask = label(mask)
         if mask.max() == 0:
             return mask
@@ -257,7 +260,8 @@ class InteractiveController:
             results_mask_for_vis[
                 self.current_object_prob > self.prob_thresh
             ] = self.curr_label_number
-        results_mask_for_vis = self.largestCC(results_mask_for_vis)
+        if self.filterLargestCC:
+            results_mask_for_vis = self.getLargestCC(results_mask_for_vis)
         vis = draw_with_blend_and_clicks(
             self.image,
             mask=results_mask_for_vis,
