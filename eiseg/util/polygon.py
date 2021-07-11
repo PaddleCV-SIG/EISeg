@@ -21,8 +21,8 @@ def get_polygon(label, sample=2):
     # print("contours", contours[1])
 
     cv2_v = cv2.__version__.split(".")[0]
-    contours = contours[1] if cv2_v == "3" else contours[0]
     print(f"Totally {len(contours[1])} contours")
+    contours = contours[1] if cv2_v == "3" else contours[0]
     polygons = []
     for contour in contours:
         polygon = []

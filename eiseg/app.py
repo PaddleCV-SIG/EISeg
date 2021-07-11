@@ -124,7 +124,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             icon = util.newIcon("Model")
             action = QtWidgets.QAction(
                 icon,
-                # 完整路径感觉太长了
                 f"&【{m['model_name']}】 {osp.basename(m['param_path'])}",
                 self,
             )
@@ -133,6 +132,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             menu.addAction(action)
         self.settings.setValue("recent_params", self.recentModels)
+
+    def delActivePolygon(self):
+        print("in")
+        for idx, polygon in enumerate(self.scene.polygon_items):
+            if polygon.hasFocus():
+                polygon.remove()
+                # self.scene.removeItem(polygon)
 
     def initActions(self):
         def menu(title, actions=None):
@@ -143,6 +149,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         shortcuts = self.config["shortcut"]
+        del_active_polygon = action(
+            self.tr("&删除多边形"),
+            self.delActivePolygon,
+            shortcuts["del_active_polygon"],
+            "Clear",
+            self.tr("删除当前选中的多边形"),
+        )
         turn_prev = action(
             self.tr("&上一张"),
             partial(self.turnImg, -1),
@@ -201,7 +214,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("快速上手介绍"),
         )
         about = action(
-            self.tr("&关于软件"),
+            self.tr("&关于软del_active_polygon件"),
             self.toBeImplemented,
             None,
             "About",
@@ -371,6 +384,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 largest_component,
                 grid_ann,
+                del_active_polygon,
             ),
             helpMenu=(quick_start, about, shortcuts),
             toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
@@ -765,7 +779,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             polygons = util.get_polygon(current_mask)
-            # print(f"Totally {len(points)} points")
             self.setDirty()
             color = self.labelList[self.currLabelIdx].color
             for points in polygons:
