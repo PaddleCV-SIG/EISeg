@@ -86,7 +86,21 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+
+    def remove(self):
+        for item in self.m_items:
+            self.scene().removeItem(item)
+        self.scene().removeItem(self)
+
+    def focusInEvent(self, ev):
+        self.setBrush(self.insideColor)
+
+    def focusOutEvent(self, ev):
+        if not self.polygon_hovering:
+            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
 
     def setOpacity(self, opacity):
         self.opacity = opacity
@@ -140,7 +154,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
     def hoverLeaveEvent(self, ev):
         self.polygon_hovering = False
-        self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        if not self.hasFocus():
+            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
         super(PolygonAnnotation, self).hoverLeaveEvent(ev)
 
 
