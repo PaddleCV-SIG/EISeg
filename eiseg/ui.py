@@ -30,6 +30,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
         self.setAcceptHoverEvents(True)
         self.setZValue(11)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
@@ -94,6 +95,35 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         for item in self.m_items:
             self.scene().removeItem(item)
         self.scene().removeItem(self)
+
+    def removeFocusPoint(self):
+        focusIdx = None
+        for idx, item in enumerate(self.m_items):
+            print(item.hasFocus())
+            if item.hasFocus():
+                focusIdx = idx
+                break
+        if focusIdx:
+            self.scene().removeItem(self.m_items[focusIdx])
+            del self.m_items[idx]
+            del self.m_points[idx]
+            for item in self.m_items:
+                print(item.m_index)
+
+            for item in self.m_items[focusIdx:]:
+                item.m_index -= 1
+            self.setPolygon(QtGui.QPolygonF(self.m_points))
+
+            # for item in self.m_items:
+            #     self.scene().removeItem(item)
+            # del self.m_points[idx]
+            # points = self.m_points
+            # self.m_points = []
+            # self.m_items = []
+            # for p in points:
+            #     print(p)
+            #     self.addPoint(p)
+            # print("finish")
 
     def focusInEvent(self, ev):
         self.setBrush(self.insideColor)
