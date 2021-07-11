@@ -20,7 +20,10 @@ def get_polygon(label, sample=2):
     # plt.imshow(label)
     # plt.savefig("./temp.png")
     # print("contours", contours[1])
-    for p in contours[1][0]:  # 0索引显示的边界
+    # opencv3返回为3个参数，其中第二个是边界；opencv4和2只返回2个参数，其中第一个是边界
+    cv2_v = cv2.__version__.split('.')[0]
+    boundary = contours[1][0] if cv2_v == 3 else contours[0][0]
+    for p in boundary:
         # print("+_+_+", p)
         if count == sample:
             points.append(p[0])
