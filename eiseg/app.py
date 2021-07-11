@@ -764,15 +764,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         current_mask = self.controller.finish_object()
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
-            points = util.get_polygon(current_mask)
+            polygons = util.get_polygon(current_mask)
+            # print(f"Totally {len(points)} points")
             self.setDirty()
             color = self.labelList[self.currLabelIdx].color
-            poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
-            poly.labelIndex = self.currLabelIdx
-            self.scene.addItem(poly)
-            self.scene.polygon_items.append(poly)
-            for p in points:
-                poly.addPoint(QtCore.QPointF(p[0], p[1]))
+            for points in polygons:
+                poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
+                poly.labelIndex = self.currLabelIdx
+                self.scene.addItem(poly)
+                self.scene.polygon_items.append(poly)
+                for p in points:
+                    poly.addPoint(QtCore.QPointF(p[0], p[1]))
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
