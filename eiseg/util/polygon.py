@@ -17,11 +17,11 @@ def get_polygon(label, sample=2):
     points = []
     count = 0
 
-    plt.imshow(label)
-    plt.savefig("./temp.png")
-    print("contours", contours[1])
+    # plt.imshow(label)
+    # plt.savefig("./temp.png")
+    # print("contours", contours[1])
     for p in contours[1][0]:  # 0索引显示的边界
-        print("+_+_+", p)
+        # print("+_+_+", p)
         if count == sample:
             points.append(p[0])
             count = 0

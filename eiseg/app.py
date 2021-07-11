@@ -55,7 +55,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", [])
         self.recentModels = self.settings.value("recent_models", [])
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
-        print(self.recentModels)
+        # print(self.recentModels)
 
         # 初始化action
         self.initActions()
@@ -97,7 +97,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateFileMenu(self):
         menu = self.actions.recent_files
         menu.clear()
-        print("recentFiles", self.recentFiles)
+        # print("recentFiles", self.recentFiles)
         files = [f for f in self.recentFiles if osp.exists(f)]
         if self.currentPath in files:
             files.remove(self.currentPath)
@@ -113,7 +113,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateModelsMenu(self):
         menu = self.actions.recent_params
         menu.clear()
-        print("recentModels", self.recentModels)
+        # print("recentModels", self.recentModels)
 
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
@@ -476,7 +476,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if file_path == "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
             return
         self.labelList = util.readLabel(file_path)
-        print(self.labelList)
+        # print(self.labelList)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
 
@@ -537,7 +537,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.setRowCount(0)
 
     def refreshLabelList(self):
-        print(self.labelList)
+        # print(self.labelList)
         table = self.labelListTable
         table.clearContents()
         table.setRowCount(len(self.labelList))
@@ -588,7 +588,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
-                print(int(table.item(row, 0).text()))
+                # print(int(table.item(row, 0).text()))
                 self.controller.change_label_num(int(table.item(row, 0).text()))
                 self.controller.label_list = self.labelList
 
@@ -888,7 +888,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.img_item.setPixmap(QPixmap(image))
 
         # BUG: 一直有两张图片在scene里，研究是为什么
-        print(self.scene.items())
+        # print(self.scene.items())
 
     # 界面缩放重置
     def resetZoom(self, width, height):
