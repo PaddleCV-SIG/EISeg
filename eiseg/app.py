@@ -39,7 +39,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.status = self.IDILE
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
-        self.modelClass = None
+        # 默认显示为HRNet18s，默认的类别应该统一，否则直接加载报错
+        self.modelClass = MODELS[0]
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
         self.filePaths = []  # 文件夹下所有待标注图片路径
@@ -101,7 +102,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if osp.exists(f):
                 icon = util.newIcon("File")
                 action = QtWidgets.QAction(
-                    icon, "&%d %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+                    icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
                 )
                 action.triggered.connect(partial(self.loadImage, f, True))
                 menu.addAction(action)
@@ -118,7 +119,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             icon = util.newIcon("Model")
             action = QtWidgets.QAction(
                 icon,
-                f"&模型： {m['model_name']} 权重： {m['param_path']}",
+                # 完整路径感觉太长了
+                f"&【{m['model_name']}】 {osp.basename(m['param_path'])}",
                 self,
             )
             action.triggered.connect(
@@ -316,6 +318,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Shortcut",
             self.tr("查看所有快捷键"),
         )
+        clear_recent = action(
+            self.tr("&清除最近记录"),
+            self.clearRecent,
+            "",
+            "ClearRecent",
+            self.tr("删除最近记录文件"),
+        )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateFileMenu)
         recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
@@ -330,6 +339,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 open_folder,
                 change_output_dir,
                 # model_loader,
+                clear_recent,
                 recent_files,
                 recent_params,
                 None,
@@ -375,11 +385,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeParam(self):
         formats = ["*.pdparams"]
         filters = self.tr("paddle model param files (%s)") % " ".join(formats)
+        start_path = "/home/lin/Downloads" if len(self.recentModels) == 0 \
+                     else osp.dirname(self.recentModels[-1]["param_path"])
+        # print(start_path)
         param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
             self.tr("%s - 选择模型参数") % __APPNAME__,
-            "/home/lin/Downloads",
-            # TODO: 最近模型文件夹
+            # "/home/lin/Downloads",
+            start_path,
             filters,
         )
         if not osp.exists(param_path):
@@ -413,7 +426,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("not a instance")
             return False
         modelIdx = MODELS.idx(model.__name__)
-        self.statusbar.showMessage(f"正在加载 {model.__name__} 模型")
+        self.statusbar.showMessage(f"正在加载 {model.__name__} 模型")  # 这里没显示
         model = model.load_param(param_path)
         if model is not None:
             if self.controller is None:
@@ -461,6 +474,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         model = MODELS[m["model_name"]]
         param_path = m["param_path"]
         self.loadModelParam(param_path, model)
+
+    def clearRecent(self):
+        ini_path = osp.join(pjpath, "config/setting.ini")
+        print(ini_path)
+        if osp.exists(ini_path):
+            os.remove(ini_path)
+            self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def loadLabelList(self):
         filters = self.tr("标签配置文件 (*.txt)")
@@ -720,10 +740,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             # print('points:', points)
             self.setDirty()
             self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
-            w, h = self.controller.image.shape[:2]
+            # w, h = self.controller.image.shape[:2]
             # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
+            # 多个边界
+            obj_poly = PolygonAnnotation()
+            self.scene.polygon_item = obj_poly
+            self.scene.addItem(obj_poly)
             for p in points:
-                self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
+                # self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
+                obj_poly.addPoint(QtCore.QPointF(p[0], p[1]))
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
