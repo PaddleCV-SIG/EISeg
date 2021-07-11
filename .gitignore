@@ -151,3 +151,6 @@ test_output/
 
 # qsetting
 *.ini
+
+# mask_sm
+tool/mask.png
