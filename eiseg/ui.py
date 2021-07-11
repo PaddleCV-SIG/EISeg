@@ -128,8 +128,7 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         super(AnnotationScene, self).__init__(parent)
         self.current_instruction = Instructions.No_Instruction
         self.polygon_item = PolygonAnnotation()
-
-        self.addItem(self.polygon_item)
+        # self.addItem(self.polygon_item)
 
     def setCurrentInstruction(self, instruction=Instructions.Polygon_Instruction):
         self.current_instruction = instruction
