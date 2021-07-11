@@ -59,6 +59,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
         self,
+        index,
         insideColor=[255, 0, 0],
         borderColor=[0, 255, 0],
         opacity=0.5,
@@ -70,11 +71,12 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         i = insideColor
         self.insideColor = QtGui.QColor(i[0], i[1], i[2])
         self.insideColor.setAlphaF(opacity)
+        self.opacity = opacity
         self.m_points = []
         self.m_items = []
+        self.labelIndex = index
 
         self.setZValue(10)
-        # self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
         b = borderColor
         self.borderColor = QtGui.QColor(b[0], b[1], b[2])
         self.borderColor.setAlphaF(0.8)
@@ -87,7 +89,12 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     def setOpacity(self, opacity):
+        self.opacity = opacity
         self.insideColor.setAlphaF(opacity)
+
+    def setColor(self, c):
+        self.insideColor = QtGui.QColor(c[0], c[1], c[2])
+        self.insideColor.setAlphaF(self.opacity)
 
     def number_of_points(self):
         return len(self.m_items)
@@ -338,7 +345,7 @@ class Ui_EISeg(object):
         sizePolicy.setHeightForWidth(self.dockWorker.sizePolicy().hasHeightForWidth())
         self.dockWorker.setSizePolicy(sizePolicy)
         self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
-        self.dockWorker.setWindowTitle("工作区")
+        # self.dockWorker.setWindowTitle("工作区")
         self.dockWorker.setFeatures(
             QtWidgets.QDockWidget.DockWidgetFloatable
             | QtWidgets.QDockWidget.DockWidgetMovable
@@ -372,6 +379,7 @@ class Ui_EISeg(object):
         SetRegion.addLayout(ModelRegion)
         SetRegion.setStretch(0, 1)
         # 数据列表
+        # TODO: 数据列表加一个搜索功能
         listRegion = QtWidgets.QVBoxLayout()
         listRegion.setObjectName("listRegion")
         labFiles = self.create_text(CentralWidget, "labFiles", "数据列表")

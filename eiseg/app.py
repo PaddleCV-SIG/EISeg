@@ -29,6 +29,9 @@ np.set_printoptions(threshold=sys.maxsize)
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
     IDILE, ANNING, EDITING = 0, 1, 2
+    # IDILE：打开软件到模型和权重加载之前
+    # ANNING：有未完成的交互式标注
+    # EDITING：交互式标注完成，修改多边形
 
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
@@ -56,7 +59,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", [])
         self.recentModels = self.settings.value("recent_models", [])
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
-        # print(self.recentModels)
 
         # 初始化action
         self.initActions()
@@ -87,7 +89,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldThresh.valueChanged.connect(self.threshChanged)
 
         ## 标签列表点击
-        # TODO: 更换标签颜色之后重绘所有已有标签
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
@@ -613,6 +614,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList[row].color = color.getRgb()[:3]
         if self.controller:
             self.controller.label_list = self.labelList
+        for p in self.scene.polygon_items:
+            p.setColor(self.labelList[p.labelIndex].color)
 
     @property
     def currLabelIdx(self):
@@ -764,7 +767,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             points = util.get_polygon(current_mask)
             self.setDirty()
             color = self.labelList[self.currLabelIdx].color
-            poly = PolygonAnnotation(color, color, self.opacity)
+            poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
+            poly.labelIndex = self.currLabelIdx
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
