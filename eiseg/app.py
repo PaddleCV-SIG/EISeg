@@ -264,7 +264,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         # auto_save.setChecked(self.config.get("auto_save", False))
-
+        largest_component = action(
+            self.tr("&保留最大连通块"),
+            self.toggleLargestCC,
+            "",
+            "AutoSave",
+            self.tr("翻页同时自动保存"),
+            checkable=True,
+        )
         recent = action(
             self.tr("&近期图片"),
             self.toBeImplemented,
@@ -356,7 +363,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 quit,
             ),
-            labelMenu=(save_label, load_label, clear_label, None, grid_ann),
+            labelMenu=(
+                save_label,
+                load_label,
+                clear_label,
+                None,
+                largest_component,
+                grid_ann,
+            ),
             helpMenu=(quick_start, about, shortcuts),
             toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
         )
@@ -381,6 +395,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.config["auto_save"] = save
         util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
 
+    def toggleLargestCC(self, on):
+        self.filterLargestCC = on
+        self.controller.filterLargestCC = on
+
     def changeModel(self, idx):
         self.modelClass = MODELS[idx]
         print("model class:", self.modelClass)
@@ -400,7 +418,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if not osp.exists(param_path):
             return
-        # model = self.modelClass().load_param(param_path)
         res = self.loadModelParam(param_path)
         if res:
             model_dict = {
@@ -493,10 +510,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ".",
             filters,
         )
-        if file_path == "":  # 不加判断打开保存界面然后关闭会报错，主要是刷新列表
+        if not osp.exists(file_path):
             return
         self.labelList.readLabel(file_path)
-        # print(self.labelList)
+        print("Loaded label list:", self.labelList.list)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
 
@@ -518,14 +535,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         savePath, _ = dlg.getSaveFileName(
             self, self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__, ".", filters
         )
-        print(savePath)
+        print("Save label list:", self.labelList.list, savePath)
         self.settings.setValue("label_list_file", savePath)
-        print("calling save label")
         self.labelList.saveLabel(savePath)
 
     def addLabel(self):
-        # 可以在配色表中预制多种容易分辨的颜色，直接随机生成恐怕生成类似的颜色不好区分
-        c = self.maskColormap.get_color()  # 从配色表取颜色
+        c = self.maskColormap.get_color(self.labelList)
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
