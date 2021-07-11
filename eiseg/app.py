@@ -742,27 +742,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             points = util.get_polygon(current_mask)
             # print('points:', points)
             self.setDirty()
-<<<<<<< HEAD
-            self.scene.setCurrentInstruction(util.Instructions.Polygon_Instruction)
-            # w, h = self.controller.image.shape[:2]
-            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
-            # 多个边界
-            obj_poly = PolygonAnnotation()
-            self.scene.polygon_item = obj_poly
-            self.scene.addItem(obj_poly)
-            for p in points:
-                # self.scene.polygon_item.addPoint(QtCore.QPointF(p[0], p[1]))
-                obj_poly.addPoint(QtCore.QPointF(p[0], p[1]))
-=======
             # self.scene.set(util.Instructions.Polygon_Instruction)
-            # w, h = self.controller.image.shape[:2]
-            # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
+            # # w, h = self.controller.image.shape[:2]
+            # # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
             poly = PolygonAnnotation()
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
                 poly.addPoint(QtCore.QPointF(p[0], p[1]))
->>>>>>> cf96df522fc0b47b55b4f1442190991bbfd231e2
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的

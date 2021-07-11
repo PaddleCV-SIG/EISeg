@@ -127,21 +127,12 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
 
     def __init__(self, parent=None):
         super(AnnotationScene, self).__init__(parent)
-<<<<<<< HEAD
-        self.current_instruction = Instructions.No_Instruction
-        self.polygon_item = PolygonAnnotation()
-        # self.addItem(self.polygon_item)
-
-    def setCurrentInstruction(self, instruction=Instructions.Polygon_Instruction):
-        self.current_instruction = instruction
-=======
         self.creating = False
         self.polygon_items = []  # = PolygonAnnotation()
         # self.addItem(self.polygon_item)
 
     def setCreating(self, creating=True):
         self.creating = creating
->>>>>>> cf96df522fc0b47b55b4f1442190991bbfd231e2
 
     def mousePressEvent(self, ev):
         pos = ev.scenePos()
