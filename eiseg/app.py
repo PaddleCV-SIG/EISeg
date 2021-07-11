@@ -99,7 +99,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateFileMenu(self):
         menu = self.actions.recent_files
         menu.clear()
-        # print("recentFiles", self.recentFiles)
         files = [f for f in self.recentFiles if osp.exists(f)]
         if self.currentPath in files:
             files.remove(self.currentPath)
@@ -115,8 +114,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateModelsMenu(self):
         menu = self.actions.recent_params
         menu.clear()
-        # print("recentModels", self.recentModels)
-
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
         ]
@@ -144,8 +141,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 res = msg.exec_()
                 if res == QMessageBox.Yes:
                     polygon.remove()
-                    # self.scene.removeItem(polygon)
                     del self.scene.polygon_items[idx]
+
+    def delActivePoint(self):
+        print("delActivePoint")
+        for polygon in self.scene.polygon_items:
+            polygon.removeFocusPoint()
 
     def initActions(self):
         def menu(title, actions=None):
@@ -156,6 +157,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         shortcuts = self.config["shortcut"]
+        del_active_point = action(
+            self.tr("&删除点"),
+            self.delActivePoint,
+            shortcuts["del_active_point"],
+            "Clear",
+            self.tr("删除当前选中的点"),
+        )
         del_active_polygon = action(
             self.tr("&删除多边形"),
             self.delActivePolygon,
@@ -221,7 +229,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("快速上手介绍"),
         )
         about = action(
-            self.tr("&关于软del_active_polygon件"),
+            self.tr("&关于软件"),
             self.toBeImplemented,
             None,
             "About",
@@ -392,6 +400,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 largest_component,
                 grid_ann,
                 del_active_polygon,
+                del_active_point,
             ),
             helpMenu=(quick_start, about, shortcuts),
             toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),

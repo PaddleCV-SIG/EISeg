@@ -9,7 +9,7 @@ class Instructions(Enum):
     Polygon_Instruction = 1
 
 
-def get_polygon(label, sample=2):
+def get_polygon(label, sample=1):
     contours = cv2.findContours(
         image=label, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_TC89_KCOS
     )
