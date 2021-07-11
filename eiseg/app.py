@@ -609,7 +609,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.horizontalHeader().setSectionResizeMode(
             2, QtWidgets.QHeaderView.Fixed)
         self.labelListTable.setColumnWidth(2, 50)
-        
 
     def clearLabelList(self):
         self.labelList.clear()
