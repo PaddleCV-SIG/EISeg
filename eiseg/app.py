@@ -575,7 +575,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.saveLabel(savePath)
 
     def addLabel(self):
-        c = self.maskColormap.get_color(self.labelList)
+        c = self.maskColormap.get_color()
         table = self.labelListTable
         table.insertRow(table.rowCount())
         idx = table.rowCount() - 1
@@ -597,6 +597,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
+
+        self.adjustTableSize()
+
+    def adjustTableSize(self):
+        self.labelListTable.horizontalHeader().setDefaultSectionSize(25)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            0, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            3, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.horizontalHeader().setSectionResizeMode(
+            2, QtWidgets.QHeaderView.Fixed)
+        self.labelListTable.setColumnWidth(2, 50)
 
     def clearLabelList(self):
         self.labelList.clear()
