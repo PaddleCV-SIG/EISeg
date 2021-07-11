@@ -6,7 +6,8 @@ from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
-from models import models
+import models
+from util import MODELS
 from eiseg import pjpath, __APPNAME__
 from util import Instructions
 
@@ -260,7 +261,9 @@ class Ui_EISeg(object):
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
         MainWindow.setStatusBar(self.statusbar)
-        self.statusbar.addPermanentWidget(self.show_logo(osp.join(pjpath, "resource/Paddle.png")))
+        self.statusbar.addPermanentWidget(
+            self.show_logo(osp.join(pjpath, "resource/Paddle.png"))
+        )
         ## -----
         ## -- 图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
@@ -324,15 +327,13 @@ class Ui_EISeg(object):
         # 模型加载
         ModelRegion = QtWidgets.QVBoxLayout()
         ModelRegion.setObjectName("ModelRegion")
-        labShowSet = self.create_text(CentralWidget, "labShowSet", "网络选择")
+        labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
         ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
-        # for model in models:
-        #     combo.addItem(model.name)
-        # 网络参数
-        combo.addItems([m.name for m in models])
+        combo.addItems([m.__name__ for m in MODELS])
         self.comboModelSelect = combo
-        ModelRegion.addWidget(self.comboModelSelect)  # 模型选择
+        ModelRegion.addWidget(self.comboModelSelect)
+        # 网络参数
         self.btnParamsSelect = p_create_button(
             "btnParamsLoad", "加载网络参数", osp.join(pjpath, "resource/Model.png"), "Ctrl+D"
         )

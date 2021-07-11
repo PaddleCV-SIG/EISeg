@@ -2,6 +2,7 @@ import os
 import os.path as osp
 from functools import partial
 import sys
+import inspect
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -13,12 +14,13 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from util.colormap import ColorMask
+import models
 from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
-from models import models, findModelByName
-import util
 from eiseg import pjpath, __APPNAME__
+import util
+from util.colormap import ColorMask
+from util import MODELS
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -30,40 +32,41 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
+        # 初始化界面
+        self.setupUi(self)
+
         # app变量
         self.status = self.IDILE
         self.controller = None
-        self.image = None  # 可能先加载图片后加载模型，暂村图片用
+        self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
+        self.modelClass = None
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
-        self.filePaths = []  # 标注文件夹时所有文件路径
-        self.currIdx = 0  # 打开文件夹时当前图片下标
+        self.filePaths = []  # 文件夹下所有待标注图片路径
+        self.currIdx = 0  # 文件夹标注当前图片下标
         self.currentPath = None
         self.isDirty = False
-        # TODO: 默认上次model
-        self.modelType = models[0]  # 模型类型
         # TODO: labelList用一个class实现
         self.labelList = []  # 标签列表(数字，名字，颜色)
-        self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
-        self.maskColormap = ColorMask(
-            color_path=osp.join(pjpath, "config/colormap.txt")
-        )
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
+        self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentFiles = self.settings.value("recent_files", [])
-        self.recentParams = self.settings.value("recent_params", [])
+        self.recentModels = self.settings.value("recent_models", [])
+        self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
+        print(self.recentModels)
 
-        # 初始化界面
-        self.setupUi(self)
+        # 初始化action
+        self.initActions()
+
+        # 更新模型记录
+        self.updateModelsMenu()
 
         # 帮助界面
         self.help_dialog = QtWidgets.QDialog()
         help_ui = Ui_Help()
         help_ui.setupUi(self.help_dialog)
-
-        # 初始化action
-        self.initActions()
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
@@ -71,9 +74,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
         self.listFiles.itemDoubleClicked.connect(self.listClicked)  # 标签列表点击
-        self.comboModelSelect.currentIndexChanged.connect(self.changeModelType)  # 模型选择
+        self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
         self.btnAddClass.clicked.connect(self.addLabel)
-        self.btnParamsSelect.clicked.connect(self.changeModel)  # 模型参数选择
+        self.btnParamsSelect.clicked.connect(self.changeParam)  # 模型参数选择
 
         ## 滑动
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
@@ -85,33 +88,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
-
         labelListFile = self.settings.value("label_list_file")
         self.labelList = util.readLabel(labelListFile)
         self.refreshLabelList()
 
-        # 打开上次关软件时用的模型
-        # 在run中异步加载近期吗，模型参数
-
-        # FIXME: 消息传到模型那去
-        # 消息栏（放到load_recent_params不会显示）
-        if len(self.recentParams) == 0:
-            self.statusbar.showMessage("模型参数未加载")
-        else:
-            if osp.exists(self.recentParams[-1]["path"]):
-                # TODO: 能不能删除注册表中找不到的路径
-                self.statusbar.showMessage("正在加载最近模型参数")
-            else:
-                self.statusbar.showMessage("最近参数不存在，请重新加载参数")
-
     def updateFileMenu(self):
-        def exists(filename):
-            return osp.exists(str(filename))
-
         menu = self.actions.recent_files
         menu.clear()
         print("recentFiles", self.recentFiles)
-        files = [f for f in self.recentFiles if f != self.currentPath and exists(f)]
+        files = [f for f in self.recentFiles if f != self.currentPath and osp.exists(f)]
         for i, f in enumerate(files):
             if osp.exists(f):
                 icon = util.newIcon("File")
@@ -121,26 +106,26 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 action.triggered.connect(partial(self.loadImage, f, True))
                 menu.addAction(action)
 
-    def updateParamsMenu(self):
-        def exists(filename):
-            return osp.exists(str(filename))
-
+    def updateModelsMenu(self):
         menu = self.actions.recent_params
         menu.clear()
-        print("recentParams", self.recentParams)
-        files = [f for f in self.recentParams if exists(f["path"])]
-        for i, f in enumerate(files):
-            if osp.exists(f["path"]):
-                icon = util.newIcon("Model")
-                action = QtWidgets.QAction(
-                    icon,
-                    "&%d %s" % (i + 1, QtCore.QFileInfo(f["path"]).fileName()),
-                    self,
-                )
-                action.triggered.connect(
-                    partial(self.load_model_params, f["path"], f["type"])
-                )
-                menu.addAction(action)
+        print("recentModels", self.recentModels)
+
+        self.recentModels = [
+            m for m in self.recentModels if osp.exists(m["param_path"])
+        ]
+        for idx, m in enumerate(self.recentModels):
+            icon = util.newIcon("Model")
+            action = QtWidgets.QAction(
+                icon,
+                f"&模型： {m['model_name']} 权重： {m['param_path']}",
+                self,
+            )
+            action.triggered.connect(
+                partial(self.loadModelParam, m["param_path"], m["model_name"])
+            )
+            menu.addAction(action)
+        self.settings.setValue("recent_params", self.recentModels)
 
     def initActions(self):
         def menu(title, actions=None):
@@ -333,8 +318,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateFileMenu)
-        recent_params = QtWidgets.QMenu(self.tr("近期模型参数"))
-        recent_params.aboutToShow.connect(self.updateParamsMenu)
+        recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
+        recent_params.aboutToShow.connect(self.updateModelsMenu)
         # TODO: 改用manager
         self.actions = util.struct(
             auto_save=auto_save,
@@ -382,43 +367,56 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.config["auto_save"] = save
         util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
 
-    def changeModelType(self, idx):
-        self.modelType = models[idx]
-        print("model type:", self.modelType)
+    def changeModel(self, idx):
+        self.modelClass = MODELS[idx]
+        # self.settings.setValue("recent_model", self.modelClass.__name__)
+        print("model class:", self.modelClass)
 
-    def changeModel(self):
-        # TODO: 设置gpu还是cpu运行
+    def changeParam(self):
         formats = ["*.pdparams"]
-        filters = self.tr("paddle model params files (%s)") % " ".join(formats)
-        params_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+        filters = self.tr("paddle model param files (%s)") % " ".join(formats)
+        param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
             self.tr("%s - 选择模型参数") % __APPNAME__,
-            "/home/lin/Desktop",
+            "/home/lin/Downloads",
+            # TODO: 最近模型文件夹
             filters,
         )
-        print(params_path)
-        if osp.exists(params_path):
-            if self.load_model_params(params_path):
-                # 最近参数
-                model_dict = {"path": params_path, "type": self.modelType.name}
-                if model_dict not in self.recentParams:
-                    self.recentParams.append(model_dict)
-                    if len(self.recentParams) > 10:
-                        del self.recentParams[0]
-                    self.settings.setValue("recent_params", self.recentParams)
+        if not osp.exists(param_path):
+            return
+        # model = self.modelClass().load_param(param_path)
+        res = self.loadModelParam(param_path)
+        if res:
+            model_dict = {
+                "param_path": param_path,
+                "model_name": self.modelClass.__name__,
+            }
+            if model_dict not in self.recentModels:
+                self.recentModels.append(model_dict)
+                if len(self.recentModels) > 10:
+                    del self.recentModels[0]
+                self.settings.setValue("recent_models", self.recentModels)
 
-    def load_model_params(self, params_path, model_type=None):
-        if model_type is not None:
-            self.modelType, idx = findModelByName(model_type)
-            if self.modelType is None:
-                self.statusbar.showMessage(f"未找到 {self.modelType.name} 模型")
-                return
-            self.comboModelSelect.setCurrentIndex(idx)
-        self.statusbar.showMessage(f"正在加载 {self.modelType.name} 模型")
-        model = self.modelType.load_params(params_path=params_path)
+    def loadModelParam(self, param_path, model=None):
+        print("Call load model param: ", param_path, model, type(model))
+        if model is None:
+            model = self.modelClass()
+        if isinstance(model, str):
+            try:
+                model = MODELS[model]()
+            except KeyError:
+                print("Model don't exist")
+                return False
+        if inspect.isclass(model):
+            model = model()
+        if not isinstance(model, models.EISegModel):
+            print("not a instance")
+            return False
+        modelIdx = MODELS.idx(model.__name__)
+        self.statusbar.showMessage(f"正在加载 {model.__name__} 模型")
+        model = model.load_param(param_path)
         if model is not None:
             if self.controller is None:
-                limit_longest_size = 400
                 self.controller = InteractiveController(
                     model,
                     predictor_params={
@@ -437,12 +435,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     update_image_callback=self._update_image,
                 )
                 self.controller.prob_thresh = self.segThresh
-                # 这里如果直接加载模型会报错，先判断有没有图像
                 if self.image is not None:
                     self.controller.set_image(self.image)
             else:
                 self.controller.reset_predictor(model)
-            self.statusbar.showMessage(f"{osp.basename(params_path)} 模型加载完成", 5000)
+            self.statusbar.showMessage(f"{osp.basename(param_path)} 模型加载完成", 20000)
+            self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
             msg = QMessageBox()
@@ -451,36 +449,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             msg.setText("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
             msg.setStandardButtons(QMessageBox.Yes)
             res = msg.exec_()
-            self.statusbar.showMessage("模型和参数不匹配，请重新加载", 5000)
+            self.statusbar.showMessage("模型和参数不匹配，请重新加载", 20000)
             self.controller = None  # 清空controller
             return False
 
-    def load_recent_params(self):
-        if len(self.recentParams) != 0:
-            if osp.exists(self.recentParams[-1]["path"]):
-                self.modelType, idx = findModelByName(self.recentParams[-1]["type"])  # 问题
-                if self.modelType is not None:
-                    self.comboModelSelect.setCurrentIndex(idx)
-                    self.load_model_params(self.recentParams[-1]["path"])
-
-    # def changeModel(self, idx):
-    #     # TODO: 设置gpu还是cpu运行
-    #     self.statusbar.showMessage(f"正在加载 {models[idx].name} 模型")
-    #     model = models[idx].get_model()
-    #     if self.controller is None:
-    #         self.controller = InteractiveController(
-    #             model,
-    #             predictor_params={"brs_mode": "f-BRS-B"},
-    #             update_image_callback=self._update_image,
-    #         )
-    #         self.controller.prob_thresh = self.segThresh
-    #         # 这里如果直接加载模型会报错，先判断有没有图像
-    #         if self.image is not None:
-    #             self.controller.set_image(self.image)
-    #     else:
-    #         self.controller.reset_predictor(model)
-
-    #     self.statusbar.showMessage(f"{ models[idx].name}模型加载完成", 5000)
+    def loadRecentModelParam(self):
+        if len(self.recentModels) == 0:
+            self.statusbar.showMessage("没有最近使用模型信息，请加载模型", 10000)
+            return
+        m = self.recentModels[-1]
+        model = MODELS[m["model_name"]]
+        param_path = m["param_path"]
+        self.loadModelParam(param_path, model)
 
     def loadLabelList(self):
         filters = self.tr("标签配置文件 (*.txt)")
@@ -664,7 +644,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.set_image(self.image)
         else:
             self.showWarning("未加载模型参数，请先加载模型参数！")
-            self.changeModel()
+            self.changeParam()
             print("please load model params first!")
             return 0
         self.controller.set_label(self.loadLabel(path))
