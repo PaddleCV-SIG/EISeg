@@ -26,7 +26,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
         self.setPath(GripItem.circle)
         self.setBrush(QtGui.QColor("green"))
-        self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
+        self.setPen(QtGui.QPen(QtGui.QColor("green"), 1))
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -36,7 +36,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
     def hoverEnterEvent(self, ev):
         self.setPath(GripItem.square)
-        self.setBrush(QtGui.QColor("red"))
+        self.setBrush(QtGui.QColor(0, 0, 0, 0))
         self.m_annotation_item.item_hovering = True
         super(GripItem, self).hoverEnterEvent(ev)
 
@@ -57,22 +57,37 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
 
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        insideColor=[255, 0, 0],
+        borderColor=[0, 255, 0],
+        opacity=0.5,
+        parent=None,
+    ):
         super(PolygonAnnotation, self).__init__(parent)
         self.item_hovering = False
         self.polygon_hovering = False
+        i = insideColor
+        self.insideColor = QtGui.QColor(i[0], i[1], i[2])
+        self.insideColor.setAlphaF(opacity)
         self.m_points = []
+        self.m_items = []
+
         self.setZValue(10)
-        self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
+        # self.setPen(QtGui.QPen(QtGui.QColor("green"), 2))
+        b = borderColor
+        self.borderColor = QtGui.QColor(b[0], b[1], b[2])
+        self.borderColor.setAlphaF(0.8)
+        self.setPen(QtGui.QPen(self.borderColor))
         self.setAcceptHoverEvents(True)
 
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
-
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
-        self.m_items = []
+    def setOpacity(self, opacity):
+        self.insideColor.setAlphaF(opacity)
 
     def number_of_points(self):
         return len(self.m_items)
@@ -113,7 +128,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
     def hoverEnterEvent(self, ev):
         self.polygon_hovering = True
-        self.setBrush(QtGui.QColor(255, 0, 0, 100))
+        self.setBrush(self.insideColor)
         super(PolygonAnnotation, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):

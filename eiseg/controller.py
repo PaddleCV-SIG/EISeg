@@ -157,7 +157,6 @@ class InteractiveController:
         object_prob = self.current_object_prob
         if object_prob is None:
             return None
-        # self.curr_label_number += 1  # TODO: 当前是按照第几个目标给结果中的数，改成根据目标编号
         object_mask = object_prob > self.prob_thresh
         if self.filterLargestCC:
             object_mask = self.getLargestCC(object_mask)
@@ -195,6 +194,7 @@ class InteractiveController:
         """
         self.states = []
         self.probs_history = []
+        # self.current_object_prob = None
         self.clicker.reset_clicks()
         self.reset_predictor()
         self.reset_init_mask()
@@ -208,7 +208,6 @@ class InteractiveController:
         predictor_params : 网络权重
             新的网络权重
         """
-        # print("palette", self.palette)
         if net is not None:
             self.net = net
         if predictor_params is not None:
@@ -223,7 +222,7 @@ class InteractiveController:
 
     @property
     def current_object_prob(self):
-        if self.probs_history:
+        if len(self.probs_history) > 0:
             current_prob_total, current_prob_additive = self.probs_history[-1]
             return np.maximum(current_prob_total, current_prob_additive)
         else:
@@ -254,8 +253,9 @@ class InteractiveController:
         if self.image is None:
             return None
 
-        # 1. 画当前没标完的mask
-        results_mask_for_vis = self.result_mask
+        # 1. 正在标注的mask
+        # results_mask_for_vis = self.result_mask # 加入之前标完的mask
+        results_mask_for_vis = np.zeros_like(self.result_mask)
         if self.probs_history:
             results_mask_for_vis[
                 self.current_object_prob > self.prob_thresh
@@ -271,7 +271,7 @@ class InteractiveController:
             palette=self.palette,
         )
 
-        # # 2. 在图片和当前mask的基础上画之前标完的mask
+        # # 2. 正在标注的mask
         # if self.probs_history:
         #     total_mask = self.probs_history[-1][0] > self.prob_thresh
         #     results_mask_for_vis[np.logical_not(total_mask)] = 0

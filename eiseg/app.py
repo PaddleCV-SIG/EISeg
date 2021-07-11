@@ -406,8 +406,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeParam(self):
         formats = ["*.pdparams"]
         filters = self.tr("paddle model param files (%s)") % " ".join(formats)
-        start_path = "/home/lin/Downloads" if len(self.recentModels) == 0 \
-                     else osp.dirname(self.recentModels[-1]["param_path"])
+        start_path = (
+            "/home/lin/Downloads"
+            if len(self.recentModels) == 0
+            else osp.dirname(self.recentModels[-1]["param_path"])
+        )
         # print(start_path)
         param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
@@ -496,11 +499,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadModelParam(param_path, model)
 
     def clearRecent(self):
-        ini_path = osp.join(pjpath, "config/setting.ini")
-        print(ini_path)
-        if osp.exists(ini_path):
-            os.remove(ini_path)
-            self.statusbar.showMessage("已清除最近打开文件", 10000)
+        self.settings.setValue("recent_files", [])
+        # ini_path = osp.join(pjpath, "config/setting.ini")
+        # print(ini_path)
+        # if osp.exists(ini_path):
+        #     os.remove(ini_path)
+        self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def loadLabelList(self):
         filters = self.tr("标签配置文件 (*.txt)")
@@ -572,7 +576,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.setRowCount(0)
 
     def refreshLabelList(self):
-        # print(self.labelList)
         table = self.labelListTable
         table.clearContents()
         table.setRowCount(len(self.labelList))
@@ -598,17 +601,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             table.resizeColumnToContents(idx)
 
     def labelListDoubleClick(self, row, col):
-        print("cell double clicked", row, col)
+        print("Label list double clicked", row, col)
         if col != 2:
             return
         table = self.labelListTable
         color = QtWidgets.QColorDialog.getColor()
-        # BUG: 判断颜色没变
-        print(color.getRgb())
+        if color.getRgb() == (0, 0, 0, 255):
+            return
+        print("Change to new color:", color.getRgb())
         table.item(row, col).setBackground(color)
         self.labelList[row][2] = color.getRgb()[:3]
         if self.controller:
             self.controller.label_list = self.labelList
+
+    @property
+    def currLabelIdx(self):
+        return self.controller.curr_label_number - 1
 
     def labelListClicked(self, row, col):
         print("cell clicked", row, col)
@@ -623,7 +631,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
-                # print(int(table.item(row, 0).text()))
                 self.controller.change_label_num(int(table.item(row, 0).text()))
                 self.controller.label_list = self.labelList
 
@@ -755,12 +762,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             points = util.get_polygon(current_mask)
-            # print('points:', points)
             self.setDirty()
-            # self.scene.set(util.Instructions.Polygon_Instruction)
-            # # w, h = self.controller.image.shape[:2]
-            # # self.scene.setSceneRect(0, 0, w, h)  # 这句代码会引起图像偏移
-            poly = PolygonAnnotation()
+            color = self.labelList[self.currLabelIdx][2]
+            poly = PolygonAnnotation(color, color, self.opacity)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
@@ -857,6 +861,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.textLab.setText(str(self.opacity))
         if not self.controller or self.controller.image is None:
             return
+        for polygon in self.scene.polygon_items:
+            polygon.setOpacity(self.opacity)
         self._update_image()
 
     def clickRadiusChanged(self):
