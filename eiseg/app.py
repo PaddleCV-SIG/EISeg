@@ -134,11 +134,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.setValue("recent_params", self.recentModels)
 
     def delActivePolygon(self):
-        print("in")
         for idx, polygon in enumerate(self.scene.polygon_items):
             if polygon.hasFocus():
-                polygon.remove()
-                # self.scene.removeItem(polygon)
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Warning)
+                msg.setWindowTitle("确认删除？")
+                msg.setText("确认要删除当前选中多边形标注？")
+                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+                res = msg.exec_()
+                if res == QMessageBox.Yes:
+                    polygon.remove()
+                    # self.scene.removeItem(polygon)
+                    del self.scene.polygon_items[idx]
 
     def initActions(self):
         def menu(title, actions=None):
