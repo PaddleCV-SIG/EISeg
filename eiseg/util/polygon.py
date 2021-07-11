@@ -19,13 +19,18 @@ def get_polygon(label, sample=2):
     # plt.imshow(label)
     # plt.savefig("./temp.png")
     # print("contours", contours[1])
-    # 这个地方split出来是字符的3，不是数字，改了一下
+
     cv2_v = cv2.__version__.split(".")[0]
-    boundary = contours[1][0] if cv2_v == "3" else contours[0][0]
-    for p in boundary:
-        if count == sample:
-            points.append(p[0])
-            count = 0
-        else:
-            count += 1
-    return points
+    contours = contours[1] if cv2_v == "3" else contours[0]
+    print(f"Totally {len(contours[1])} contours")
+    polygons = []
+    for contour in contours:
+        polygon = []
+        for p in contour:
+            if count == sample:
+                polygon.append(p[0])
+                count = 0
+            else:
+                count += 1
+        polygons.append(polygon)
+    return polygons
