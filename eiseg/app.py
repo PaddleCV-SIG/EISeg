@@ -43,7 +43,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.status = self.IDILE
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
-        # 默认显示为HRNet18s，默认的类别应该统一，否则直接加载报错
         self.modelClass = MODELS[0]
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
@@ -63,8 +62,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 初始化action
         self.initActions()
 
-        # 更新模型使用记录
+        # 更新近期记录
         self.updateModelsMenu()
+        self.updateFileMenu()
 
         # 帮助界面
         self.help_dialog = QtWidgets.QDialog()
@@ -103,13 +103,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.currentPath in files:
             files.remove(self.currentPath)
         for i, f in enumerate(files):
-            if osp.exists(f):
-                icon = util.newIcon("File")
-                action = QtWidgets.QAction(
-                    icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
-                )
-                action.triggered.connect(partial(self.loadImage, f, True))
-                menu.addAction(action)
+            icon = util.newIcon("File")
+            action = QtWidgets.QAction(
+                icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+            )
+            action.triggered.connect(partial(self.loadImage, f, True))
+            menu.addAction(action)
+        self.settings.setValue("recent_files", files)
 
     def updateModelsMenu(self):
         menu = self.actions.recent_params
@@ -207,13 +207,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
-        # model_loader = action(
-        #     self.tr("&选择模型参数"),
-        #     self.loadModel,
-        #     shortcuts["load_model"],
-        #     "Model",
-        #     self.tr("加载一个模型参数"),
-        # )
+        load_param = action(
+            self.tr("&加载模型参数"),
+            self.changeParam,
+            shortcuts["load_param"],
+            "Model",
+            self.tr("加载一个模型参数"),
+        )
         change_output_dir = action(
             self.tr("&改变标签保存路径"),
             self.changeOutputDir,
@@ -382,6 +382,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 clear_recent,
                 recent_files,
                 recent_params,
+                load_param,
                 None,
                 save,
                 save_as,
@@ -435,10 +436,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("model class:", self.modelClass)
 
     def changeParam(self):
+        if not self.modelClass:
+            self.warn("选择模型结构", "尚未选择模型结构，请在右侧下拉菜单进行选择！")
         formats = ["*.pdparams"]
         filters = self.tr("paddle model param files (%s)") % " ".join(formats)
         start_path = (
-            "/home/lin/Downloads"
+            "/home/lin/Desktop/model"
             if len(self.recentModels) == 0
             else osp.dirname(self.recentModels[-1]["param_path"])
         )
@@ -478,6 +481,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             model = model()
         if not isinstance(model, models.EISegModel):
             print("not a instance")
+            self.warn("选择模型结构", "尚未选择模型结构，请在右侧下拉菜单进行选择")
             return False
         modelIdx = MODELS.idx(model.__name__)
         self.statusbar.showMessage(f"正在加载 {model.__name__} 模型")  # 这里没显示
@@ -510,15 +514,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("模型和参数不匹配")
-            msg.setText("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
-            msg.setStandardButtons(QMessageBox.Yes)
-            res = msg.exec_()
+            self.warn("模型和参数不匹配", "当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
+            # msg = QMessageBox()
+            # msg.setIcon(QMessageBox.Warning)
+            # msg.setWindowTitle("模型和参数不匹配")
+            # msg.setText("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
+            # msg.setStandardButtons(QMessageBox.Yes)
+            # res = msg.exec_()
             self.statusbar.showMessage("模型和参数不匹配，请重新加载", 20000)
             self.controller = None  # 清空controller
             return False
+
+    def warn(self, title, text, buttons=QMessageBox.Yes):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle(title)
+        msg.setText(text)
+        msg.setStandardButtons(QMessageBox.Yes)
+        res = msg.exec_()
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
@@ -603,11 +616,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def adjustTableSize(self):
         self.labelListTable.horizontalHeader().setDefaultSectionSize(25)
         self.labelListTable.horizontalHeader().setSectionResizeMode(
-            0, QtWidgets.QHeaderView.Fixed)
+            0, QtWidgets.QHeaderView.Fixed
+        )
         self.labelListTable.horizontalHeader().setSectionResizeMode(
-            3, QtWidgets.QHeaderView.Fixed)
+            3, QtWidgets.QHeaderView.Fixed
+        )
         self.labelListTable.horizontalHeader().setSectionResizeMode(
-            2, QtWidgets.QHeaderView.Fixed)
+            2, QtWidgets.QHeaderView.Fixed
+        )
         self.labelListTable.setColumnWidth(2, 50)
 
     def clearLabelList(self):
