@@ -19,14 +19,16 @@ class GripItem(QtWidgets.QGraphicsPathItem):
     square = QtGui.QPainterPath()
     square.addRect(QtCore.QRectF(-3, -3, 6, 6))
 
-    def __init__(self, annotation_item, index):
+    def __init__(self, annotation_item, index, color):
         super(GripItem, self).__init__()
         self.m_annotation_item = annotation_item
         self.m_index = index
+        color.setAlphaF(1)
+        self.color = color
 
         self.setPath(GripItem.circle)
-        self.setBrush(QtGui.QColor("green"))
-        self.setPen(QtGui.QPen(QtGui.QColor("green"), 1))
+        self.setBrush(self.color)
+        self.setPen(QtGui.QPen(self.color, 1))
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
@@ -43,7 +45,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
     def hoverLeaveEvent(self, ev):
         self.setPath(GripItem.circle)
-        self.setBrush(QtGui.QColor("green"))
+        self.setBrush(self.color)
         self.m_annotation_item.item_hovering = False
         super(GripItem, self).hoverLeaveEvent(ev)
 
@@ -138,7 +140,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def addPoint(self, p):
         self.m_points.append(p)
         self.setPolygon(QtGui.QPolygonF(self.m_points))
-        item = GripItem(self, len(self.m_points) - 1)
+        item = GripItem(self, len(self.m_points) - 1, self.borderColor)
         self.scene().addItem(item)
         self.m_items.append(item)
         item.setPos(p)
