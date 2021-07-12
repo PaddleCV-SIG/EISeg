@@ -92,6 +92,10 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
+    def __del__(self):
+        print("destructor")
+        self.remove()
+
     def remove(self):
         for item in self.m_items:
             self.scene().removeItem(item)

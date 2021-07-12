@@ -68,7 +68,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 更新近期记录
         self.updateModelsMenu()
-        self.updateFileMenu()
+        self.updateRecentFile()
 
         # 帮助界面
         self.help_dialog = QtWidgets.QDialog()
@@ -288,13 +288,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         clear_recent = action(
             self.tr("&清除标注记录"),
-            self.clearRecent,
+            self.clearRecentFile,
             "",
             "ClearRecent",
             self.tr("清除近期标注记录"),
         )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
-        recent_files.aboutToShow.connect(self.updateFileMenu)
+        recent_files.aboutToShow.connect(self.updateRecentFile)
         recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
         recent_params.aboutToShow.connect(self.updateModelsMenu)
         self.actions = util.struct(
@@ -349,7 +349,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
-    def updateFileMenu(self):
+    def updateRecentFile(self):
         menu = self.actions.recent_files
         menu.clear()
         recentFiles = self.settings.value("recent_files", [])
@@ -366,6 +366,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(files) == 0:
             menu.addAction("无近期文件")
         self.settings.setValue("recent_files", files)
+
+    def addRecentFile(self, path):
+        if not osp.exists(path):
+            return
+        paths = self.settings.value("recent_files")
+        if not paths:
+            paths = []
+        if path not in paths:
+            paths.append(path)
+        if len(paths) > 15:
+            del paths[0]
+        self.settings.setValue("recent_files", paths)
+        print("update recent files", self.settings.value("recent_files", []))
+        self.updateRecentFile()
+
+    def clearRecentFile(self):
+        self.settings.remove("recent_files")
+        self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def updateModelsMenu(self):
         menu = self.actions.recent_params
@@ -385,43 +403,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             menu.addAction(action)
         self.settings.setValue("recent_params", self.recentModels)
-
-    def delActivePolygon(self):
-        for idx, polygon in enumerate(self.scene.polygon_items):
-            if polygon.hasFocus():
-                res = self.warn(
-                    "确认删除？",
-                    "确认要删除当前选中多边形标注？",
-                    QMessageBox.Yes | QMessageBox.Cancel,
-                )
-                if res == QMessageBox.Yes:
-                    polygon.remove()
-                    del self.scene.polygon_items[idx]
-
-    def delActivePoint(self):
-        for polygon in self.scene.polygon_items:
-            polygon.removeFocusPoint()
-
-    def queueEvent(self, function):
-        # TODO: 研究这个东西是不是真的不影响ui
-        QtCore.QTimer.singleShot(0, function)
-
-    def showShortcuts(self):
-        self.toBeImplemented()
-
-    def toggleAutoSave(self, save):
-        if save and not self.outputDir:
-            self.changeOutputDir()
-        if save and not self.outputDir:
-            save = False
-        self.actions.auto_save.setChecked(save)
-        self.settings.setValue("auto_save", save)
-        # self.config["auto_save"] = save
-        # util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
-
-    def toggleLargestCC(self, on):
-        # self.filterLargestCC = on
-        self.controller.filterLargestCC = on
 
     def changeModel(self, idx):
         self.modelClass = MODELS[idx]
@@ -508,14 +489,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller = None  # 清空controller
             return False
 
-    def warn(self, title, text, buttons=QMessageBox.Yes):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle(title)
-        msg.setText(text)
-        msg.setStandardButtons(QMessageBox.Yes)
-        return msg.exec_()
-
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
             self.statusbar.showMessage("没有最近使用模型信息，请加载模型", 10000)
@@ -524,10 +497,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         model = MODELS[m["model_name"]]
         param_path = m["param_path"]
         self.loadModelParam(param_path, model)
-
-    def clearRecent(self):
-        self.settings.remove("recent_files")
-        self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def loadLabelList(self):
         filters = self.tr("标签配置文件 (*.txt)")
@@ -546,12 +515,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def saveLabelList(self):
         if len(self.labelList) == 0:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("没有需要保存的标签")
-            msg.setText("请先添加标签之后再进行保存")
-            msg.setStandardButtons(QMessageBox.Yes)
-            res = msg.exec_()
+            self.warn("没有需要保存的标签", "请先添加标签之后再进行保存")
             return
         filters = self.tr("标签配置文件 (*.txt)")
         dlg = QtWidgets.QFileDialog(self, "保存标签配置文件", ".", filters)
@@ -562,9 +526,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         savePath, _ = dlg.getSaveFileName(
             self, self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__, ".", filters
         )
+        self.labelList.saveLabel(savePath)
         print("Save label list:", self.labelList.list, savePath)
         self.settings.setValue("label_list_file", savePath)
-        self.labelList.saveLabel(savePath)
 
     def addLabel(self):
         c = self.maskColormap.get_color()
@@ -680,16 +644,38 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         name = self.labelListTable.item(row, col).text()
         self.labelList[row].name = name
 
+    def delActivePolygon(self):
+        for idx, polygon in enumerate(self.scene.polygon_items):
+            if polygon.hasFocus():
+                res = self.warn(
+                    "确认删除？",
+                    "确认要删除当前选中多边形标注？",
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Yes:
+                    polygon.remove()
+                    del self.scene.polygon_items[idx]
+
+    def delActivePoint(self):
+        for polygon in self.scene.polygon_items:
+            polygon.removeFocusPoint()
+
+    # 图片/标签 io
     def openImage(self):
         formats = [
             "*.{}".format(fmt.data().decode())
             for fmt in QtGui.QImageReader.supportedImageFormats()
         ]
+        recentPath = self.settings.value("recent_files", [])
+        if len(recentPath) == 0:
+            recentPath = "."
+        else:
+            recentPath = osp.dirname(recentPath[-1])
         filters = self.tr("Image & Label files (%s)") % " ".join(formats)
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
             self.tr("%s - 选择待标注图片") % __APPNAME__,
-            "/home/lin/Desktop",
+            recentPath,
             filters,
         )
         if len(file_path) == 0:
@@ -698,36 +684,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.listFiles.addItems([file_path])
         self.filePaths.append(file_path)
 
-    def loadLabel(self, imgPath):
-        if imgPath == "" or len(self.labelPaths) == 0:
-            return None
-
-        def getName(path):
-            return osp.basename(path).split(".")[0]
-
-        imgName = getName(imgPath)
-        for path in self.labelPaths:
-            if getName(path) == imgName:
-                labPath = path
-                print(labPath)
-                break
-        label = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-        print("label shape", label.shape)
-        return label
-
-    def addRecentFile(self, path):
-        if not osp.exists(path):
+    def openFolder(self):
+        self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
+            self,
+            self.tr("%s - 选择待标注图片文件夹") % __APPNAME__,
+            "/home/lin/Desktop",
+            QtWidgets.QFileDialog.ShowDirsOnly
+            | QtWidgets.QFileDialog.DontResolveSymlinks,
+        )
+        if len(self.inputDir) == 0:
             return
-        paths = self.settings.value("recent_files")
-        if not paths:
-            paths = []
-        if path not in paths:
-            paths.append(path)
-        if len(paths) > 15:
-            del paths[0]
-        self.settings.setValue("recent_files", paths)
-        print("update recent files", self.settings.value("recent_files", []))
-        self.updateFileMenu()
+        filePaths = os.listdir(self.inputDir)
+        exts = QtGui.QImageReader.supportedImageFormats()
+        filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
+        filePaths = [osp.join(self.inputDir, n) for n in filePaths]
+        self.filePaths += filePaths
+        self.listFiles.addItems(filePaths)
+        self.currIdx = 0
+        self.turnImg(0)
 
     def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
@@ -750,31 +724,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.listFiles.addItems([path])
             self.filePaths.append(path)
 
-    def openFolder(self):
-        self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            self.tr("%s - 选择待标注图片文件夹") % __APPNAME__,
-            "/home/lin/Desktop",
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
-        if len(self.inputDir) == 0:
-            return
-        filePaths = os.listdir(self.inputDir)
-        exts = QtGui.QImageReader.supportedImageFormats()
-        filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
-        filePaths = [osp.join(self.inputDir, n) for n in filePaths]
-        self.filePaths += filePaths
-        self.listFiles.addItems(filePaths)
-        self.currIdx = 0
-        self.turnImg(0)
+    def loadLabel(self, imgPath):
+        if imgPath == "" or len(self.labelPaths) == 0:
+            return None
 
-    def listClicked(self):
-        if self.controller.is_incomplete_mask:
-            self.saveLabel()
-        toRow = self.listFiles.currentRow()
-        delta = toRow - self.currIdx
-        self.turnImg(delta)
+        def getName(path):
+            return osp.basename(path).split(".")[0]
+
+        imgName = getName(imgPath)
+        for path in self.labelPaths:
+            if getName(path) == imgName:
+                labPath = path
+                print(labPath)
+                break
+        label = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        print("label shape", label.shape)
+        return label
 
     def turnImg(self, delta):
         self.currIdx += delta
@@ -787,20 +752,30 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if self.actions.auto_save.isChecked():
                 self.saveLabel()
             else:
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Warning)
-                msg.setWindowTitle("保存标签？")
-                msg.setText("标签尚未保存，是否保存标签")
-                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-                res = msg.exec_()
+                res = self.warn(
+                    "保存标签？",
+                    "标签尚未保存，是否保存标签",
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
                 if res == QMessageBox.Yes:
                     self.saveLabel()
 
         imagePath = self.filePaths[self.currIdx]
+        for idx, p in enumerate(self.scene.polygon_items):
+            p.remove()
+            del self.scene.polygon_items[idx]
+
         self.loadImage(imagePath)
         self.imagePath = imagePath
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
+
+    def listClicked(self):
+        if self.controller.is_incomplete_mask:
+            self.saveLabel()
+        toRow = self.listFiles.currentRow()
+        delta = toRow - self.currIdx
+        self.turnImg(delta)
 
     def finishObject(self):
         if not self.controller or self.image is None:
@@ -999,6 +974,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.canvas.zoom_all = scr_cont[0]
         self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
 
+    def queueEvent(self, function):
+        # TODO: 研究这个东西是不是真的不影响ui
+        QtCore.QTimer.singleShot(0, function)
+
+    def toggleAutoSave(self, save):
+        if save and not self.outputDir:
+            self.changeOutputDir()
+        if save and not self.outputDir:
+            save = False
+        self.actions.auto_save.setChecked(save)
+        self.settings.setValue("auto_save", save)
+
+    def toggleLargestCC(self, on):
+        self.controller.filterLargestCC = on
+
     @property
     def opacity(self):
         return self.sldOpacity.value() / 100
@@ -1011,10 +1001,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def segThresh(self):
         return self.sldThresh.value() / 100
 
-    # 警告框
-    def showWarning(self, str):
-        msg_box = QMessageBox(QMessageBox.Warning, "警告", str)
-        msg_box.exec_()
+    def warn(self, title, text, buttons=QMessageBox.Yes):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setWindowTitle(title)
+        msg.setText(text)
+        msg.setStandardButtons(buttons)
+        return msg.exec_()
 
     def toBeImplemented(self):
         self.statusbar.showMessage("功能尚在开发")
+
+    def showShortcuts(self):
+        self.toBeImplemented()
