@@ -305,11 +305,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 open_image,
                 open_folder,
                 change_output_dir,
-                # model_loader,
+                load_param,
                 clear_recent,
                 recent_files,
                 recent_params,
-                load_param,
                 None,
                 save,
                 save_as,
@@ -527,9 +526,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadModelParam(param_path, model)
 
     def clearRecent(self):
-        self.settings.setValue("recent_files", [])
-        self.recentFiles = []
-        self.updateFileMenu()
+        self.settings.remove("recent_files")
         self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def loadLabelList(self):
