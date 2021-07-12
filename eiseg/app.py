@@ -161,14 +161,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("&删除点"),
             self.delActivePoint,
             shortcuts["del_active_point"],
-            "Clear",
+            "RemovePolygonPoint",
             self.tr("删除当前选中的点"),
         )
         del_active_polygon = action(
             self.tr("&删除多边形"),
             self.delActivePolygon,
             shortcuts["del_active_polygon"],
-            "Clear",
+            "RemovePolygon",
             self.tr("删除当前选中的多边形"),
         )
         turn_prev = action(
@@ -297,7 +297,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("&保留最大连通块"),
             self.toggleLargestCC,
             "",
-            "AutoSave",
+            "SaveMaxPolygon",
             self.tr("翻页同时自动保存"),
             checkable=True,
         )
@@ -386,6 +386,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save,
                 save_as,
                 auto_save,
+                None,
                 turn_next,
                 turn_prev,
                 close,
@@ -397,13 +398,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 load_label,
                 clear_label,
                 None,
-                largest_component,
                 grid_ann,
+                None,
+                largest_component,
                 del_active_polygon,
                 del_active_point,
             ),
             helpMenu=(quick_start, about, shortcuts),
-            toolBar=(finish_object, clear, undo, redo, turn_prev, turn_next),
+            toolBar=(
+                finish_object, 
+                clear, 
+                undo, 
+                redo, 
+                turn_prev, 
+                turn_next, 
+                None,
+                del_active_polygon, 
+                del_active_point,
+            ),
         )
         menu("文件", self.actions.fileMenu)
         menu("标注", self.actions.labelMenu)
