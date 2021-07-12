@@ -52,6 +52,9 @@ class _MaskLabel:
         self.name = name
         self.color = color
 
+    def __repr__(self):
+        return f"{self.idx} {self.name} {self.color}"
+
 
 class Labeler(object):
     def __init__(self):
