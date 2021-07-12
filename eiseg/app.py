@@ -378,11 +378,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 open_image,
                 open_folder,
                 change_output_dir,
-                # model_loader,
+                load_param,
                 clear_recent,
                 recent_files,
                 recent_params,
-                load_param,
                 None,
                 save,
                 save_as,
@@ -555,7 +554,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadModelParam(param_path, model)
 
     def clearRecent(self):
-        self.settings.setValue("recent_files", [])
+        # self.settings.setValue("recent_files", [])
+        # 使用上面的方法清除下次打开会报错
+        self.settings.remove("recent_files")
         # ini_path = osp.join(pjpath, "config/setting.ini")
         # print(ini_path)
         # if osp.exists(ini_path):
