@@ -761,9 +761,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.saveLabel()
 
         imagePath = self.filePaths[self.currIdx]
-        for idx, p in enumerate(self.scene.polygon_items):
+        for p in self.scene.polygon_items:
             p.remove()
-            del self.scene.polygon_items[idx]
+        self.scene.polygon_items = []
 
         self.loadImage(imagePath)
         self.imagePath = imagePath
@@ -836,14 +836,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.tr("选择标签文件保存路径"),
                     osp.basename(self.imagePath).split(".")[0] + ".png",
                 )
-        if (
-            savePath is None
-            or len(savePath) == 0
-            or not osp.exists(osp.dirname(savePath))
-        ):
+        if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
 
         cv2.imwrite(savePath, self.controller.result_mask)
+        polygons = self.scene.polygon_items
+        for polygon in polygons:
+            p = polygon.polygon()
+            print(p.toList())
+            print(p.toPolygon())
+
         # 保存路径带有中文
         # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
         # 保存带有调色板的
