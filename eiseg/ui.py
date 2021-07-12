@@ -102,6 +102,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.scene().removeItem(self)
 
     def removeFocusPoint(self):
+        # removeAt
+        # PySide2.QtGui.QPolygonF.removeAt(i)
         focusIdx = None
         for idx, item in enumerate(self.m_items):
             if item.hasFocus():
