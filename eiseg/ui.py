@@ -376,7 +376,7 @@ class Ui_EISeg(object):
         sizePolicy.setHeightForWidth(self.dockWorker.sizePolicy().hasHeightForWidth())
         self.dockWorker.setSizePolicy(sizePolicy)
         self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
-        # self.dockWorker.setWindowTitle("工作区")
+        self.dockWorker.setWindowTitle(" ")  # 避免拖出后显示“python”
         self.dockWorker.setFeatures(
             QtWidgets.QDockWidget.DockWidgetFloatable
             | QtWidgets.QDockWidget.DockWidgetMovable
