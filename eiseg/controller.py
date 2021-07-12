@@ -40,11 +40,6 @@ class InteractiveController:
         image :
             Description of parameter `image`.
         """
-        # TODO: 这里normalize需要按照模型改
-        # input_transform = T.Compose(
-        #     [T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])],
-        #     to_rgb=False,
-        # )
         self.image = image
         # self.image_nd = input_transform(image)[0]
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
@@ -256,6 +251,7 @@ class InteractiveController:
         # 1. 正在标注的mask
         # results_mask_for_vis = self.result_mask # 加入之前标完的mask
         results_mask_for_vis = np.zeros_like(self.result_mask)
+        results_mask_for_vis *= self.curr_label_number
         if self.probs_history:
             results_mask_for_vis[
                 self.current_object_prob > self.prob_thresh

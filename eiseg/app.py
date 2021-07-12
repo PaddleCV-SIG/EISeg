@@ -4,6 +4,7 @@ from functools import partial
 import sys
 import inspect
 import warnings
+import json
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -378,7 +379,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(paths) > 15:
             del paths[0]
         self.settings.setValue("recent_files", paths)
-        print("update recent files", self.settings.value("recent_files", []))
         self.updateRecentFile()
 
     def clearRecentFile(self):
@@ -593,7 +593,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 2, colorItem)
             delItem = QTableWidgetItem()
-            delItem.setIcon(util.newIcon("clear"))
+            delItem.setIcon(util.newIcon("Clear"))
             delItem.setTextAlignment(Qt.AlignCenter)
             delItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 3, delItem)
@@ -601,6 +601,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         cols = [0, 1, 3]
         for idx in cols:
             table.resizeColumnToContents(idx)
+        self.adjustTableSize()
 
     def labelListDoubleClick(self, row, col):
         print("Label list double clicked", row, col)
@@ -725,6 +726,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.filePaths.append(path)
 
     def loadLabel(self, imgPath):
+        print("load label", imgPath, self.labelPaths)
         if imgPath == "" or len(self.labelPaths) == 0:
             return None
 
@@ -732,14 +734,28 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return osp.basename(path).split(".")[0]
 
         imgName = getName(imgPath)
+        labelPath = None
         for path in self.labelPaths:
             if getName(path) == imgName:
-                labPath = path
-                print(labPath)
+                labelPath = path
                 break
-        label = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-        print("label shape", label.shape)
-        return label
+        if not labelPath:
+            return
+        print("label path", labelPath)
+
+        labelPath = labelPath[: -len("png")] + "json"
+        labels = json.loads(open(labelPath, "r").read())
+        print(labels)
+
+        for label in labels:
+            color = label["color"]
+            labelIdx = label["labelIdx"]
+            points = label["points"]
+            poly = PolygonAnnotation(labelIdx, color, color, self.opacity)
+            self.scene.addItem(poly)
+            self.scene.polygon_items.append(poly)
+            for p in points:
+                poly.addPoint(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
         self.currIdx += delta
@@ -800,12 +816,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return True
         if not self.controller.is_incomplete_mask:
             return True
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        msg.setWindowTitle("完成最后一个目标？")
-        msg.setText("是否完成最后一个目标的标注，不完成不会进行保存。")
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-        res = msg.exec_()
+        res = self.warn(
+            "完成最后一个目标？",
+            "是否完成最后一个目标的标注，不完成不会进行保存。",
+            QMessageBox.Yes | QMessageBox.Cancel,
+        )
         if res == QMessageBox.Yes:
             self.finishObject()
             self.setDirty()
@@ -840,11 +855,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
 
         cv2.imwrite(savePath, self.controller.result_mask)
+        if savePath not in self.labelPaths:
+            self.labelPaths.append(savePath)
         polygons = self.scene.polygon_items
+        labels = []
         for polygon in polygons:
-            p = polygon.polygon()
-            print(p.toList())
-            print(p.toPolygon())
+            l = self.labelList[polygon.labelIndex]
+            label = {"name": l.name, "labelIdx": l.idx, "color": l.color, "points": []}
+            poly = polygon.polygon()
+            for p in poly:
+                label["points"].append([p.x(), p.y()])
+            labels.append(label)
+        savePath = savePath[: -len("png")] + "json"
+        open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
+        self.setClean()
 
         # 保存路径带有中文
         # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
@@ -868,8 +892,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             self.tr("%s - 选择标签保存路径") % __APPNAME__,
-            # osp.dirname(self.imagePath),
-            ".",
+            "/home/lin/Desktop/output/",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
@@ -881,6 +904,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         labelPaths = [osp.join(outputDir, n) for n in labelPaths]
         self.outputDir = outputDir
         self.labelPaths = labelPaths
+        print("labelpaths", self.labelPaths)
         return True
 
     def maskOpacityChanged(self):
