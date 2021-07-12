@@ -3,6 +3,7 @@ import os.path as osp
 from functools import partial
 import sys
 import inspect
+import warnings
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -25,6 +26,7 @@ from util import MODELS
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
+warnings.filterwarnings("ignore")
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -55,8 +57,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
-        self.recentFiles = self.settings.value("recent_files", [])
         self.recentModels = self.settings.value("recent_models", [])
+        self.recentFiles = self.settings.value("recent_files", [])
+        if not self.recentFiles:
+            self.recentFiles = []
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
 
         # 初始化action
@@ -73,8 +77,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
-        self.img_item = QtWidgets.QGraphicsPixmapItem()
-        self.scene.addItem(self.img_item)
+        self.annImage = QtWidgets.QGraphicsPixmapItem()
+        self.scene.addItem(self.annImage)
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
@@ -92,61 +96,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
-        labelListFile = self.settings.value("label_list_file")
-        self.labelList.readLabel(labelListFile)
+        self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()
-
-    def updateFileMenu(self):
-        menu = self.actions.recent_files
-        menu.clear()
-        files = [f for f in self.recentFiles if osp.exists(f)]
-        if self.currentPath in files:
-            files.remove(self.currentPath)
-        for i, f in enumerate(files):
-            icon = util.newIcon("File")
-            action = QtWidgets.QAction(
-                icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
-            )
-            action.triggered.connect(partial(self.loadImage, f, True))
-            menu.addAction(action)
-        self.settings.setValue("recent_files", files)
-
-    def updateModelsMenu(self):
-        menu = self.actions.recent_params
-        menu.clear()
-        self.recentModels = [
-            m for m in self.recentModels if osp.exists(m["param_path"])
-        ]
-        for idx, m in enumerate(self.recentModels):
-            icon = util.newIcon("Model")
-            action = QtWidgets.QAction(
-                icon,
-                f"&【{m['model_name']}】 {osp.basename(m['param_path'])}",
-                self,
-            )
-            action.triggered.connect(
-                partial(self.loadModelParam, m["param_path"], m["model_name"])
-            )
-            menu.addAction(action)
-        self.settings.setValue("recent_params", self.recentModels)
-
-    def delActivePolygon(self):
-        for idx, polygon in enumerate(self.scene.polygon_items):
-            if polygon.hasFocus():
-                msg = QMessageBox()
-                msg.setIcon(QMessageBox.Warning)
-                msg.setWindowTitle("确认删除？")
-                msg.setText("确认要删除当前选中多边形标注？")
-                msg.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-                res = msg.exec_()
-                if res == QMessageBox.Yes:
-                    polygon.remove()
-                    del self.scene.polygon_items[idx]
-
-    def delActivePoint(self):
-        print("delActivePoint")
-        for polygon in self.scene.polygon_items:
-            polygon.removeFocusPoint()
 
     def initActions(self):
         def menu(title, actions=None):
@@ -157,20 +108,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         shortcuts = self.config["shortcut"]
-        del_active_point = action(
-            self.tr("&删除点"),
-            self.delActivePoint,
-            shortcuts["del_active_point"],
-            "RemovePolygonPoint",
-            self.tr("删除当前选中的点"),
-        )
-        del_active_polygon = action(
-            self.tr("&删除多边形"),
-            self.delActivePolygon,
-            shortcuts["del_active_polygon"],
-            "RemovePolygon",
-            self.tr("删除当前选中的多边形"),
-        )
         turn_prev = action(
             self.tr("&上一张"),
             partial(self.turnImg, -1),
@@ -199,12 +136,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "OpenFolder",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
-        open_recent = action(
-            self.tr("&最近标注"),
-            self.toBeImplemented,
-            "",
-            # TODO: 搞个图
-            "",
+        change_output_dir = action(
+            self.tr("&改变标签保存路径"),
+            self.changeOutputDir,
+            shortcuts["change_output_dir"],
+            "ChangeLabelPath",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         load_param = action(
@@ -213,13 +149,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             shortcuts["load_param"],
             "Model",
             self.tr("加载一个模型参数"),
-        )
-        change_output_dir = action(
-            self.tr("&改变标签保存路径"),
-            self.changeOutputDir,
-            shortcuts["change_output_dir"],
-            "ChangeLabelPath",
-            self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         quick_start = action(
             self.tr("&快速上手"),
@@ -293,6 +222,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         # auto_save.setChecked(self.config.get("auto_save", False))
+        del_active_point = action(
+            self.tr("&删除点"),
+            self.delActivePoint,
+            shortcuts["del_active_point"],
+            "RemovePolygonPoint",
+            self.tr("删除当前选中的点"),
+        )
+        del_active_polygon = action(
+            self.tr("&删除多边形"),
+            self.delActivePolygon,
+            shortcuts["del_active_polygon"],
+            "RemovePolygon",
+            self.tr("删除当前选中的多边形"),
+        )
         largest_component = action(
             self.tr("&保留最大连通块"),
             self.toggleLargestCC,
@@ -301,27 +244,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("翻页同时自动保存"),
             checkable=True,
         )
-        recent = action(
-            self.tr("&近期图片"),
-            self.toBeImplemented,
-            "",
-            "RecentDocuments",
-            self.tr("近期打开的图片"),
-        )
         close = action(
             self.tr("&关闭"),
             self.toBeImplemented,
             "",
             "End",
             self.tr("关闭当前图像"),
-        )
-        connected = action(
-            self.tr("&连通块"),
-            self.toBeImplemented,
-            "",
-            # TODO: 搞个图
-            "",
-            self.tr(""),
         )
         quit = action(
             self.tr("&退出"),
@@ -359,17 +287,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("查看所有快捷键"),
         )
         clear_recent = action(
-            self.tr("&清除最近记录"),
+            self.tr("&清除标注记录"),
             self.clearRecent,
             "",
             "ClearRecent",
-            self.tr("删除最近记录文件"),
+            self.tr("清除近期标注记录"),
         )
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateFileMenu)
         recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
         recent_params.aboutToShow.connect(self.updateModelsMenu)
-        # TODO: 改用manager
         self.actions = util.struct(
             auto_save=auto_save,
             recent_files=recent_files,
@@ -407,14 +334,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ),
             helpMenu=(quick_start, about, shortcuts),
             toolBar=(
-                finish_object, 
-                clear, 
-                undo, 
-                redo, 
-                turn_prev, 
-                turn_next, 
+                finish_object,
+                clear,
+                undo,
+                redo,
+                turn_prev,
+                turn_next,
                 None,
-                del_active_polygon, 
+                del_active_polygon,
                 del_active_point,
             ),
         )
@@ -422,6 +349,59 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu("标注", self.actions.labelMenu)
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
+
+    def updateFileMenu(self):
+        menu = self.actions.recent_files
+        menu.clear()
+        recentFiles = self.settings.value("recent_files", [])
+        if not recentFiles:
+            recentFiles = []
+        files = [f for f in recentFiles if osp.exists(f)]
+        for i, f in enumerate(files):
+            icon = util.newIcon("File")
+            action = QtWidgets.QAction(
+                icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
+            )
+            action.triggered.connect(partial(self.loadImage, f, True))
+            menu.addAction(action)
+        if len(files) == 0:
+            menu.addAction("无近期文件")
+        self.settings.setValue("recent_files", files)
+
+    def updateModelsMenu(self):
+        menu = self.actions.recent_params
+        menu.clear()
+        self.recentModels = [
+            m for m in self.recentModels if osp.exists(m["param_path"])
+        ]
+        for idx, m in enumerate(self.recentModels):
+            icon = util.newIcon("Model")
+            action = QtWidgets.QAction(
+                icon,
+                f"&【{m['model_name']}】 {osp.basename(m['param_path'])}",
+                self,
+            )
+            action.triggered.connect(
+                partial(self.loadModelParam, m["param_path"], m["model_name"])
+            )
+            menu.addAction(action)
+        self.settings.setValue("recent_params", self.recentModels)
+
+    def delActivePolygon(self):
+        for idx, polygon in enumerate(self.scene.polygon_items):
+            if polygon.hasFocus():
+                res = self.warn(
+                    "确认删除？",
+                    "确认要删除当前选中多边形标注？",
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Yes:
+                    polygon.remove()
+                    del self.scene.polygon_items[idx]
+
+    def delActivePoint(self):
+        for polygon in self.scene.polygon_items:
+            polygon.removeFocusPoint()
 
     def queueEvent(self, function):
         # TODO: 研究这个东西是不是真的不影响ui
@@ -436,16 +416,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if save and not self.outputDir:
             save = False
         self.actions.auto_save.setChecked(save)
-        self.config["auto_save"] = save
-        util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
+        self.settings.setValue("auto_save", save)
+        # self.config["auto_save"] = save
+        # util.save_configs(osp.join(pjpath, "config/config.yaml"), self.config)
 
     def toggleLargestCC(self, on):
-        self.filterLargestCC = on
+        # self.filterLargestCC = on
         self.controller.filterLargestCC = on
 
     def changeModel(self, idx):
         self.modelClass = MODELS[idx]
-        print("model class:", self.modelClass)
 
     def changeParam(self):
         if not self.modelClass:
@@ -453,15 +433,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         formats = ["*.pdparams"]
         filters = self.tr("paddle model param files (%s)") % " ".join(formats)
         start_path = (
-            "/home/lin/Desktop/model"
+            "."
             if len(self.recentModels) == 0
             else osp.dirname(self.recentModels[-1]["param_path"])
         )
-        # print(start_path)
         param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
             self.tr("%s - 选择模型参数") % __APPNAME__,
-            # "/home/lin/Downloads",
             start_path,
             filters,
         )
@@ -527,12 +505,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return True
         else:  # 模型和参数不匹配
             self.warn("模型和参数不匹配", "当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
-            # msg = QMessageBox()
-            # msg.setIcon(QMessageBox.Warning)
-            # msg.setWindowTitle("模型和参数不匹配")
-            # msg.setText("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
-            # msg.setStandardButtons(QMessageBox.Yes)
-            # res = msg.exec_()
             self.statusbar.showMessage("模型和参数不匹配，请重新加载", 20000)
             self.controller = None  # 清空controller
             return False
@@ -543,7 +515,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         msg.setWindowTitle(title)
         msg.setText(text)
         msg.setStandardButtons(QMessageBox.Yes)
-        res = msg.exec_()
+        return msg.exec_()
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
@@ -556,10 +528,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def clearRecent(self):
         self.settings.setValue("recent_files", [])
-        # ini_path = osp.join(pjpath, "config/setting.ini")
-        # print(ini_path)
-        # if osp.exists(ini_path):
-        #     os.remove(ini_path)
+        self.recentFiles = []
+        self.updateFileMenu()
         self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def loadLabelList(self):
@@ -708,7 +678,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.label_list = self.labelList
 
     def labelListItemChanged(self, row, col):
-        print("cell changed", row, col)
         if col != 1:
             return
         name = self.labelListTable.item(row, col).text()
@@ -731,7 +700,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.queueEvent(partial(self.loadImage, file_path))
         self.listFiles.addItems([file_path])
         self.filePaths.append(file_path)
-        # self.imagePath = file_path
 
     def loadLabel(self, imgPath):
         if imgPath == "" or len(self.labelPaths) == 0:
@@ -750,10 +718,23 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("label shape", label.shape)
         return label
 
+    def addRecentFile(self, path):
+        if not osp.exists(path):
+            return
+        paths = self.settings.value("recent_files")
+        if not paths:
+            paths = []
+        if path not in paths:
+            paths.append(path)
+        if len(paths) > 15:
+            del paths[0]
+        self.settings.setValue("recent_files", paths)
+        print("update recent files", self.settings.value("recent_files", []))
+        self.updateFileMenu()
+
     def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
             return
-        # TODO: 在不同平台测试含中文路径
         image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
         image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
@@ -766,11 +747,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("please load model params first!")
             return 0
         self.controller.set_label(self.loadLabel(path))
-        if path not in self.recentFiles:
-            self.recentFiles.append(path)
-            if len(self.recentFiles) > 10:
-                del self.recentFiles[0]
-            self.settings.setValue("recent_files", self.recentFiles)
+        self.addRecentFile(path)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
         if update_list:
             self.listFiles.addItems([path])
@@ -1001,7 +978,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
             self.resetZoom(width, height)
-        self.img_item.setPixmap(QPixmap(image))
+        self.annImage.setPixmap(QPixmap(image))
 
         # BUG: 一直有两张图片在scene里，研究是为什么
         # print(self.scene.items())
