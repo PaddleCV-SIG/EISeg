@@ -101,6 +101,9 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def remove(self):
         for item in self.m_items:
             self.scene().removeItem(item)
+            if item is not None:
+                del item
+                item = None
         self.scene().removeItem(self)
 
     def removeFocusPoint(self):
