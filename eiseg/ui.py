@@ -192,7 +192,9 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         print("creating, Hovering", self.creating, self.item_hovering)
         if not self.creating and not self.hovering:
             if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-                self.clickRequest.emit(pos.x(), pos.y(), ev.buttons() == Qt.LeftButton)
+                self.clickRequest.emit(
+                    int(pos.x()), int(pos.y()), ev.buttons() == Qt.LeftButton
+                )
         elif self.creating:
             self.polygon_item.removeLastPoint()
             self.polygon_item.addPoint(ev.scenePos())
@@ -426,7 +428,7 @@ class Ui_EISeg(object):
         self.labelListTable.horizontalHeader().hide()
         # 铺满
         self.labelListTable.horizontalHeader().setSectionResizeMode(
-           QtWidgets.QHeaderView.Stretch
+            QtWidgets.QHeaderView.Stretch
         )
         self.labelListTable.verticalHeader().hide()
         self.labelListTable.setColumnWidth(0, 10)
