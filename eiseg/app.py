@@ -759,7 +759,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             color = label["color"]
             labelIdx = label["labelIdx"]
             points = label["points"]
-            poly = PolygonAnnotation(labelIdx, color, color, self.opacity)
+            poly = PolygonAnnotation(labelIdx, color, color, self.opacity, self.scene)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:

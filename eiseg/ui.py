@@ -188,6 +188,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.m_lines.pop()
 
         self.scene().removeItem(self)
+        del self
 
     def removeFocusPoint(self):
         # TODO: 删线
@@ -196,13 +197,27 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             if item.hasFocus():
                 focusIdx = idx
                 break
-        if focusIdx:
+        print("del", focusIdx)
+        if focusIdx is not None:
+            if len(self) <= 3:
+                self.remove()
+                return
+            del self.points[focusIdx]
+            self.setPolygon(QtGui.QPolygonF(self.points))
+
             self.scene().removeItem(self.m_items[focusIdx])
             del self.m_items[focusIdx]
-            for item in self.m_items[focusIdx:]:
-                item.m_index -= 1
-            self.points.remove(focusIdx)
-            self.setPolygon(QtGui.QPolygonF(self.points))
+            for grip in self.m_items[focusIdx:]:
+                grip.m_index -= 1
+
+            self.scene().removeItem(self.m_lines[focusIdx])
+            del self.m_lines[focusIdx]
+            line = QtCore.QLineF(
+                self.points[(focusIdx - 1) % len(self)],
+                self.points[focusIdx % len(self)],
+            )
+            print((focusIdx - 1) % len(self), len(self.m_lines), len(self))
+            self.m_lines[(focusIdx - 1) % len(self)].setLine(line)
 
     def removeLastPoint(self):
         # TODO: 研究需不需要删线
