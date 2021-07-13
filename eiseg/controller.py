@@ -118,8 +118,8 @@ class InteractiveController:
 
         self.update_image_callback()
         # test
-        res = [i.coords for i in self.states[-1]["clicker"]]
-        print(res)
+        # res = [i.coords for i in self.states[-1]["clicker"]]
+        # print(res)
 
 
     def set_label(self, label):
@@ -132,7 +132,7 @@ class InteractiveController:
 
     def undo_click(self):
         """undo一步点击"""
-        if len(self.states) == 1:  # 如果还没点
+        if len(self.states) <= 1:  # 如果还没点
             return
         self.undo_states.append(self.states.pop())
         self.clicker.set_state(self.states[-1]["clicker"])
@@ -211,6 +211,8 @@ class InteractiveController:
         """
         self.states = []
         self.probs_history = []
+        self.undo_states = []
+        self.undo_probs_history = []
         # self.current_object_prob = None
         self.clicker.reset_clicks()
         self.reset_predictor()
