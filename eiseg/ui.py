@@ -26,11 +26,12 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setAcceptHoverEvents(True)
 
     def hoverEnterEvent(self, ev):
-        print("hover line", self.idx)
+        self.polygon_item.line_hovering = True
         self.setPen(QtGui.QPen(self.color, 3))
         super(LineItem, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
+        self.polygon_item.line_hovering = False
         self.setPen(self.color)
         super(LineItem, self).hoverLeaveEvent(ev)
 
@@ -106,6 +107,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.labelIndex = index
         self.item_hovering = False
         self.polygon_hovering = False
+        self.line_hovering = False
         self.noMove = False
 
         self.setZValue(10)
@@ -142,16 +144,11 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         line = QtCore.QLineF(
             self.mapToScene(self.points[lineIdx]),
             point
-            # self.points[lineIdx],
-            # self.mapToScene(self.points[lineIdx + 1]),
-            # self.mapToScene(self.points[lineIdx]),
             # self.mapToScene(self.points[lineIdx + 1]),
         )
         self.m_lines[lineIdx].setLine(line)
         lineItem = LineItem(self, lineIdx + 1, self.borderColor)
         line = QtCore.QLineF(
-            # self.mapToScene(self.points[lineIdx + 1]),
-            # self.points[lineIdx + 2],
             # self.mapToScene(self.points[lineIdx + 1]),
             point,
             self.mapToScene(self.points[(lineIdx + 2) % len(self)]),
@@ -179,7 +176,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
         self.points.append(p)
         self.setPolygon(QtGui.QPolygonF(self.points))
-        print("add point last", len(self.points), len(self.m_lines))
 
     def remove(self):
         for grip in self.m_items:
@@ -337,9 +333,16 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         return False
 
     @property
+    def line_hovering(self):
+        for poly in self.polygon_items:
+            if poly.line_hovering:
+                return True
+        return False
+
+    @property
     def hovering(self):
         print(self.item_hovering, self.polygon_hovering)
-        return self.item_hovering or self.polygon_hovering
+        return self.item_hovering or self.polygon_hovering or self.line_hovering
 
 
 class AnnotationView(QGraphicsView):
