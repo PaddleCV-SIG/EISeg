@@ -203,7 +203,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         redo = action(
             self.tr("&重做"),
-            self.toBeImplemented,
+            self.redoClick,
             shortcuts["redo"],
             "Redo",
             self.tr("重做一次点击"),
@@ -953,7 +953,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setClean()
 
     def redoClick(self):
-        self.toBeImplemented()
+        if self.image is None:
+            return
+        if not self.controller:
+            return
+        self.controller.redo_click()
 
     def canvasClick(self, x, y, isLeft):
         if self.controller is None:

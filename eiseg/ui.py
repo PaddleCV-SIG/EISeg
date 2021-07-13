@@ -179,6 +179,11 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.scene().removeItem(grip)
         for line in self.m_lines:
             self.scene().removeItem(line)
+        while len(self.m_items) != 0:
+            self.m_items.pop()
+        while len(self.m_lines) != 0:
+            self.m_lines.pop()
+
         self.scene().removeItem(self)
 
     def removeFocusPoint(self):
