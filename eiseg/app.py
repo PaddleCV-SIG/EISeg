@@ -78,6 +78,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
+        self.canvas.zoomRequest.connect(self.viewZoomed)
         self.annImage = QtWidgets.QGraphicsPixmapItem()
         self.scene.addItem(self.annImage)
 
@@ -993,6 +994,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # BUG: 一直有两张图片在scene里，研究是为什么
         # print(self.scene.items())
 
+    def viewZoomed(self, scale):
+        self.scene.scale = scale
+        self.scene.updatePolygonSize()
+
     # 界面缩放重置
     def resetZoom(self, width, height):
         # 每次加载图像前设定下当前的显示框，解决图像缩小后不在中心的问题
@@ -1011,6 +1016,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         else:
             self.canvas.zoom_all = scr_cont[0]
         self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
+        self.scene.scale = self.canvas.zoom_all
 
     def queueEvent(self, function):
         # TODO: 研究这个东西是不是真的不影响ui

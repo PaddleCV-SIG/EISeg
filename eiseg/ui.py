@@ -45,19 +45,18 @@ class LineItem(QtWidgets.QGraphicsLineItem):
 
 # BUG: item 不能移出图片的范围，需要限制起来
 class GripItem(QtWidgets.QGraphicsPathItem):
-    circle = QtGui.QPainterPath()
-    circle.addEllipse(QtCore.QRectF(-2.5, -2.5, 5, 5))
-    square = QtGui.QPainterPath()
-    square.addRect(QtCore.QRectF(-3, -3, 6, 6))
+    fixedSize = 10
 
     def __init__(self, annotation_item, index, color):
         super(GripItem, self).__init__()
         self.m_annotation_item = annotation_item
+        self.hovering = False
         self.m_index = index
         color.setAlphaF(1)
         self.color = color
 
-        self.setPath(GripItem.circle)
+        self.updateSize(2)
+        self.setPath(self.circle)
         self.setBrush(self.color)
         self.setPen(QtGui.QPen(self.color, 1))
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
@@ -68,17 +67,29 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setZValue(11)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
+    def updateSize(self, size=None):
+        if not size:
+            size = GripItem.fixedSize / self.scene().scale
+        # size = 2
+        self.circle = QtGui.QPainterPath()
+        self.circle.addEllipse(QtCore.QRectF(-size, -size, size * 2, size * 2))
+        self.square = QtGui.QPainterPath()
+        self.square.addRect(QtCore.QRectF(-size, -size, size * 2, size * 2))
+        self.setPath(self.square if self.hovering else self.circle)
+
     def hoverEnterEvent(self, ev):
-        print("hover grip ", self.m_index, self.pos())
-        self.setPath(GripItem.square)
+        print("hover grip ", self.m_index, self.pos(), self.scene().scale)
+        self.setPath(self.square)
         self.setBrush(QtGui.QColor(0, 0, 0, 0))
         self.m_annotation_item.item_hovering = True
+        self.hovring = True
         super(GripItem, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
-        self.setPath(GripItem.circle)
+        self.setPath(self.circle)
         self.setBrush(self.color)
         self.m_annotation_item.item_hovering = False
+        self.hovring = False
         super(GripItem, self).hoverLeaveEvent(ev)
 
     def mouseReleaseEvent(self, ev):
@@ -223,7 +234,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
                 line.idx -= 1
 
     def removeLastPoint(self):
-        # TODO: 研究需不需要删线
+        # TODO: 创建的时候用到，需要删line
         if len(self.points) == 0:
             self.points.pop()
             self.setPolygon(QtGui.QPolygonF(self.points))
@@ -232,7 +243,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             del it
 
     def movePoint(self, i, p):
-        print("move point", i, p)
+        print("Move point", i, p)
         if 0 <= i < len(self.points):
             p = self.mapFromScene(p)
             self.points[i] = p
@@ -309,6 +320,11 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         self.polygon_items = []  # = PolygonAnnotation()
         # self.addItem(self.polygon_item)
 
+    def updatePolygonSize(self):
+        for poly in self.polygon_items:
+            for grip in poly.m_items:
+                grip.updateSize()
+
     def setCreating(self, creating=True):
         self.creating = creating
 
@@ -364,6 +380,8 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
 
 
 class AnnotationView(QGraphicsView):
+    zoomRequest = QtCore.Signal(float)
+
     def __init__(self, *args):
         super(AnnotationView, self).__init__(*args)
         self.setRenderHints(
@@ -388,6 +406,7 @@ class AnnotationView(QGraphicsView):
             delta = newPos - oldPos
             self.translate(delta.x(), delta.y())
             ev.ignore()
+            self.zoomRequest.emit(self.zoom_all)
         else:
             super(AnnotationView, self).wheelEvent(ev)
 
