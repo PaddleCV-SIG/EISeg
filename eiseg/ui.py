@@ -26,6 +26,7 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setAcceptHoverEvents(True)
 
     def hoverEnterEvent(self, ev):
+        print("hover line: ", self.idx)
         self.polygon_item.line_hovering = True
         self.setPen(QtGui.QPen(self.color, 3))
         super(LineItem, self).hoverEnterEvent(ev)
@@ -218,6 +219,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             )
             print((focusIdx - 1) % len(self), len(self.m_lines), len(self))
             self.m_lines[(focusIdx - 1) % len(self)].setLine(line)
+            for line in self.m_lines[focusIdx:]:
+                line.idx -= 1
 
     def removeLastPoint(self):
         # TODO: 研究需不需要删线
