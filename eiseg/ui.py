@@ -37,7 +37,7 @@ class LineItem(QtWidgets.QGraphicsLineItem):
     def mouseDoubleClickEvent(self, ev):
         print("double click ", self.idx, ev.pos())
         self.setPen(self.color)
-        self.polygon_item.addPointMiddle(self.idx, self.mapToScene(ev.pos()))
+        self.polygon_item.addPointMiddle(self.idx, ev.pos())
         super(LineItem, self).mouseDoubleClickEvent(ev)
 
 
@@ -135,18 +135,25 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         for grip in self.m_items[lineIdx + 1 :]:
             grip.m_index += 1
         self.m_items.insert(lineIdx + 1, gripItem)
-        self.points.insert(lineIdx + 1, point)
+        self.points.insert(lineIdx + 1, self.mapFromScene(point))
         self.setPolygon(QtGui.QPolygonF(self.points))
         for line in self.m_lines[lineIdx + 1 :]:
             line.idx += 1
         line = QtCore.QLineF(
             self.mapToScene(self.points[lineIdx]),
-            self.mapToScene(self.points[lineIdx + 1]),
+            point
+            # self.points[lineIdx],
+            # self.mapToScene(self.points[lineIdx + 1]),
+            # self.mapToScene(self.points[lineIdx]),
+            # self.mapToScene(self.points[lineIdx + 1]),
         )
         self.m_lines[lineIdx].setLine(line)
         lineItem = LineItem(self, lineIdx + 1, self.borderColor)
         line = QtCore.QLineF(
-            self.mapToScene(self.points[lineIdx + 1]),
+            # self.mapToScene(self.points[lineIdx + 1]),
+            # self.points[lineIdx + 2],
+            # self.mapToScene(self.points[lineIdx + 1]),
+            point,
             self.mapToScene(self.points[(lineIdx + 2) % len(self)]),
         )
         lineItem.setLine(line)
