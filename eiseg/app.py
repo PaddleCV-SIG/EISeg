@@ -100,6 +100,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()
 
+        # poly = PolygonAnnotation(0, (0, 255, 0), (0, 255, 0), self.opacity)
+        # poly.labelIndex = 0
+        # self.scene.addItem(poly)
+        # self.scene.polygon_items.append(poly)
+        # points = [[0, 0], [100, 0], [100, 100], [0, 100]]
+        # for p in points:
+        #     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+
     def initActions(self):
         def menu(title, actions=None):
             menu = self.menuBar().addMenu(title)
@@ -755,7 +763,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
-                poly.addPoint(QtCore.QPointF(p[0], p[1]))
+                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
         self.currIdx += delta
@@ -808,7 +816,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
-                    poly.addPoint(QtCore.QPointF(p[0], p[1]))
+                    poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的

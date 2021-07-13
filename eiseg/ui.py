@@ -12,10 +12,39 @@ from eiseg import pjpath, __APPNAME__
 from util import Instructions
 
 
+class LineItem(QtWidgets.QGraphicsLineItem):
+    def __init__(self, annotation_item, idx, color):
+        super(LineItem, self).__init__()
+        self.polygon_item = annotation_item
+        self.idx = idx
+        self.color = color
+        self.setPen(QtGui.QPen(color, 1))
+
+        self.setZValue(15)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+        self.setAcceptHoverEvents(True)
+
+    def hoverEnterEvent(self, ev):
+        print("hover line", self.idx)
+        self.setPen(QtGui.QPen(self.color, 3))
+        super(LineItem, self).hoverEnterEvent(ev)
+
+    def hoverLeaveEvent(self, ev):
+        self.setPen(self.color)
+        super(LineItem, self).hoverLeaveEvent(ev)
+
+    def mouseDoubleClickEvent(self, ev):
+        print("double click ", self.idx, ev.pos())
+        self.setPen(self.color)
+        self.polygon_item.addPointMiddle(self.idx, self.mapToScene(ev.pos()))
+        super(LineItem, self).mouseDoubleClickEvent(ev)
+
+
 # BUG: item 不能移出图片的范围，需要限制起来
 class GripItem(QtWidgets.QGraphicsPathItem):
     circle = QtGui.QPainterPath()
-    circle.addEllipse(QtCore.QRectF(-3, -3, 6, 6))
+    circle.addEllipse(QtCore.QRectF(-2.5, -2.5, 5, 5))
     square = QtGui.QPainterPath()
     square.addRect(QtCore.QRectF(-3, -3, 6, 6))
 
@@ -38,6 +67,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     def hoverEnterEvent(self, ev):
+        print("hover grip ", self.m_index, self.pos())
         self.setPath(GripItem.square)
         self.setBrush(QtGui.QColor(0, 0, 0, 0))
         self.m_annotation_item.item_hovering = True
@@ -59,7 +89,6 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         return super(GripItem, self).itemChange(change, value)
 
 
-# TODO: 添加一个点
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
         self,
@@ -70,17 +99,20 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         parent=None,
     ):
         super(PolygonAnnotation, self).__init__(parent)
+        self.points = []
+        self.m_items = []
+        self.m_lines = []
+
+        self.labelIndex = index
         self.item_hovering = False
         self.polygon_hovering = False
+        self.noMove = False
+
+        self.setZValue(10)
         i = insideColor
         self.insideColor = QtGui.QColor(i[0], i[1], i[2])
         self.insideColor.setAlphaF(opacity)
         self.opacity = opacity
-        self.m_points = []
-        self.m_items = []
-        self.labelIndex = index
-
-        self.setZValue(10)
         b = borderColor
         self.borderColor = QtGui.QColor(b[0], b[1], b[2])
         self.borderColor.setAlphaF(0.8)
@@ -94,18 +126,63 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
-    def __del__(self):
-        print("destructor")
-        self.remove()
+    def addPointMiddle(self, lineIdx, point):
+        gripItem = GripItem(self, lineIdx + 1, self.borderColor)
+        gripItem.setEnabled(False)
+        gripItem.setPos(point)
+        self.scene().addItem(gripItem)
+        gripItem.setEnabled(True)
+        for grip in self.m_items[lineIdx + 1 :]:
+            grip.m_index += 1
+        self.m_items.insert(lineIdx + 1, gripItem)
+        self.points.insert(lineIdx + 1, point)
+        self.setPolygon(QtGui.QPolygonF(self.points))
+        for line in self.m_lines[lineIdx + 1 :]:
+            line.idx += 1
+        line = QtCore.QLineF(
+            self.mapToScene(self.points[lineIdx]),
+            self.mapToScene(self.points[lineIdx + 1]),
+        )
+        self.m_lines[lineIdx].setLine(line)
+        lineItem = LineItem(self, lineIdx + 1, self.borderColor)
+        line = QtCore.QLineF(
+            self.mapToScene(self.points[lineIdx + 1]),
+            self.mapToScene(self.points[(lineIdx + 2) % len(self)]),
+        )
+        lineItem.setLine(line)
+        self.m_lines.insert(lineIdx + 1, lineItem)
+        self.scene().addItem(lineItem)
+
+    def addPointLast(self, p):
+        item = GripItem(self, len(self), self.borderColor)
+        self.scene().addItem(item)
+        self.m_items.append(item)
+        item.setPos(p)
+        if len(self) == 0:
+            line = LineItem(self, len(self), self.borderColor)
+            self.scene().addItem(line)
+            self.m_lines.append(line)
+            line.setLine(QtCore.QLineF(p, p))
+        else:
+            self.m_lines[-1].setLine(QtCore.QLineF(self.points[-1], p))
+            line = LineItem(self, len(self), self.borderColor)
+            self.scene().addItem(line)
+            self.m_lines.append(line)
+            line.setLine(QtCore.QLineF(p, self.points[0]))
+
+        self.points.append(p)
+        self.setPolygon(QtGui.QPolygonF(self.points))
+        print("add point last", len(self.points), len(self.m_lines))
 
     def remove(self):
-        for item in self.m_items:
-            self.scene().removeItem(item)
+        for grip in self.m_items:
+            self.scene().removeItem(grip)
+        for line in self.m_lines:
+            self.scene().removeItem(line)
         self.scene().removeItem(self)
 
     def removeFocusPoint(self):
-        # removeAt
-        # PySide2.QtGui.QPolygonF.removeAt(i)
+        # TODO: 删线
         focusIdx = None
         for idx, item in enumerate(self.m_items):
             if item.hasFocus():
@@ -113,11 +190,70 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
                 break
         if focusIdx:
             self.scene().removeItem(self.m_items[focusIdx])
-            del self.m_items[idx]
-            del self.m_points[idx]
+            del self.m_items[focusIdx]
             for item in self.m_items[focusIdx:]:
                 item.m_index -= 1
-            self.setPolygon(QtGui.QPolygonF(self.m_points))
+            self.points.remove(focusIdx)
+            self.setPolygon(QtGui.QPolygonF(self.points))
+
+    def removeLastPoint(self):
+        # TODO: 研究需不需要删线
+        if len(self.points) == 0:
+            self.points.pop()
+            self.setPolygon(QtGui.QPolygonF(self.points))
+            it = self.m_items.pop()
+            self.scene().removeItem(it)
+            del it
+
+    def movePoint(self, i, p):
+        print("move point", i, p)
+        if 0 <= i < len(self.points):
+            p = self.mapFromScene(p)
+            self.points[i] = p
+            self.setPolygon(QtGui.QPolygonF(self.points))
+            self.moveLine(i)
+
+    def moveLine(self, i):
+        print("Moving line: ", i, self.noMove)
+        if self.noMove:
+            return
+        points = self.points
+        # line[i]
+        line = QtCore.QLineF(
+            self.mapToScene(points[i]), self.mapToScene(points[(i + 1) % len(self)])
+        )
+        self.m_lines[i].setLine(line)
+        # line[i-1]
+        line = QtCore.QLineF(
+            self.mapToScene(points[(i - 1) % len(self)]), self.mapToScene(points[i])
+        )
+        print((i - 1) % len(self), len(self.m_lines), len(self))
+        self.m_lines[(i - 1) % len(self)].setLine(line)
+
+    def move_item(self, i, pos):
+        if 0 <= i < len(self.m_items):
+            item = self.m_items[i]
+            item.setEnabled(False)
+            item.setPos(pos)
+            item.setEnabled(True)
+            self.moveLine(i)
+
+    def itemChange(self, change, value):
+        if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
+            for i, point in enumerate(self.points):
+                self.move_item(i, self.mapToScene(point))
+        return super(PolygonAnnotation, self).itemChange(change, value)
+
+    def hoverEnterEvent(self, ev):
+        self.polygon_hovering = True
+        self.setBrush(self.insideColor)
+        super(PolygonAnnotation, self).hoverEnterEvent(ev)
+
+    def hoverLeaveEvent(self, ev):
+        self.polygon_hovering = False
+        if not self.hasFocus():
+            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
+        super(PolygonAnnotation, self).hoverLeaveEvent(ev)
 
     def focusInEvent(self, ev):
         self.setBrush(self.insideColor)
@@ -134,53 +270,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.insideColor = QtGui.QColor(c[0], c[1], c[2])
         self.insideColor.setAlphaF(self.opacity)
 
-    def number_of_points(self):
-        return len(self.m_items)
-
-    def addPoint(self, p):
-        self.m_points.append(p)
-        self.setPolygon(QtGui.QPolygonF(self.m_points))
-        item = GripItem(self, len(self.m_points) - 1, self.borderColor)
-        self.scene().addItem(item)
-        self.m_items.append(item)
-        item.setPos(p)
-
-    def removeLastPoint(self):
-        if self.m_points:
-            self.m_points.pop()
-            self.setPolygon(QtGui.QPolygonF(self.m_points))
-            it = self.m_items.pop()
-            self.scene().removeItem(it)
-            del it
-
-    def movePoint(self, i, p):
-        if 0 <= i < len(self.m_points):
-            self.m_points[i] = self.mapFromScene(p)
-            self.setPolygon(QtGui.QPolygonF(self.m_points))
-
-    def move_item(self, index, pos):
-        if 0 <= index < len(self.m_items):
-            item = self.m_items[index]
-            item.setEnabled(False)
-            item.setPos(pos)
-            item.setEnabled(True)
-
-    def itemChange(self, change, value):
-        if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
-            for i, point in enumerate(self.m_points):
-                self.move_item(i, self.mapToScene(point))
-        return super(PolygonAnnotation, self).itemChange(change, value)
-
-    def hoverEnterEvent(self, ev):
-        self.polygon_hovering = True
-        self.setBrush(self.insideColor)
-        super(PolygonAnnotation, self).hoverEnterEvent(ev)
-
-    def hoverLeaveEvent(self, ev):
-        self.polygon_hovering = False
-        if not self.hasFocus():
-            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
-        super(PolygonAnnotation, self).hoverLeaveEvent(ev)
+    def __len__(self):
+        return len(self.points)
 
 
 class AnnotationScene(QtWidgets.QGraphicsScene):
@@ -205,15 +296,17 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
                 )
         elif self.creating:
             self.polygon_item.removeLastPoint()
-            self.polygon_item.addPoint(ev.scenePos())
+            self.polygon_item.addPointLast(ev.scenePos())
             # movable element
-            self.polygon_item.addPoint(ev.scenePos())
+            self.polygon_item.addPointLast(ev.scenePos())
         super(AnnotationScene, self).mousePressEvent(ev)
 
     def mouseMoveEvent(self, ev):
         if self.creating:
             self.polygon_item.movePoint(
-                self.polygon_item.number_of_points() - 1, ev.scenePos()
+                # self.polygon_item.number_of_points() - 1, ev.scenePos()
+                len(self.polygon_item) - 1,
+                ev.scenePos(),
             )
         super(AnnotationScene, self).mouseMoveEvent(ev)
 
@@ -252,7 +345,7 @@ class AnnotationView(QGraphicsView):
 
     def wheelEvent(self, ev):
         if ev.modifiers() & QtCore.Qt.ControlModifier:
-            print(ev.angleDelta().x(), ev.angleDelta().y())
+            # print(ev.angleDelta().x(), ev.angleDelta().y())
             zoom = 1 + ev.angleDelta().y() / 2880
             self.zoom_all *= zoom
             oldPos = self.mapToScene(ev.pos())
