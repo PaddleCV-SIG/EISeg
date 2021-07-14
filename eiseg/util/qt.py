@@ -3,11 +3,13 @@ import os.path as osp
 
 import numpy as np
 
+from eiseg import pjpath
 from qtpy import QtCore
 from qtpy import QtGui
 from qtpy import QtWidgets
+from .config import parse_configs
 
-
+shortcuts = parse_configs(osp.join(pjpath, "config/config.yaml"))["shortcut"]
 here = osp.dirname(osp.abspath(__file__))
 
 
@@ -29,7 +31,7 @@ def newAction(
     parent,
     text,
     slot=None,
-    shortcut=None,
+    shortcutName=None,
     icon=None,
     tip=None,
     checkable=False,
@@ -42,6 +44,7 @@ def newAction(
     if icon is not None:
         a.setIconText(text.replace(" ", "\n"))
         a.setIcon(newIcon(icon))
+    shortcut = shortcuts.get(shortcutName, None)
     if shortcut is not None:
         if isinstance(shortcut, (list, tuple)):
             a.setShortcuts(shortcut)
@@ -66,6 +69,7 @@ def addActions(widget, actions):
         elif isinstance(action, QtWidgets.QMenu):
             widget.addMenu(action)
         else:
+            print(action)
             widget.addAction(action)
 
 
