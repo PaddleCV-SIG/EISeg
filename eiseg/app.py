@@ -44,6 +44,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # app变量
         self.status = self.IDILE
+        self.save_status = [False, True]  # 默认不报错伪彩色，保存JSON
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -251,8 +252,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.toggleLargestCC,
             "",
             "SaveMaxPolygon",
-            self.tr("翻页同时自动保存"),
+            self.tr("保留最大的连通块"),
             checkable=True,
+        )
+        save_color = action(
+            self.tr("&伪彩色保存"),
+            partial(self.changeSave, 0),
+            "",
+            "ColorImageSave",
+            self.tr("保存为伪彩色图像"),
+            checkable=True,
+        )
+        save_json = action(
+            self.tr("&JSON保存"),
+            partial(self.changeSave, 1),
+            "",
+            "JSONSave",
+            self.tr("保存为JSON格式"),
+            checkable=True,
+            checked=True,
         )
         close = action(
             self.tr("&关闭"),
@@ -341,6 +359,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
+            setMenu=(save_color, save_json),
             helpMenu=(quick_start, about, shortcuts),
             toolBar=(
                 finish_object,
@@ -350,12 +369,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 turn_prev,
                 turn_next,
                 None,
+                save_color,
+                save_json,
+                None,
+                largest_component,
                 del_active_polygon,
                 del_active_point,
             ),
         )
         menu("文件", self.actions.fileMenu)
         menu("标注", self.actions.labelMenu)
+        menu("设置", self.actions.setMenu)
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
@@ -863,33 +887,37 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
-
-        cv2.imwrite(savePath, self.controller.result_mask)
+        # 是否保存伪彩色
+        if self.save_status[0]:
+            # 保存带有调色板的
+            # TODO：关于linux保存bug还需要进一步检测修改
+            mask_pil = Image.fromarray(self.controller.result_mask, "P")
+            mask_map = [0, 0, 0]
+            for lb in self.labelList:
+                mask_map += lb.color
+            mask_pil.putpalette(mask_map)
+            mask_pil.save(savePath)
+        else:
+            cv2.imwrite(savePath, self.controller.result_mask)
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
-        polygons = self.scene.polygon_items
-        labels = []
-        for polygon in polygons:
-            l = self.labelList[polygon.labelIndex]
-            label = {"name": l.name, "labelIdx": l.idx, "color": l.color, "points": []}
-            poly = polygon.polygon()
-            for p in poly:
-                label["points"].append([p.x(), p.y()])
-            labels.append(label)
-        savePath = savePath[: -len("png")] + "json"
-        open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
+        # 是否保存json
+        if self.save_status[1]:
+            polygons = self.scene.polygon_items
+            labels = []
+            for polygon in polygons:
+                l = self.labelList[polygon.labelIndex]
+                label = {"name": l.name, "labelIdx": l.idx, "color": l.color, "points": []}
+                poly = polygon.polygon()
+                for p in poly:
+                    label["points"].append([p.x(), p.y()])
+                labels.append(label)
+            savePath = savePath[: -len("png")] + "json"
+            open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
         self.setClean()
 
         # 保存路径带有中文
         # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
-        # 保存带有调色板的
-        # mask_pil = Image.fromarray(self.controller.result_mask, "P")
-        # mask_map = [0, 0, 0]
-        # for lb in self.labelList:
-        #     mask_map += lb[2]
-        # mask_pil.putpalette(mask_map)
-        # mask_pil.save(savePath)
-        # self.setClean()
         self.statusbar.showMessage(f"标签成功保存至 {savePath}")
 
     def setClean(self):
@@ -1030,6 +1058,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             save = False
         self.actions.auto_save.setChecked(save)
         self.settings.setValue("auto_save", save)
+
+    def changeSave(self, index):
+        self.save_status[index] = bool(self.save_status[index] - 1)
 
     def toggleLargestCC(self, on):
         self.controller.filterLargestCC = on
