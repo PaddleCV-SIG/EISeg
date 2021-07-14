@@ -11,3 +11,4 @@ shortcut:
   del_active_polygon: Ctrl+BackSpace
   del_active_point: BackSpace
   load_param: Ctrl+M
+  edit_shortcuts: E
