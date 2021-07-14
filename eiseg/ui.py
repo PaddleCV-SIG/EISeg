@@ -203,7 +203,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         del self
 
     def removeFocusPoint(self):
-        # TODO: 删线
         focusIdx = None
         for idx, item in enumerate(self.m_items):
             if item.hasFocus():

@@ -16,6 +16,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
+from widget import ShortcutWindow
 import models
 from controller import InteractiveController
 from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
@@ -72,10 +73,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.updateModelsMenu()
         self.updateRecentFile()
 
-        # 帮助界面
+        # 窗口
         self.help_dialog = QtWidgets.QDialog()
         help_ui = Ui_Help()
         help_ui.setupUi(self.help_dialog)
+        self.shortcutWindow = ShortcutWindow()
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
@@ -110,6 +112,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # for p in points:
         #     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
+    def editShortcut(self):
+        self.shortcutWindow.show()
+
     def initActions(self):
         def menu(title, actions=None):
             menu = self.menuBar().addMenu(title)
@@ -119,6 +124,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         shortcuts = self.config["shortcut"]
+
+        edit_shortcuts = action(
+            self.tr("&编辑快捷键"),
+            self.editShortcut,
+            shortcuts["edit_shortcuts"],
+            "",
+            self.tr("编辑软件快捷键"),
+        )
         turn_prev = action(
             self.tr("&上一张"),
             partial(self.turnImg, -1),
@@ -259,7 +272,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("&伪彩色保存"),
             partial(self.changeSave, 0),
             "",
-            "ColorImageSave",
+            "SavePseudoColor",
             self.tr("保存为伪彩色图像"),
             checkable=True,
         )
@@ -267,7 +280,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("&JSON保存"),
             partial(self.changeSave, 1),
             "",
-            "JSONSave",
+            "SaveJson",
             self.tr("保存为JSON格式"),
             checkable=True,
             checked=True,
@@ -359,8 +372,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
-            setMenu=(save_color, save_json),
-            helpMenu=(quick_start, about, shortcuts),
+            saveMenu=(save_color, save_json),
+            helpMenu=(quick_start, about, shortcuts, edit_shortcuts),
             toolBar=(
                 finish_object,
                 clear,
@@ -379,7 +392,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         menu("文件", self.actions.fileMenu)
         menu("标注", self.actions.labelMenu)
-        menu("设置", self.actions.setMenu)
+        menu("保存", self.actions.saveMenu)
         menu("帮助", self.actions.helpMenu)
         util.addActions(self.toolBar, self.actions.toolBar)
 
@@ -907,7 +920,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             labels = []
             for polygon in polygons:
                 l = self.labelList[polygon.labelIndex]
-                label = {"name": l.name, "labelIdx": l.idx, "color": l.color, "points": []}
+                label = {
+                    "name": l.name,
+                    "labelIdx": l.idx,
+                    "color": l.color,
+                    "points": [],
+                }
                 poly = polygon.polygon()
                 for p in poly:
                     label["points"].append([p.x(), p.y()])

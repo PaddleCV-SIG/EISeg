@@ -1,0 +1,1 @@
+from .shortcut import ShortcutWindow
