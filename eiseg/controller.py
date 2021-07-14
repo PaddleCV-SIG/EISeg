@@ -117,7 +117,7 @@ class InteractiveController:
             self.probs_history.append((np.zeros_like(pred), pred))
 
         self.update_image_callback()
-        # test
+        # # test
         # res = [i.coords for i in self.states[-1]["clicker"]]
         # print(res)
 
