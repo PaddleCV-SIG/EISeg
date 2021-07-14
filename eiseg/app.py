@@ -664,7 +664,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 if res == QMessageBox.Yes:
                     polygon.remove()
-                    del self.scene.polygon_items[idx]
 
     def delActivePoint(self):
         for polygon in self.scene.polygon_items:
@@ -812,6 +811,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.setDirty()
             color = self.labelList[self.currLabelIdx].color
             for points in polygons:
+                if len(points) < 3:
+                    continue
                 poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
                 poly.labelIndex = self.currLabelIdx
                 self.scene.addItem(poly)
