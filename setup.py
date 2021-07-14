@@ -17,7 +17,7 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/PaddleCV-SIG/EISeg",
-    author="Paddlecv-SIG",
+    author="PaddleCV-SIG",
     author_email="linhandev@qq.com",
     license="Apache Software License",  # 这里和readme的license不一样，统一了下，不知道是不是apache
     classifiers=[
