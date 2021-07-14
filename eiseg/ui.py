@@ -198,7 +198,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.m_items.pop()
         while len(self.m_lines) != 0:
             self.m_lines.pop()
-
+        self.scene().polygon_items.remove(self)
         self.scene().removeItem(self)
         del self
 
@@ -216,7 +216,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
                 return
             del self.points[focusIdx]
             self.setPolygon(QtGui.QPolygonF(self.points))
-
             self.scene().removeItem(self.m_items[focusIdx])
             del self.m_items[focusIdx]
             for grip in self.m_items[focusIdx:]:
@@ -225,8 +224,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.scene().removeItem(self.m_lines[focusIdx])
             del self.m_lines[focusIdx]
             line = QtCore.QLineF(
-                self.points[(focusIdx - 1) % len(self)],
-                self.points[focusIdx % len(self)],
+                self.mapToScene(self.points[(focusIdx - 1) % len(self)]),
+                self.mapToScene(self.points[focusIdx % len(self)]),
             )
             print((focusIdx - 1) % len(self), len(self.m_lines), len(self))
             self.m_lines[(focusIdx - 1) % len(self)].setLine(line)
