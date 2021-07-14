@@ -104,6 +104,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()
 
+        # DEBUG:
         # poly = PolygonAnnotation(0, (0, 255, 0), (0, 255, 0), self.opacity)
         # poly.labelIndex = 0
         # self.scene.addItem(poly)
@@ -123,124 +124,124 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return menu
 
         action = partial(util.newAction, self)
-        shortcuts = self.config["shortcut"]
+        # shortcuts = self.config["shortcut"]
 
         edit_shortcuts = action(
             self.tr("&编辑快捷键"),
             self.editShortcut,
-            shortcuts["edit_shortcuts"],
+            "edit_shortcuts",
             "",
             self.tr("编辑软件快捷键"),
         )
         turn_prev = action(
             self.tr("&上一张"),
             partial(self.turnImg, -1),
-            shortcuts["turn_prev"],
+            "turn_prev",
             "Prev",
             self.tr("翻到上一张图片"),
         )
         turn_next = action(
             self.tr("&下一张"),
             partial(self.turnImg, 1),
-            shortcuts["turn_next"],
+            "turn_next",
             "Next",
             self.tr("翻到下一张图片"),
         )
         open_image = action(
             self.tr("&打开图像"),
             self.openImage,
-            shortcuts["open_image"],
+            "open_image",
             "OpenImage",
             self.tr("打开一张图像进行标注"),
         )
         open_folder = action(
             self.tr("&打开文件夹"),
             self.openFolder,
-            shortcuts["open_folder"],
+            "open_folder",
             "OpenFolder",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         change_output_dir = action(
             self.tr("&改变标签保存路径"),
             self.changeOutputDir,
-            shortcuts["change_output_dir"],
+            "change_output_dir",
             "ChangeLabelPath",
             self.tr("打开一个文件夹下所有的图像进行标注"),
         )
         load_param = action(
             self.tr("&加载模型参数"),
             self.changeParam,
-            shortcuts["load_param"],
+            "load_param",
             "Model",
             self.tr("加载一个模型参数"),
         )
         quick_start = action(
             self.tr("&快速上手"),
             self.toBeImplemented,
-            None,
+            "quick_start",
             "Use",
             self.tr("快速上手介绍"),
         )
         about = action(
             self.tr("&关于软件"),
             self.toBeImplemented,
-            None,
+            "about",
             "About",
             self.tr("关于这个软件和开发团队"),
         )
         grid_ann = action(
             self.tr("&N²宫格标注"),
             self.toBeImplemented,
-            None,
+            "grid_ann",
             "N2",
             self.tr("使用N²宫格进行细粒度标注"),
         )
         finish_object = action(
             self.tr("&完成当前目标"),
             self.finishObject,
-            shortcuts["finish_object"],
+            "finish_object",
             "Ok",
             self.tr("完成当前目标的标注"),
         )
         clear = action(
             self.tr("&清除所有标注"),
             self.undoAll,
-            shortcuts["clear"],
+            "clear",
             "Clear",
             self.tr("清除所有标注信息"),
         )
         undo = action(
             self.tr("&撤销"),
             self.undoClick,
-            shortcuts["undo"],
+            "undo",
             "Undo",
             self.tr("撤销一次点击"),
         )
         redo = action(
             self.tr("&重做"),
             self.redoClick,
-            shortcuts["redo"],
+            "redo",
             "Redo",
             self.tr("重做一次点击"),
         )
         save = action(
             self.tr("&保存"),
             self.saveLabel,
-            "",
+            "save",
             "Save",
             self.tr("保存图像标签"),
         )
         save_as = action(
             self.tr("&另存为"),
             partial(self.saveLabel, True),
-            "",
+            "save_as",
             "OtherSave",
             self.tr("指定标签保存路径"),
         )
         auto_save = action(
             self.tr("&自动保存"),
             self.toggleAutoSave,
-            "",
+            "auto_save",
             "AutoSave",
             self.tr("翻页同时自动保存"),
             checkable=True,
@@ -249,21 +250,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         del_active_point = action(
             self.tr("&删除点"),
             self.delActivePoint,
-            shortcuts["del_active_point"],
+            "del_active_point",
             "RemovePolygonPoint",
             self.tr("删除当前选中的点"),
         )
         del_active_polygon = action(
             self.tr("&删除多边形"),
             self.delActivePolygon,
-            shortcuts["del_active_polygon"],
+            "del_active_polygon",
             "RemovePolygon",
             self.tr("删除当前选中的多边形"),
         )
         largest_component = action(
             self.tr("&保留最大连通块"),
             self.toggleLargestCC,
-            "",
+            "largest_component",
             "SaveMaxPolygon",
             self.tr("保留最大的连通块"),
             checkable=True,
@@ -271,7 +272,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         save_color = action(
             self.tr("&伪彩色保存"),
             partial(self.changeSave, 0),
-            "",
+            "save_color",
             "SavePseudoColor",
             self.tr("保存为伪彩色图像"),
             checkable=True,
@@ -279,7 +280,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         save_json = action(
             self.tr("&JSON保存"),
             partial(self.changeSave, 1),
-            "",
+            "save_json",
             "SaveJson",
             self.tr("保存为JSON格式"),
             checkable=True,
@@ -288,49 +289,49 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         close = action(
             self.tr("&关闭"),
             self.toBeImplemented,
-            "",
+            "close",
             "End",
             self.tr("关闭当前图像"),
         )
         quit = action(
             self.tr("&退出"),
             self.close,
-            "",
+            "quit",
             "Close",
             self.tr("退出软件"),
         )
         save_label = action(
             self.tr("&保存标签列表"),
             self.saveLabelList,
-            "",
+            "save_label",
             "ExportLabel",
             self.tr("将标签保存成标签配置文件"),
         )
         load_label = action(
             self.tr("&加载标签列表"),
             self.loadLabelList,
-            "",
+            "load_label",
             "ImportLabel",
             self.tr("从标签配置文件中加载标签"),
         )
         clear_label = action(
             self.tr("&清空标签列表"),
             self.clearLabelList,
-            "",
+            "clear_label",
             "ClearLabel",
             self.tr("清空所有的标签"),
         )
-        shortcuts = action(
-            self.tr("&快捷键列表"),
-            self.toBeImplemented,
-            "",
-            "Shortcut",
-            self.tr("查看所有快捷键"),
-        )
+        # shortcuts = action(
+        #     self.tr("&快捷键列表"),
+        #     self.toBeImplemented,
+        #     "shortcuts",
+        #     "Shortcut",
+        #     self.tr("查看所有快捷键"),
+        # )
         clear_recent = action(
             self.tr("&清除标注记录"),
             self.clearRecentFile,
-            "",
+            "clear_recent",
             "ClearRecent",
             self.tr("清除近期标注记录"),
         )
@@ -373,7 +374,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_point,
             ),
             saveMenu=(save_color, save_json),
-            helpMenu=(quick_start, about, shortcuts, edit_shortcuts),
+            helpMenu=(quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
                 clear,
