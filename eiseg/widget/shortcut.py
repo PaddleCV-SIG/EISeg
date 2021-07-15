@@ -11,6 +11,8 @@ from qtpy.QtWidgets import (
     QMessageBox,
 )
 
+from util import save_configs
+
 
 class RecordShortcutWindow(QtWidgets.QKeySequenceEdit):
     # TODO: 限制只允许一个
@@ -40,7 +42,6 @@ class ShortcutWindow(QtWidgets.QWidget):
             if len(shortcut) == 0:
                 shortcut = "无"
             button = QPushButton(shortcut)
-            # button.clicked.connect(lambda: self.recordShortcut(action))
             button.clicked.connect(partial(self.recordShortcut, action))
             button.setFixedWidth(100)
             button.setFixedHeight(30)
@@ -64,7 +65,6 @@ class ShortcutWindow(QtWidgets.QWidget):
     def recordShortcut(self, action):
         self.recorder = RecordShortcutWindow(self.setShortcut)
         self.currentAction = action
-        # self.recorder.moveCenter(self.rect().center())
 
     def setShortcut(self, key):
         print("setting shortcut", key.toString())
@@ -80,6 +80,6 @@ class ShortcutWindow(QtWidgets.QWidget):
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
                 return
-        print(self.currentAction.data())
         self.currentAction.setShortcut(key)
         self.refreshUi()
+        save_configs(None, None, self.actions)

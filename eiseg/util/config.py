@@ -1,5 +1,8 @@
 import yaml
 import os.path as osp
+import os
+
+from eiseg import pjpath
 
 
 def parse_configs(path):
@@ -9,10 +12,19 @@ def parse_configs(path):
         return yaml.load(f.read(), Loader=yaml.FullLoader)
 
 
-def save_configs(path, config):
+def save_configs(path=None, config=None, actions=None):
+    if not path:
+        path = osp.join(pjpath, "config/config.yaml")
+    print(path)
     if not osp.exists(osp.basename(path)):
-        print("文件夹不存在")
-        return
+        os.makedirs(osp.basename(path))
+    if not config:
+        config = {}
+    if actions:
+        config["shortcut"] = {}
+        for action in actions:
+            config["shortcut"][action.data()] = action.shortcut().toString()
+    print("config", config["shortcut"])
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(config, f)
 
