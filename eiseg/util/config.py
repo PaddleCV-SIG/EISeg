@@ -15,7 +15,6 @@ def parse_configs(path):
 def save_configs(path=None, config=None, actions=None):
     if not path:
         path = osp.join(pjpath, "config/config.yaml")
-    print(path)
     if not osp.exists(osp.basename(path)):
         os.makedirs(osp.basename(path))
     if not config:
@@ -24,7 +23,6 @@ def save_configs(path=None, config=None, actions=None):
         config["shortcut"] = {}
         for action in actions:
             config["shortcut"][action.data()] = action.shortcut().toString()
-    print("config", config["shortcut"])
     with open(path, "w", encoding="utf-8") as f:
         yaml.dump(config, f)
 
