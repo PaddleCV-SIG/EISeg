@@ -9,150 +9,23 @@ from qtpy.QtWidgets import QGraphicsView
 from eiseg import pjpath, __APPNAME__
 import models
 from util import MODELS, Instructions
-from widget import LineItem, GripItem
+from widget import LineItem, GripItem, AnnotationScene, AnnotationView
 
-
-class AnnotationScene(QtWidgets.QGraphicsScene):
-    clickRequest = QtCore.Signal(int, int, bool)
-
-    def __init__(self, parent=None):
-        super(AnnotationScene, self).__init__(parent)
-        self.creating = False
-        self.polygon_items = []  # = PolygonAnnotation()
-        # self.addItem(self.polygon_item)
-
-    def updatePolygonSize(self):
-        for poly in self.polygon_items:
-            for grip in poly.m_items:
-                grip.updateSize()
-            for line in poly.m_lines:
-                line.updateWidth()
-
-    def setCreating(self, creating=True):
-        self.creating = creating
-
-    def mousePressEvent(self, ev):
-        pos = ev.scenePos()
-        print("creating, Hovering", self.creating, self.item_hovering)
-        if not self.creating and not self.hovering:
-            if ev.buttons() in [Qt.LeftButton, Qt.RightButton]:
-                self.clickRequest.emit(
-                    int(pos.x()), int(pos.y()), ev.buttons() == Qt.LeftButton
-                )
-        elif self.creating:
-            self.polygon_item.removeLastPoint()
-            self.polygon_item.addPointLast(ev.scenePos())
-            # movable element
-            self.polygon_item.addPointLast(ev.scenePos())
-        super(AnnotationScene, self).mousePressEvent(ev)
-
-    def mouseMoveEvent(self, ev):
-        if self.creating:
-            self.polygon_item.movePoint(
-                # self.polygon_item.number_of_points() - 1, ev.scenePos()
-                len(self.polygon_item) - 1,
-                ev.scenePos(),
-            )
-        super(AnnotationScene, self).mouseMoveEvent(ev)
-
-    @property
-    def item_hovering(self):
-        for poly in self.polygon_items:
-            if poly.item_hovering:
-                return True
-        return False
-
-    @property
-    def polygon_hovering(self):
-        for poly in self.polygon_items:
-            if poly.polygon_hovering:
-                return True
-        return False
-
-    @property
-    def line_hovering(self):
-        for poly in self.polygon_items:
-            if poly.line_hovering:
-                return True
-        return False
-
-    @property
-    def hovering(self):
-        print(self.item_hovering, self.polygon_hovering)
-        return self.item_hovering or self.polygon_hovering or self.line_hovering
-
-
-class AnnotationView(QGraphicsView):
-    zoomRequest = QtCore.Signal(float)
-
-    def __init__(self, *args):
-        super(AnnotationView, self).__init__(*args)
-        self.setRenderHints(
-            QtGui.QPainter.Antialiasing | QtGui.QPainter.SmoothPixmapTransform
-        )
-        self.setMouseTracking(True)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
-        self.setResizeAnchor(QGraphicsView.NoAnchor)
-        self.point = QtCore.QPoint(0, 0)
-        self.middle_click = False
-        self.zoom_all = 1
-
-    def wheelEvent(self, ev):
-        if ev.modifiers() & QtCore.Qt.ControlModifier:
-            # print(ev.angleDelta().x(), ev.angleDelta().y())
-            zoom = 1 + ev.angleDelta().y() / 2880
-            self.zoom_all *= zoom
-            oldPos = self.mapToScene(ev.pos())
-            if self.zoom_all >= 0.02 and self.zoom_all <= 50:  # 限制缩放的倍数
-                self.scale(zoom, zoom)
-            newPos = self.mapToScene(ev.pos())
-            delta = newPos - oldPos
-            self.translate(delta.x(), delta.y())
-            ev.ignore()
-            self.zoomRequest.emit(self.zoom_all)
-        else:
-            super(AnnotationView, self).wheelEvent(ev)
-
-    def mouseMoveEvent(self, ev):
-        if self.middle_click and (
-            self.horizontalScrollBar().isVisible()
-            or self.verticalScrollBar().isVisible()
-        ):
-            # 放大到出现滚动条才允许拖动，避免出现抖动
-            self._endPos = ev.pos() / self.zoom_all - self._startPos / self.zoom_all
-            # 这儿不写为先减后除，这样会造成速度不一致
-            self.point = self.point + self._endPos
-            self._startPos = ev.pos()
-            print("move", self._endPos.x(), self._endPos.y())
-            self.translate(self._endPos.x(), self._endPos.y())
-        super(AnnotationView, self).mouseMoveEvent(ev)
-
-    def mousePressEvent(self, ev):
-        if ev.buttons() == Qt.MiddleButton:
-            self.middle_click = True
-            self._startPos = ev.pos()
-        super(AnnotationView, self).mousePressEvent(ev)
-
-    def mouseReleaseEvent(self, ev):
-        if ev.button() == Qt.MiddleButton:
-            self.middle_click = False
-        super(AnnotationView, self).mouseReleaseEvent(ev)
-
-
-class Ui_Help(object):
-    def setupUi(self, Dialog):
-        Dialog.setObjectName("Dialog")
-        Dialog.setWindowTitle("Help")
-        Dialog.resize(650, 560)
-        Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
-        horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
-        horizontalLayout.setObjectName("horizontalLayout")
-        label = QtWidgets.QLabel(Dialog)
-        label.setText("")
-        # label.setPixmap(QtGui.QPixmap("EISeg/resources/shortkey.jpg"))
-        label.setObjectName("label")
-        horizontalLayout.addWidget(label)
-        QtCore.QMetaObject.connectSlotsByName(Dialog)
+#
+# class Ui_Help(object):
+#     def setupUi(self, Dialog):
+#         Dialog.setObjectName("Dialog")
+#         Dialog.setWindowTitle("Help")
+#         Dialog.resize(650, 560)
+#         Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
+#         horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
+#         horizontalLayout.setObjectName("horizontalLayout")
+#         label = QtWidgets.QLabel(Dialog)
+#         label.setText("")
+#         # label.setPixmap(QtGui.QPixmap("EISeg/resources/shortkey.jpg"))
+#         label.setObjectName("label")
+#         horizontalLayout.addWidget(label)
+#         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
 
 class Ui_EISeg(object):
