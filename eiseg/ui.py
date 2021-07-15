@@ -11,22 +11,6 @@ import models
 from util import MODELS, Instructions
 from widget import LineItem, GripItem, AnnotationScene, AnnotationView
 
-#
-# class Ui_Help(object):
-#     def setupUi(self, Dialog):
-#         Dialog.setObjectName("Dialog")
-#         Dialog.setWindowTitle("Help")
-#         Dialog.resize(650, 560)
-#         Dialog.setStyleSheet("background-color: rgb(255, 255, 255);")
-#         horizontalLayout = QtWidgets.QHBoxLayout(Dialog)
-#         horizontalLayout.setObjectName("horizontalLayout")
-#         label = QtWidgets.QLabel(Dialog)
-#         label.setText("")
-#         # label.setPixmap(QtGui.QPixmap("EISeg/resources/shortkey.jpg"))
-#         label.setObjectName("label")
-#         horizontalLayout.addWidget(label)
-#         QtCore.QMetaObject.connectSlotsByName(Dialog)
-
 
 class Ui_EISeg(object):
     def setupUi(self, MainWindow):
@@ -72,14 +56,12 @@ class Ui_EISeg(object):
         self.scrollArea.setObjectName("scrollArea")
         ImageRegion.addWidget(self.scrollArea)
         # 图形显示
-        # self.scene = QtWidgets.QGraphicsScene()
         self.scene = AnnotationScene()
 
         QtWidgets.QShortcut(
             QtCore.Qt.Key_Escape,
             self,
             activated=partial(
-                # self.scene.setCurrentInstruction, Instructions.No_Instruction
                 self.scene.setCreating,
                 False,
             ),

@@ -1,4 +1,4 @@
-from qtpy import QtWidgets, QtGui
+from qtpy import QtWidgets, QtGui, QtCore
 
 
 class LineItem(QtWidgets.QGraphicsLineItem):
@@ -43,3 +43,16 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setPen(QtGui.QPen(self.color, self.width))
         self.polygon_item.addPointMiddle(self.idx, ev.pos())
         super(LineItem, self).mouseDoubleClickEvent(ev)
+
+    def shape(self):
+        path = QtGui.QPainterPath()
+        path.addPolygon(self.boundingPolygon())
+        return path
+
+    def boundingPolygon(self):
+        w = self.width * 10
+        w = max(w, 3)
+        p = QtCore.QPointF(w, 0)
+        s, e = self.line().p1(), self.line().p2()
+        poly = QtGui.QPolygonF([s - p, s + p, e + p, e - p])
+        return poly
