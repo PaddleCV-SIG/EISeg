@@ -16,23 +16,15 @@ from util import save_configs
 
 
 class RecordShortcutWindow(QtWidgets.QKeySequenceEdit):
-    # TODO: 限制只允许一个
     def __init__(self, finishCallback):
         super().__init__()
         self.finishCallback = finishCallback
         self.setWindowTitle("输入快捷键")
         self.show()
         self.editingFinished.connect(lambda: finishCallback(self.keySequence()))
-        # self.keySequenceChanged.connect(self.turncate)
 
     def keyReleaseEvent(self, ev):
-        # self.setKeySequence(QKeySequence(self.keySequence()[0]))
         self.finishCallback(self.keySequence())
-        # super(RecordShortcutWindow, self).keyReleaseEvent(ev)
-
-    # def turncate(self):
-    #     print("filter", QKeySequence(self.keySequence()[0]))
-    #     self.setKeySequence(QKeySequence(self.keySequence()[0]))
 
 
 class ShortcutWindow(QtWidgets.QWidget):
