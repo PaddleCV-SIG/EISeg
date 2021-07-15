@@ -1,14 +1,29 @@
 shortcut:
+  about: A
+  auto_save: Y
   change_output_dir: Shift+Z
   clear: Ctrl+Shift+Z
+  clear_label: ''
+  clear_recent: ''
+  close: ''
+  del_active_point: Backspace
+  del_active_polygon: Ctrl+Backspace
+  edit_shortcuts: E
   finish_object: Space
+  grid_ann: ''
+  largest_component: ''
+  load_label: ''
+  load_param: Ctrl+M
   open_folder: Shift+A
   open_image: Ctrl+A
+  quick_start: ''
+  quit: ''
   redo: Ctrl+Y
+  save: ''
+  save_as: ''
+  save_color: ''
+  save_json: ''
+  save_label: ''
   turn_next: F
   turn_prev: S
   undo: Ctrl+Z
-  del_active_polygon: Ctrl+BackSpace
-  del_active_point: BackSpace
-  load_param: Ctrl+M
-  edit_shortcuts: E
