@@ -334,7 +334,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
-        print("here", len(self.actions))
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateRecentFile)
         recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
