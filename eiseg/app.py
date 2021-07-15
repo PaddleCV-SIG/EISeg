@@ -477,6 +477,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def loadModelParam(self, param_path, model=None):
         print("Call load model param: ", param_path, model, type(model))
+        # TODO: 捕获加载模型过程中所有的错误，
+        # TODO: 对paddle版本不到2.1.0进行提示
         if model is None:
             model = self.modelClass()
         if isinstance(model, str):
