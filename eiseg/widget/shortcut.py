@@ -10,6 +10,7 @@ from qtpy.QtWidgets import (
     QDesktopWidget,
     QMessageBox,
 )
+from qtpy.QtGui import QKeySequence
 
 from util import save_configs
 
@@ -22,6 +23,16 @@ class RecordShortcutWindow(QtWidgets.QKeySequenceEdit):
         self.setWindowTitle("输入快捷键")
         self.show()
         self.editingFinished.connect(lambda: finishCallback(self.keySequence()))
+        # self.keySequenceChanged.connect(self.turncate)
+
+    def keyReleaseEvent(self, ev):
+        # self.setKeySequence(QKeySequence(self.keySequence()[0]))
+        self.finishCallback(self.keySequence())
+        # super(RecordShortcutWindow, self).keyReleaseEvent(ev)
+
+    # def turncate(self):
+    #     print("filter", QKeySequence(self.keySequence()[0]))
+    #     self.setKeySequence(QKeySequence(self.keySequence()[0]))
 
 
 class ShortcutWindow(QtWidgets.QWidget):
