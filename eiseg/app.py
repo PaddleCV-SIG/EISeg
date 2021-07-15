@@ -107,15 +107,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()
 
-        # DEBUG:
-        # poly = PolygonAnnotation(0, (0, 255, 0), (0, 255, 0), self.opacity)
-        # poly.labelIndex = 0
-        # self.scene.addItem(poly)
-        # self.scene.polygon_items.append(poly)
-        # points = [[0, 0], [100, 0], [100, 100], [0, 100]]
-        # for p in points:
-        #     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-
     def editShortcut(self):
         self.shortcutWindow.show()
 

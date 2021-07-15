@@ -1,6 +1,6 @@
 shortcut:
-  about: Y
-  auto_save: Q
+  about: A
+  auto_save: X
   change_output_dir: Shift+Z
   clear: Ctrl+Shift+Z
   clear_label: ''
