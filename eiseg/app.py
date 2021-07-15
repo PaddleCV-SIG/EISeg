@@ -5,6 +5,8 @@ import sys
 import inspect
 import warnings
 import json
+import collections
+
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -77,7 +79,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.help_dialog = QtWidgets.QDialog()
         help_ui = Ui_Help()
         help_ui.setupUi(self.help_dialog)
-        self.shortcutWindow = ShortcutWindow()
+        self.shortcutWindow = ShortcutWindow(self.actions)
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
@@ -125,7 +127,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         action = partial(util.newAction, self)
         # shortcuts = self.config["shortcut"]
-
+        self.actions = util.struct()
+        start = dir()
         edit_shortcuts = action(
             self.tr("&编辑快捷键"),
             self.editShortcut,
@@ -321,13 +324,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "ClearLabel",
             self.tr("清空所有的标签"),
         )
-        # shortcuts = action(
-        #     self.tr("&快捷键列表"),
-        #     self.toBeImplemented,
-        #     "shortcuts",
-        #     "Shortcut",
-        #     self.tr("查看所有快捷键"),
-        # )
         clear_recent = action(
             self.tr("&清除标注记录"),
             self.clearRecentFile,
@@ -335,12 +331,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "ClearRecent",
             self.tr("清除近期标注记录"),
         )
+        for name in dir():
+            if name not in start:
+                self.actions.append(eval(name))
+        print("here", len(self.actions))
         recent_files = QtWidgets.QMenu(self.tr("近期文件"))
         recent_files.aboutToShow.connect(self.updateRecentFile)
         recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
         recent_params.aboutToShow.connect(self.updateModelsMenu)
-        self.actions = util.struct(
-            auto_save=auto_save,
+
+        self.menus = util.struct(
             recent_files=recent_files,
             recent_params=recent_params,
             fileMenu=(
@@ -391,14 +391,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_point,
             ),
         )
-        menu("文件", self.actions.fileMenu)
-        menu("标注", self.actions.labelMenu)
-        menu("保存", self.actions.saveMenu)
-        menu("帮助", self.actions.helpMenu)
-        util.addActions(self.toolBar, self.actions.toolBar)
+        menu("文件", self.menus.fileMenu)
+        menu("标注", self.menus.labelMenu)
+        menu("保存", self.menus.saveMenu)
+        menu("帮助", self.menus.helpMenu)
+        util.addActions(self.toolBar, self.menus.toolBar)
 
     def updateRecentFile(self):
-        menu = self.actions.recent_files
+        menu = self.menus.recent_files
         menu.clear()
         recentFiles = self.settings.value("recent_files", [])
         if not recentFiles:
@@ -433,7 +433,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.statusbar.showMessage("已清除最近打开文件", 10000)
 
     def updateModelsMenu(self):
-        menu = self.actions.recent_params
+        menu = self.menus.recent_params
         menu.clear()
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
@@ -760,7 +760,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.controller:
             self.controller.set_image(self.image)
         else:
-            self.showWarning("未加载模型参数，请先加载模型参数！")
+            self.warn("未加载模型", "未加载模型参数，请先加载模型参数！")
             self.changeParam()
             print("please load model params first!")
             return 0

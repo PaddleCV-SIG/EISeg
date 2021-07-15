@@ -18,61 +18,57 @@ from collections.abc import Sequence
 
 class ComponentManager:
     """
-        Implement a manager class to add the new component properly.
-        The component can be added as either class or function type.
+    Implement a manager class to add the new component properly.
+    The component can be added as either class or function type.
 
-        Args:
-            name (str): The name of component.
+    Args:
+        name (str): The name of component.
 
-        Returns:
-            A callable object of ComponentManager.
+    Returns:
+        A callable object of ComponentManager.
 
-        Examples 1:
+    Examples 1:
 
-            from paddleseg.cvlibs.manager import ComponentManager
+        from paddleseg.cvlibs.manager import ComponentManager
 
-            model_manager = ComponentManager()
+        model_manager = ComponentManager()
 
-            class AlexNet: ...
-            class ResNet: ...
+        class AlexNet: ...
+        class ResNet: ...
 
-            model_manager.add_component(AlexNet)
-            model_manager.add_component(ResNet)
+        model_manager.add_component(AlexNet)
+        model_manager.add_component(ResNet)
 
-            # Or pass a sequence alliteratively:
-            model_manager.add_component([AlexNet, ResNet])
-            print(model_manager.components_dict)
-            # {'AlexNet': <class '__main__.AlexNet'>, 'ResNet': <class '__main__.ResNet'>}
+        # Or pass a sequence alliteratively:
+        model_manager.add_component([AlexNet, ResNet])
+        print(model_manager.components_dict)
+        # {'AlexNet': <class '__main__.AlexNet'>, 'ResNet': <class '__main__.ResNet'>}
 
-        Examples 2:
+    Examples 2:
 
-            # Or an easier way, using it as a Python decorator, while just add it above the class declaration.
-            from paddleseg.cvlibs.manager import ComponentManager
+        # Or an easier way, using it as a Python decorator, while just add it above the class declaration.
+        from paddleseg.cvlibs.manager import ComponentManager
 
-            model_manager = ComponentManager()
+        model_manager = ComponentManager()
 
-            @model_manager.add_component
-            class AlexNet: ...
+        @model_manager.add_component
+        class AlexNet: ...
 
-            @model_manager.add_component
-            class ResNet: ...
+        @model_manager.add_component
+        class ResNet: ...
 
-            print(model
-
-    def main():
-        app = QApplication(sys.argv)
-        myWin = APP_EISeg()  # 创建对象
-        myWin.showMaximized()  # 全屏显示窗口
-        # 加载近期模型
-        QApplication.processEvents()
-        myWin.load_recent_params()
-        sys._manager.components_dict)
-            # {'AlexNet': <class '__main__.AlexNet'>, 'ResNet': <class '__main__.ResNet'>}
+        print(model)
+        # {'AlexNet': <class '__main__.AlexNet'>, 'ResNet': <class '__main__.ResNet'>}
     """
 
     def __init__(self, name=None):
         self._components_dict = dict()
         self._name = name
+
+    def __enter__(self):
+        print("enter")
+        self.start = locals()
+        print(locals())
 
     def __len__(self):
         return len(self._components_dict)
@@ -165,7 +161,4 @@ class ComponentManager:
 
 
 MODELS = ComponentManager("models")
-# BACKBONES = ComponentManager("backbones")
-# DATASETS = ComponentManager("datasets")
-# TRANSFORMS = ComponentManager("transforms")
-# LOSSES = ComponentManager("losses")
+ACTIONS = ComponentManager("actions")
