@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from widget import ShortcutWindow
 import models
 from controller import InteractiveController
-from ui import Ui_EISeg, Ui_Help
+from ui import Ui_EISeg
 from widget import PolygonAnnotation
 from eiseg import pjpath, __APPNAME__
 import util
@@ -77,9 +77,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.updateRecentFile()
 
         # 窗口
-        self.help_dialog = QtWidgets.QDialog()
-        help_ui = Ui_Help()
-        help_ui.setupUi(self.help_dialog)
+        # self.help_dialog = QtWidgets.QDialog()
+        # help_ui = Ui_Help()
+        # help_ui.setupUi(self.help_dialog)
         self.shortcutWindow = ShortcutWindow(self.actions)
 
         ## 画布部分

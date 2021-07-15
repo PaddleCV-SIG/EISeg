@@ -2,7 +2,7 @@ from qtpy import QtWidgets, QtGui
 
 
 class LineItem(QtWidgets.QGraphicsLineItem):
-    fixedWidth = 3
+    fixedWidth = 1
 
     def __init__(self, annotation_item, idx, color):
         super(LineItem, self).__init__()
@@ -25,16 +25,12 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         return width
 
     def updateWidth(self):
-        if not self.scene():
-            width = 1
-        else:
-            width = LineItem.fixedWidth / self.scene().scale
-        self.setPen(QtGui.QPen(self.color, width))
+        self.setPen(QtGui.QPen(self.color, self.width))
 
     def hoverEnterEvent(self, ev):
         print("Hover line: ", self.idx)
         self.polygon_item.line_hovering = True
-        self.setPen(QtGui.QPen(self.color, self.width * 2))
+        self.setPen(QtGui.QPen(self.color, self.width * 3))
         super(LineItem, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):

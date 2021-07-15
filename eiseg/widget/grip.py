@@ -24,12 +24,15 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setZValue(12)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
-    def updateSize(self, size=2):
+    @property
+    def size(self):
         if not self.scene():
-            size = 2
+            return 2
         else:
-            size = GripItem.fixedSize / self.scene().scale
-        # size = 2
+            return GripItem.fixedSize / self.scene().scale
+
+    def updateSize(self, size=2):
+        size = self.size
         self.circle = QtGui.QPainterPath()
         self.circle.addEllipse(QtCore.QRectF(-size, -size, size * 2, size * 2))
         self.square = QtGui.QPainterPath()
@@ -59,3 +62,9 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         if change == QtWidgets.QGraphicsItem.ItemPositionChange and self.isEnabled():
             self.m_annotation_item.movePoint(self.m_index, value)
         return super(GripItem, self).itemChange(change, value)
+
+    def shape(self):
+        s = super(GripItem, self).shape().boundingRect().x() * 3
+        path = QtGui.QPainterPath()
+        path.addRect(QtCore.QRectF(-s, -s, 2 * s, 2 * s))
+        return path
