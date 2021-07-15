@@ -21,7 +21,8 @@ import matplotlib.pyplot as plt
 from widget import ShortcutWindow
 import models
 from controller import InteractiveController
-from ui import Ui_EISeg, Ui_Help, PolygonAnnotation
+from ui import Ui_EISeg, Ui_Help
+from widget import PolygonAnnotation
 from eiseg import pjpath, __APPNAME__
 import util
 from util.colormap import ColorMask
@@ -744,8 +745,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         exts = QtGui.QImageReader.supportedImageFormats()
         filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
-        self.filePaths += filePaths
-        self.listFiles.addItems(filePaths)
+        for p in filePaths:
+            if p not in self.filePaths:
+                self.filePaths.append(p)
+                self.listFiles.addItem(p)
+        # self.listFiles.addItems(filePaths)
         self.currIdx = 0
         self.turnImg(0)
 
@@ -832,6 +836,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setClean()
 
     def listClicked(self):
+        if not self.controller:
+            self.warn("模型未加载", "尚未加载模型，请先加载模型")
+            self.changeParam()
+            if not self.contrller:
+                return
         if self.controller.is_incomplete_mask:
             self.saveLabel()
         toRow = self.listFiles.currentRow()
