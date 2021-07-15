@@ -88,11 +88,13 @@ class struct(object):
 
     def append(self, action):
         if isinstance(action, QtWidgets.QAction):
-            print(action.data(), action)
             self.__dict__.update({action.data(): action})
 
     def __iter__(self):
         return list(self.__dict__.values()).__iter__()
+
+    def __getitem__(self, idx):
+        return list(self.__dict__.values())[idx]
 
 
 # def distance(p):
