@@ -40,6 +40,7 @@ def newAction(
 ):
     """Create a new action and assign callbacks, shortcuts, etc."""
     a = QtWidgets.QAction(text, parent)
+    a.setData(shortcutName)
     # a = QtWidgets.QAction("", parent)
     if icon is not None:
         a.setIconText(text.replace(" ", "\n"))
@@ -69,7 +70,6 @@ def addActions(widget, actions):
         elif isinstance(action, QtWidgets.QMenu):
             widget.addMenu(action)
         else:
-            print(action)
             widget.addAction(action)
 
 
@@ -80,6 +80,19 @@ def labelValidator():
 class struct(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+        # print("dict", len(self.__dict__py))
+        # print("dict", self.__dict__.values())
+
+    def __len__(self):
+        return len(self.__dict__)
+
+    def append(self, action):
+        if isinstance(action, QtWidgets.QAction):
+            print(action.data(), action)
+            self.__dict__.update({action.data(): action})
+
+    def __iter__(self):
+        return list(self.__dict__.values()).__iter__()
 
 
 # def distance(p):
