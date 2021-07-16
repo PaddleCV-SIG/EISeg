@@ -97,7 +97,29 @@ python -m eiseg
 | Ctrl+A                | 打开图像     |
 | Shift+A               | 打开文件夹   |
 
+# 常见问题
+常见问题及可能的解决方案
+<details>
+  <summary>点击查看</summary>
+## 选择模型权重后崩溃
+提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。[官方安装教程](https://www.paddlepaddle.org.cn/)
+1. Paddle版本低：EISeg中需要Paddle版本为2.1.x，如果版本过低请升级Paddle版本。查看Paddle版本：
+```shell
+python -c "import paddle; print(paddle.__version__)"
+```
+升级Paddle：
+```shell
+# CPU版本
+pip install --upgrade paddlepaddle
+# GPU版本
+pip install --upgrade paddlepaddle-gpu
+```
+2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行
+```shell
+python -c "import paddle; paddle.utils.run_check()"
+```
 
+</details>
 
 # 开发者
 
