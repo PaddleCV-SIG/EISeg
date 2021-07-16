@@ -80,7 +80,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # self.help_dialog = QtWidgets.QDialog()
         # help_ui = Ui_Help()
         # help_ui.setupUi(self.help_dialog)
-        self.shortcutWindow = ShortcutWindow(self.actions)
+        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
@@ -125,7 +125,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.tr("&编辑快捷键"),
             self.editShortcut,
             "edit_shortcuts",
-            "",
+            "Shortcut",
             self.tr("编辑软件快捷键"),
         )
         turn_prev = action(
@@ -637,6 +637,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             delItem.setTextAlignment(Qt.AlignCenter)
             delItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 3, delItem)
+            self.adjustTableSize()
 
         cols = [0, 1, 3]
         for idx in cols:
