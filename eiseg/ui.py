@@ -1,3 +1,4 @@
+import sys
 import os.path as osp
 from enum import Enum
 from functools import partial
@@ -322,3 +323,7 @@ class Ui_EISeg(object):
         )
         sld.textLab = labShow
         return sld, Region
+
+    def closeEvent(self, event):
+        # 关闭主窗体退出程序，子窗体也关闭
+        sys.exit(0)

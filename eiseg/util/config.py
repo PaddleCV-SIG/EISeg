@@ -15,8 +15,11 @@ def parse_configs(path):
 def save_configs(path=None, config=None, actions=None):
     if not path:
         path = osp.join(pjpath, "config/config.yaml")
-    if not osp.exists(osp.basename(path)):
-        os.makedirs(osp.basename(path))
+    if not osp.exists(path):
+        # os.makedirs(osp.basename(path))
+        # windows无法使用mknod
+        f = open(path, 'w+')
+        f.close()
     if not config:
         config = {}
     if actions:
