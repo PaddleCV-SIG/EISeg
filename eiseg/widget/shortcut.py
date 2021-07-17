@@ -2,29 +2,31 @@ import os.path as osp
 import math
 from functools import partial
 
+from PyQt5.QtCore import QPoint
+
 from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import (
+    QWidget,
     QLabel,
     QPushButton,
     QGridLayout,
-    QVBoxLayout,
-    QDesktopWidget,
+    QKeySequenceEdit,
     QMessageBox,
 )
-from qtpy.QtGui import QKeySequence, QIcon
+from qtpy.QtGui import QIcon
 from qtpy import QtCore
 from qtpy.QtCore import Qt
 
 from util import save_configs
 
 
-class RecordShortcutWindow(QtWidgets.QKeySequenceEdit):
-    def __init__(self, finishCallback):
+class RecordShortcutWindow(QKeySequenceEdit):
+    def __init__(self, finishCallback, location):
         super().__init__()
         self.finishCallback = finishCallback
-        # self.setWindowTitle("输入快捷键")
         # 隐藏界面
         self.setWindowFlags(Qt.FramelessWindowHint)
+        self.move(location)
         self.show()
         self.editingFinished.connect(lambda: finishCallback(self.keySequence()))
 
@@ -32,7 +34,7 @@ class RecordShortcutWindow(QtWidgets.QKeySequenceEdit):
         self.finishCallback(self.keySequence())
 
 
-class ShortcutWindow(QtWidgets.QWidget):
+class ShortcutWindow(QWidget):
     def __init__(self, actions, pjpath):
         super().__init__()
         self.setWindowTitle("编辑快捷键")
@@ -77,7 +79,10 @@ class ShortcutWindow(QtWidgets.QWidget):
         # 打开快捷键设置的窗口时，如果之前的还在就先关闭
         if self.recorder is not None:
             self.recorder.close()
-        self.recorder = RecordShortcutWindow(self.setShortcut)
+        rect = self.geometry()
+        x = rect.x()
+        y = rect.y() + rect.height()
+        self.recorder = RecordShortcutWindow(self.setShortcut, QPoint(x, y))
         self.currentAction = action
 
     def setShortcut(self, key):
@@ -94,10 +99,20 @@ class ShortcutWindow(QtWidgets.QWidget):
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
                 return
+        key = "" if key.toString() == "Esc" else key  # ESC不设置快捷键
         self.currentAction.setShortcut(key)
         self.refreshUi()
         save_configs(None, None, self.actions)
 
+    # 快捷键设置跟随移动
+    def moveEvent(self, event):
+        p = self.geometry()
+        x = p.x()
+        y = p.y() + p.height()
+        if self.recorder is not None:
+            self.recorder.move(x, y)
+
     def closeEvent(self, event):
         # 关闭时也退出快捷键设置
-        self.recorder.close()
+        if self.recorder is not None:
+            self.recorder.close()
