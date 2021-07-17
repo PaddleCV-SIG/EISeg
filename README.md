@@ -20,47 +20,16 @@ EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智
 
 
 
-## 安装
+## 安装使用
 
-EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#Conda)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
+### 使用版
 
-版本要求:
+目前带有交互式标注的EISeg已在PaddleSeg中提供。具体安装使用等说明详见[PaddleSeg/contrib/EISeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.2/contrib/EISeg)。支持多种安装方式，可兼容Windows，Mac OS和Linux。欢迎大家体验、start和fork。
 
-* PaddlePaddle >= 2.1.0
+### 开发版
 
-PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/windows-pip.html)。
+此repo下的EISeg为开发版本，目前正在开发中，暂未提供最新的pip包和exe，仅支持clone到本地运行，参考下面代码运行：
 
-### PIP
-
-pip安装方式如下：
-
-```shell
-pip install eiseg
-```
-pip会自动安装依赖。安装完成后命令行输入：
-```shell
-eiseg
-```
-即可运行软件。
-
-### Conda
-首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
-
-```shell
-conda create -n eiseg python=3.8
-conda activate eiseg
-conda install qtpy
-pip install eiseg
-eiseg
-```
-
-### Windows exe
-
-EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘](https://pan.baidu.com/s/1K7cbNnlCtfEXcuiamdxjWA)（提取码：82z9）下载目前最新的EISeg，也可从[Releases](https://github.com/PaddleCV-SIG/EISeg/releases)中进行下载。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
-
-### 运行代码
-
-首先clone本项目到本地。
 ```shell
 git clone https://github.com/PaddleCV-SIG/EISeg.git
 cd EISeg
@@ -96,30 +65,48 @@ python -m eiseg
 | Ctrl+Y                | 重做         |
 | Ctrl+A                | 打开图像     |
 | Shift+A               | 打开文件夹   |
+| E                     | 打开快捷键表 |
 
-# 常见问题
-常见问题及可能的解决方案
-<details>
-  <summary>点击查看</summary>
-## 选择模型权重后崩溃
-提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。[官方安装教程](https://www.paddlepaddle.org.cn/)
+
+
+## 更新
+
+1. 目前基本完成大功能角点编辑功能，`空格`完成后会生成基本边界，可以通过添加、删除和移动角点对边界进行微调。新增操作方法如下：
+
+   | 按键/快捷键       | 功能           |
+   | ----------------- | -------------- |
+   | 鼠标左键/移动     | 角点选择/移动  |
+   | Backspace（退格） | 删除点         |
+   | Ctrl+Backspace    | 删除多边形     |
+   | 双击【边】        | 在此边上新加点 |
+
+   
+
+2. 基本完成小功能快捷键的设置，伪彩色保存等。
+
+3. 医疗&遥感专业领域标注正在开发中。
+
+## 效果
+
+![CornerPoint](https://user-images.githubusercontent.com/71769312/126030819-0ee2777c-47ec-46f2-a06a-b365d0dd07bf.gif)
+
+## 常见问题
+
+下面列举了一些常见问题及可能的解决方案
+
+<details> <summary> 选择模型权重后崩溃</summary><pre><code>
+提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。相关安装方法参见[官方安装教程](https://www.paddlepaddle.org.cn/)。
 1. Paddle版本低：EISeg中需要Paddle版本为2.1.x，如果版本过低请升级Paddle版本。查看Paddle版本：
-```shell
-python -c "import paddle; print(paddle.__version__)"
-```
+<code>python -c "import paddle; print(paddle.__version__)"</code>
 升级Paddle：
-```shell
-# CPU版本
+<code># CPU版本
 pip install --upgrade paddlepaddle
 # GPU版本
-pip install --upgrade paddlepaddle-gpu
-```
-2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行
-```shell
-python -c "import paddle; paddle.utils.run_check()"
-```
+pip install --upgrade paddlepaddle-gpu</code>
+2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行。
+<code>python -c "import paddle; paddle.utils.run_check()"</code></pre></details>
 
-</details>
+
 
 # 开发者
 
