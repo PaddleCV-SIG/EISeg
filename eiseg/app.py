@@ -7,6 +7,7 @@ import warnings
 import json
 import collections
 
+from PyQt5.QtWidgets import QWidget
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -28,6 +29,8 @@ import util
 from util.colormap import ColorMask
 from util.label import Labeler
 from util import MODELS
+from major import WORKER_STATUS
+from major.remotesensing import check_gdal
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -48,7 +51,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # app变量
         self.status = self.IDILE
-        self.save_status = [False, True]  # 默认不报错伪彩色，保存JSON
+        self.save_status = [False, True]  # 默认不保存伪彩色，保存JSON
+        self.worker_status = WORKER_STATUS["通用"]
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -323,6 +327,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "ClearRecent",
             self.tr("清除近期标注记录"),
         )
+        remote = action(
+            self.tr("&遥感图像标注"),
+            partial(self.changeWorker, 2),
+            "remote_worker",
+            "RemoteSensing",
+            self.tr("打开标注遥感图像功能"),
+            checkable=True,
+        )
+        medical = action(
+            self.tr("&医疗图像标注"),
+            partial(self.changeWorker, 3),
+            "medical_worker",
+            "MedicalImaging",
+            self.tr("打开标注医疗图像功能"),
+            checkable=True,
+        )
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
@@ -364,7 +384,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
-            saveMenu=(save_color, save_json),
+            workMenu=(save_color, save_json, None, remote, medical),
             helpMenu=(quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
@@ -384,7 +404,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         menu("文件", self.menus.fileMenu)
         menu("标注", self.menus.labelMenu)
-        menu("保存", self.menus.saveMenu)
+        menu("功能", self.menus.workMenu)
         menu("帮助", self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
@@ -1082,6 +1102,31 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeSave(self, index):
         self.save_status[index] = bool(self.save_status[index] - 1)
+
+    def changeWorker(self, index):
+        mw = self.actions.get("medical_worker")
+        rm = self.actions.get("remote_worker")
+        if mw.isChecked() == True and index == 3:
+            self.worker_status = WORKER_STATUS["医疗"]
+            rm.setChecked(False)
+            # TODO：显示医疗辅助工具
+        elif rm.isChecked() == True and index == 2:
+            if check_gdal():
+                pass
+                # TODO：显示遥感辅助工具
+            else:
+                self.warn(
+                    "无法使用遥感标注功能",
+                    "无法导入GDAL，请在环境中配置GDAL！",
+                    QMessageBox.Cancel,
+                )
+            self.worker_status = WORKER_STATUS["遥感"]
+            mw.setChecked(False)
+        else:
+            self.worker_status = WORKER_STATUS["通用"]
+            # TODO：隐藏所有辅助工具
+        print(self.worker_status)
+        
 
     def toggleLargestCC(self, on):
         self.controller.filterLargestCC = on
