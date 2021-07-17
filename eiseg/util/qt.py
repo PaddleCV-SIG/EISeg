@@ -96,6 +96,9 @@ class struct(object):
     def __getitem__(self, idx):
         return list(self.__dict__.values())[idx]
 
+    def get(self, name):
+        return self.__dict__[name]
+
 
 # def distance(p):
 #     return sqrt(p.x() * p.x() + p.y() * p.y())
