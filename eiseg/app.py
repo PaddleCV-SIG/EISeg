@@ -29,8 +29,7 @@ import util
 from util.colormap import ColorMask
 from util.label import Labeler
 from util import MODELS
-from major import WORKER_STATUS
-from major.remotesensing import check_gdal
+
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -52,7 +51,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # app变量
         self.status = self.IDILE
         self.save_status = [False, True]  # 默认不保存伪彩色，保存JSON
-        self.worker_status = WORKER_STATUS["通用"]
+        self.workers_show = [True, True, True, True, False, False]
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -75,6 +74,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 初始化action
         self.initActions()
+        self.refreshWorker()
 
         # 更新近期记录
         self.updateModelsMenu()
@@ -327,20 +327,56 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "ClearRecent",
             self.tr("清除近期标注记录"),
         )
-        remote = action(
-            self.tr("&遥感图像标注"),
-            partial(self.changeWorker, 2),
+        model_worker = action(
+            self.tr("&模型区"),
+            partial(self.changeWorkerShow, 0),
+            "model_worker",
+            "Net",
+            self.tr("模型区"),
+            checkable=True,
+            checked=True,
+        )
+        data_worker = action(
+            self.tr("&数据区"),
+            partial(self.changeWorkerShow, 1),
+            "data_worker",
+            "Data",
+            self.tr("数据区"),
+            checkable=True,
+            checked=True,
+        )
+        label_worker = action(
+            self.tr("&标签区"),
+            partial(self.changeWorkerShow, 2),
+            "label_worker",
+            "Label",
+            self.tr("标签区"),
+            checkable=True,
+            checked=True,
+        )
+        set_worker = action(
+            self.tr("&设置区"),
+            partial(self.changeWorkerShow, 3),
+            "set_worker",
+            "Setting",
+            self.tr("设置区"),
+            checkable=True,
+            checked=True,
+        )
+        rs_worker = action(
+            self.tr("&遥感区"),
+            partial(self.changeWorkerShow, 4),
             "remote_worker",
             "RemoteSensing",
-            self.tr("打开标注遥感图像功能"),
+            self.tr("遥感区"),
             checkable=True,
         )
-        medical = action(
-            self.tr("&医疗图像标注"),
-            partial(self.changeWorker, 3),
+        mi_worker = action(
+            self.tr("&医疗区"),
+            partial(self.changeWorkerShow, 5),
             "medical_worker",
             "MedicalImaging",
-            self.tr("打开标注医疗图像功能"),
+            self.tr("医疗区"),
             checkable=True,
         )
         for name in dir():
@@ -384,7 +420,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
-            workMenu=(save_color, save_json, None, remote, medical),
+            workMenu=(save_color, save_json),
+            showMenu=(
+                model_worker, 
+                data_worker, 
+                label_worker, 
+                set_worker, 
+                rs_worker, 
+                mi_worker),
             helpMenu=(quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
@@ -397,13 +440,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_color,
                 save_json,
                 None,
-                remote,
-                medical
+                largest_component,
             ),
         )
         menu("文件", self.menus.fileMenu)
         menu("标注", self.menus.labelMenu)
         menu("功能", self.menus.workMenu)
+        menu("显示", self.menus.showMenu)
         menu("帮助", self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
@@ -1107,37 +1150,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeSave(self, index):
         self.save_status[index] = bool(self.save_status[index] - 1)
 
-    def changeWorker(self, index):
-        mw = self.actions.get("medical_worker")
-        rm = self.actions.get("remote_worker")
-        if mw.isChecked() == True and index == 3:
-            self.worker_status = WORKER_STATUS["医疗"]
-            rm.setChecked(False)
-            self.rsworker.hide()
-            # TODO：显示医疗辅助工具
-        elif rm.isChecked() == True and index == 2:
-            if check_gdal():
-                pass
-                self.rsworker.show()
+    def changeWorkerShow(self, index):
+        self.workers_show[index] = bool(self.workers_show[index] - 1)
+        self.refreshWorker()
+
+    def refreshWorker(self):
+        worker = [self.ModelDock, self.DataDock, self.LabelDock, \
+                  self.ShowSetDock, self.RSDock, self.MIDock]
+        for t, w in zip(self.workers_show, worker):
+            if t == True:
+                w.show()
             else:
-                self.warn(
-                    "无法使用遥感标注功能",
-                    "无法导入GDAL，请在环境中配置GDAL！",
-                    QMessageBox.Cancel,
-                )
-            self.worker_status = WORKER_STATUS["遥感"]
-            self.sldBrightness.valueChanged.connect(self.rsBrightnessChanged)
-            self.sldContrast.valueChanged.connect(self.rsContrastChanged)
-            mw.setChecked(False)
-        else:
-            self.worker_status = WORKER_STATUS["通用"]
-            # TODO：隐藏所有辅助工具
-            self.rsworker.hide()
-        print(self.worker_status)
-        
+                w.hide()
 
     def toggleLargestCC(self, on):
-        self.controller.filterLargestCC = on
+        try:
+            self.controller.filterLargestCC = on
+        except:
+            pass
 
     @property
     def opacity(self):
