@@ -1,3 +1,4 @@
+from eiseg.widget.create import create_button, create_slider, create_text
 import sys
 import os.path as osp
 from enum import Enum
@@ -11,6 +12,8 @@ from eiseg import pjpath, __APPNAME__
 import models
 from util import MODELS, Instructions
 from widget import LineItem, GripItem, AnnotationScene, AnnotationView
+from widget.create import *
+from major.remotesensing import createRSWorks
 
 
 class Ui_EISeg(object):
@@ -92,8 +95,8 @@ class Ui_EISeg(object):
         self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
         self.dockWorker.setWindowTitle(" ")  # 避免拖出后显示“python”
         self.dockWorker.setFeatures(
-            QtWidgets.QDockWidget.DockWidgetFloatable
-            | QtWidgets.QDockWidget.DockWidgetMovable
+            QtWidgets.QDockWidget.DockWidgetFloatable | 
+            QtWidgets.QDockWidget.DockWidgetMovable
         )
         self.dockWorker.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
@@ -187,90 +190,24 @@ class Ui_EISeg(object):
         horizontalLayout.addLayout(SetRegion)
         self.dockWorker.setWidget(DockRegion)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWorker)
+        ## 专业功能区工作区
+        self.rsworker = createRSWorks(self, MainWindow, CentralWidget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.rsworker)
+        self.rsworker.hide()
+        # TODO：添加医疗功能的工作区
+        # self.miworker = createMIWorks(MainWindow, CentralWidget)
+        # MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.miworker)
+        # self.miworker.hide()
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):
-        text = QtWidgets.QLabel(parent)
-        if text_name is not None:
-            text.setObjectName(text_name)
-        if text_text is not None:
-            text.setText(text_text)
-        return text
+        return create_text(parent, text_name, text_text)
 
     ## 创建按钮
     def create_button(self, parent, btn_name, btn_text, ico_path=None, curt=None):
-        # 创建和设置按钮
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed
-        )
-        min_size = QtCore.QSize(0, 40)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        btn = QtWidgets.QPushButton(parent)
-        sizePolicy.setHeightForWidth(btn.sizePolicy().hasHeightForWidth())
-        btn.setSizePolicy(sizePolicy)
-        btn.setMinimumSize(min_size)
-        btn.setObjectName(btn_name)
-        if ico_path is not None:
-            btn.setIcon(QtGui.QIcon(ico_path))
-        btn.setText(btn_text)
-        if curt is not None:
-            btn.setShortcut(curt)
-        return btn
-
-    ## 添加动作
-    # def add_action(self, parent, act_name, act_text="", ico_path=None, short_cut=None):
-    #     act = QtWidgets.QAction(parent)
-    #     if ico_path is not None:
-    #         icon = QtGui.QIcon()
-    #         icon.addPixmap(QtGui.QPixmap(ico_path), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-    #         act.setIcon(icon)
-    #     act.setObjectName(act_name)
-    #     act.setText(act_text)
-    #     if short_cut is not None:
-    #         act.setShortcut(short_cut)
-    #     return act
-
-    ## 创建菜单按钮
-    # def add_menu(self, parent, menu_name, menu_text, acts=None):
-    #     menu = QtWidgets.QMenu(parent)
-    #     menu.setObjectName(menu_name)
-    #     menu.setTitle(menu_text)
-    #     if acts is not None:
-    #         for act in acts:
-    #             new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
-    #             menu.addAction(new_act)
-    #     return menu
-
-    ## 创建菜单栏
-    # def create_menubar(self, parent, menus):
-    #     menuBar = QtWidgets.QMenuBar(parent)
-    #     menuBar.setGeometry(QtCore.QRect(0, 0, 800, 26))
-    #     menuBar.setObjectName("menuBar")
-    #     for menu in menus:
-    #         menuBar.addAction(menu.menuAction())
-    #     return menuBar
-
-    # ## 创建工具栏
-    # def create_toolbar(self, parent, acts):
-    #     toolBar = QtWidgets.QToolBar(parent)
-    #     sizePolicy = QtWidgets.QSizePolicy(
-    #         QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
-    #     )
-    #     sizePolicy.setHorizontalStretch(0)
-    #     sizePolicy.setVerticalStretch(0)
-    #     sizePolicy.setHeightForWidth(toolBar.sizePolicy().hasHeightForWidth())
-    #     toolBar.setSizePolicy(sizePolicy)
-    #     toolBar.setMinimumSize(QtCore.QSize(0, 33))
-    #     toolBar.setMovable(True)
-    #     toolBar.setAllowedAreas(QtCore.Qt.BottomToolBarArea | QtCore.Qt.TopToolBarArea)
-    #     toolBar.setObjectName("toolBar")
-    #     for act in acts:
-    #         new_act = self.add_action(parent, act[0], act[1], act[2], act[3])
-    #         toolBar.addAction(new_act)
-    #     return toolBar
+        return create_button(parent, btn_name, btn_text, ico_path, curt)
 
     ## 显示Logo
     def show_logo(self, logo_path):
@@ -296,33 +233,15 @@ class Ui_EISeg(object):
         max_value=100,
         text_rate=0.01,
     ):
-        Region = QtWidgets.QHBoxLayout()
-        lab = self.create_text(parent, None, text)
-        Region.addWidget(lab)
-        labShow = self.create_text(parent, text_name, str(default_value * text_rate))
-        Region.addWidget(labShow)
-        Region.setStretch(0, 1)
-        Region.setStretch(1, 10)
-        sld = QtWidgets.QSlider(parent)
-        sld.setMaximum(max_value)  # 好像只能整数的，这里是扩大了10倍，1 . 10
-        sld.setProperty("value", default_value)
-        sld.setOrientation(QtCore.Qt.Horizontal)
-        sld.setObjectName(sld_name)
-        sld.setStyleSheet(
-            """
-            QSlider::sub-page:horizontal {
-                background: #9999F1
-            }
-            QSlider::handle:horizontal
-            {
-                background: #3334E3;
-                width: 12px;
-                border-radius: 4px;
-            }
-            """
+        return create_slider(
+            parent,
+            sld_name,
+            text_name,
+            text,
+            default_value,
+            max_value,
+            text_rate,
         )
-        sld.textLab = labShow
-        return sld, Region
 
     def closeEvent(self, event):
         # 关闭主窗体退出程序，子窗体也关闭
