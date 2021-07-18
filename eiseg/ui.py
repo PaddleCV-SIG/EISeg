@@ -1,4 +1,4 @@
-from eiseg.widget.create import create_button, create_slider, create_text
+from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 import sys
 import os.path as osp
 from enum import Enum
@@ -13,7 +13,6 @@ import models
 from util import MODELS, Instructions
 from widget import LineItem, GripItem, AnnotationScene, AnnotationView
 from widget.create import *
-from major.remotesensing import createRSWorks
 
 
 class Ui_EISeg(object):
@@ -61,16 +60,6 @@ class Ui_EISeg(object):
         ImageRegion.addWidget(self.scrollArea)
         # 图形显示
         self.scene = AnnotationScene()
-
-        QtWidgets.QShortcut(
-            QtCore.Qt.Key_Escape,
-            self,
-            activated=partial(
-                self.scene.setCreating,
-                False,
-            ),
-        )
-
         self.scene.addPixmap(QtGui.QPixmap())
         self.canvas = AnnotationView(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
@@ -84,37 +73,15 @@ class Ui_EISeg(object):
         self.scrollArea.setWidget(self.canvas)
         ## -----
         ## -- 工作区 --
-        self.dockWorker = QtWidgets.QDockWidget(MainWindow)
-        sizePolicy = QtWidgets.QSizePolicy(
-            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
-        )
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.dockWorker.sizePolicy().hasHeightForWidth())
-        self.dockWorker.setSizePolicy(sizePolicy)
-        self.dockWorker.setMinimumSize(QtCore.QSize(71, 42))
-        self.dockWorker.setWindowTitle(" ")  # 避免拖出后显示“python”
-        self.dockWorker.setFeatures(
-            QtWidgets.QDockWidget.DockWidgetFloatable | 
-            QtWidgets.QDockWidget.DockWidgetMovable
-        )
-        self.dockWorker.setAllowedAreas(
-            QtCore.Qt.LeftDockWidgetArea | QtCore.Qt.RightDockWidgetArea
-        )
-        self.dockWorker.setObjectName("dockWorker")
+        p_create_dock = partial(self.creat_dock, MainWindow)
         p_create_button = partial(self.create_button, CentralWidget)
-        # 设置区设置
-        DockRegion = QtWidgets.QWidget()
-        DockRegion.setObjectName("DockRegion")
-        horizontalLayout = QtWidgets.QHBoxLayout(DockRegion)
-        horizontalLayout.setObjectName("horizontalLayout")
-        SetRegion = QtWidgets.QVBoxLayout()
-        SetRegion.setObjectName("SetRegion")
         # 模型加载
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
         ModelRegion = QtWidgets.QVBoxLayout()
         ModelRegion.setObjectName("ModelRegion")
-        labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
-        ModelRegion.addWidget(labShowSet)
+        # labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
+        # ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
         combo.addItems([m.__name__ for m in MODELS])
         self.comboModelSelect = combo
@@ -124,21 +91,35 @@ class Ui_EISeg(object):
             "btnParamsLoad", "加载网络参数", osp.join(pjpath, "resource/Model.png"), "Ctrl+D"
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
-        SetRegion.addLayout(ModelRegion)
-        SetRegion.setStretch(0, 1)
+        horizontalLayout.addLayout(ModelRegion)
+        self.ModelDock = p_create_dock("ModelDock", "模型区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ModelDock)
         # 数据列表
         # TODO: 数据列表加一个搜索功能
-        listRegion = QtWidgets.QVBoxLayout()
-        listRegion.setObjectName("listRegion")
-        labFiles = self.create_text(CentralWidget, "labFiles", "数据列表")
-        listRegion.addWidget(labFiles)
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        ListRegion = QtWidgets.QVBoxLayout()
+        ListRegion.setObjectName("ListRegion")
+        # labFiles = self.create_text(CentralWidget, "labFiles", "数据列表")
+        # ListRegion.addWidget(labFiles)
         self.listFiles = QtWidgets.QListWidget(CentralWidget)
-        self.listFiles.setObjectName("listFiles")
-        listRegion.addWidget(self.listFiles)
+        self.listFiles.setObjectName("ListFiles")
+        ListRegion.addWidget(self.listFiles)
+        # 保存
+        self.btnSave = p_create_button(
+            "btnSave", "保存", osp.join(pjpath, "resource/Save.png"), "Ctrl+S"
+        )
+        ListRegion.addWidget(self.btnSave)
+        horizontalLayout.addLayout(ListRegion)
+        self.DataDock = p_create_dock("DataDock", "数据区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DataDock)
         # 标签列表
-        labelListLab = self.create_text(CentralWidget, "labelListLab", "标签列表")
-        listRegion.addWidget(labelListLab)
-        # TODO: 改成 list widget
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        LabelRegion = QtWidgets.QVBoxLayout()
+        LabelRegion.setObjectName("LabelRegion")
+        # labelListLab = self.create_text(CentralWidget, "labelListLab", "标签列表")
+        # LabelRegion.addWidget(labelListLab)
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 铺满
@@ -149,16 +130,19 @@ class Ui_EISeg(object):
         self.labelListTable.setColumnWidth(0, 10)
         # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
-        listRegion.addWidget(self.labelListTable)
+        LabelRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button(
             "btnAddClass", "添加标签", osp.join(pjpath, "resource/Label.png")
         )
-        listRegion.addWidget(self.btnAddClass)
-        SetRegion.addLayout(listRegion)
-        SetRegion.setStretch(1, 20)
-        # 滑块设置
+        LabelRegion.addWidget(self.btnAddClass)
+        horizontalLayout.addLayout(LabelRegion)
+        self.LabelDock = p_create_dock("LabelDock", "标签区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.LabelDock)
+        ## 滑块设置
         # 分割阈值
         p_create_slider = partial(self.create_slider, CentralWidget)
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
         ShowSetRegion = QtWidgets.QVBoxLayout()
         ShowSetRegion.setObjectName("ShowSetRegion")
         self.sldThresh, SegShowRegion = p_create_slider(
@@ -178,26 +162,42 @@ class Ui_EISeg(object):
         )
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
-        SetRegion.addLayout(ShowSetRegion)
-        SetRegion.setStretch(2, 1)
-        # 保存
-        self.btnSave = p_create_button(
-            "btnSave", "保存", osp.join(pjpath, "resource/Save.png"), "Ctrl+S"
-        )
-        SetRegion.addWidget(self.btnSave)
-        SetRegion.setStretch(3, 1)
-        # dock设置完成
-        horizontalLayout.addLayout(SetRegion)
-        self.dockWorker.setWidget(DockRegion)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWorker)
+        horizontalLayout.addLayout(ShowSetRegion)
+        self.ShowSetDock = p_create_dock("ShowSetDock", "设置区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
         ## 专业功能区工作区
-        self.rsworker = createRSWorks(self, MainWindow, CentralWidget)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.rsworker)
-        self.rsworker.hide()
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        bandRegion = QtWidgets.QVBoxLayout()
+        bandRegion.setObjectName("bandRegion")
+        labFiles = create_text(CentralWidget, "bandSelection", "波段设置")
+        bandRegion.addWidget(labFiles)
+        text_list = ["R", "G", "B"]
+        combos = []
+        for txt in text_list:
+            lab = create_text(CentralWidget, "band" + txt, txt)
+            combo = QtWidgets.QComboBox()
+            combo.addItems(["band_" + txt])
+            combos.append(combo)
+            hbandLayout = QtWidgets.QHBoxLayout()
+            hbandLayout.setObjectName("hbandLayout")
+            hbandLayout.addWidget(lab)
+            hbandLayout.addWidget(combo)
+            hbandLayout.setStretch(1, 4)
+            bandRegion.addLayout(hbandLayout)
+        horizontalLayout.addLayout(bandRegion)
+        self.RSDock = p_create_dock("RSDock", "遥感区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
         # TODO：添加医疗功能的工作区
-        # self.miworker = createMIWorks(MainWindow, CentralWidget)
-        # MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.miworker)
-        # self.miworker.hide()
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        MIRegion = QtWidgets.QVBoxLayout()
+        MIRegion.setObjectName("MIRegion")
+        mi_text = create_text(CentralWidget, "bandSelection", "医疗设置")
+        MIRegion.addWidget(mi_text)
+        horizontalLayout.addLayout(MIRegion)
+        self.MIDock = p_create_dock("RSDock", "医疗区", widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
@@ -208,6 +208,10 @@ class Ui_EISeg(object):
     ## 创建按钮
     def create_button(self, parent, btn_name, btn_text, ico_path=None, curt=None):
         return create_button(parent, btn_name, btn_text, ico_path, curt)
+
+    ## 创建dock
+    def creat_dock(self, parent, name, text, layout):
+        return creat_dock(parent, name, text, layout)
 
     ## 显示Logo
     def show_logo(self, logo_path):

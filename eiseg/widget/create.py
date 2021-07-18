@@ -1,3 +1,4 @@
+from PyQt5.QtWidgets import QDockWidget
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
@@ -69,3 +70,27 @@ def create_slider(
     )
     sld.textLab = labShow
     return sld, Region
+
+## 创建dock
+def creat_dock(parent, name, text, widget):
+    dock = QDockWidget(parent)
+    dock.setObjectName(name)
+    dock.setAllowedAreas(
+        Qt.RightDockWidgetArea | 
+        Qt.LeftDockWidgetArea
+    )
+    dock.setFeatures(
+        QDockWidget.DockWidgetMovable | 
+        QDockWidget.DockWidgetFloatable
+    )
+    sizePolicy = QtWidgets.QSizePolicy(
+        QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+    )
+    sizePolicy.setHorizontalStretch(0)
+    sizePolicy.setVerticalStretch(0)
+    sizePolicy.setHeightForWidth(dock.sizePolicy().hasHeightForWidth())
+    dock.setSizePolicy(sizePolicy)
+    dock.setMinimumWidth(280)
+    dock.setWindowTitle(text)
+    dock.setWidget(widget)
+    return dock
