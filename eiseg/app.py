@@ -397,9 +397,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_color,
                 save_json,
                 None,
-                largest_component,
-                del_active_polygon,
-                del_active_point,
+                remote,
+                medical
             ),
         )
         menu("文件", self.menus.fileMenu)
@@ -998,7 +997,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldClickRadius.textLab.setText(str(self.clickRadius))
         if not self.controller or self.controller.image is None:
             return
-
         self._update_image()
 
     def threshChanged(self):
@@ -1007,6 +1005,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         self.controller.prob_thresh = self.segThresh
         self._update_image()
+
+    def rsContrastChanged(self):
+        self.sldContrast.textLab.setText(str(self.sldContrast.value() / 100))
+
+    def rsBrightnessChanged(self):
+        self.sldBrightness.textLab.setText(str(self.sldBrightness.value() / 100))
 
     def undoClick(self):
         if self.image is None:
@@ -1109,11 +1113,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if mw.isChecked() == True and index == 3:
             self.worker_status = WORKER_STATUS["医疗"]
             rm.setChecked(False)
+            self.rsworker.hide()
             # TODO：显示医疗辅助工具
         elif rm.isChecked() == True and index == 2:
             if check_gdal():
                 pass
-                # TODO：显示遥感辅助工具
+                self.rsworker.show()
             else:
                 self.warn(
                     "无法使用遥感标注功能",
@@ -1121,10 +1126,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     QMessageBox.Cancel,
                 )
             self.worker_status = WORKER_STATUS["遥感"]
+            self.sldBrightness.valueChanged.connect(self.rsBrightnessChanged)
+            self.sldContrast.valueChanged.connect(self.rsContrastChanged)
             mw.setChecked(False)
         else:
             self.worker_status = WORKER_STATUS["通用"]
             # TODO：隐藏所有辅助工具
+            self.rsworker.hide()
         print(self.worker_status)
         
 

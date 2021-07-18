@@ -4,3 +4,4 @@ from .grip import GripItem
 from .polygon import PolygonAnnotation
 from .scene import AnnotationScene
 from .view import AnnotationView
+from .create import *
