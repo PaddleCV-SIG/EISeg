@@ -784,7 +784,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(file_path) == 0:
             return
         self.queueEvent(partial(self.loadImage, file_path))
-        self.listFiles.addItems([file_path])
+        self.listFiles.addItems([file_path].replace("\\", "/"))
         self.filePaths.append(file_path)
 
     def openFolder(self):
@@ -804,7 +804,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for p in filePaths:
             if p not in self.filePaths:
                 self.filePaths.append(p)
-                self.listFiles.addItem(p)
+                self.listFiles.addItem(p.replace("\\", "/"))
         # self.listFiles.addItems(filePaths)
         self.currIdx = 0
         self.turnImg(0)
@@ -827,7 +827,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.addRecentFile(path)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
         if update_list:
-            self.listFiles.addItems([path])
+            self.listFiles.addItems([path].replace("\\", "/"))
             self.filePaths.append(path)
 
     def loadLabel(self, imgPath):
@@ -856,7 +856,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             color = label["color"]
             labelIdx = label["labelIdx"]
             points = label["points"]
-            poly = PolygonAnnotation(labelIdx, color, color, self.opacity, self.scene)
+            poly = PolygonAnnotation(labelIdx, color, color, self.opacity)  # , self.scene)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
@@ -895,7 +895,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller:
             self.warn("模型未加载", "尚未加载模型，请先加载模型")
             self.changeParam()
-            if not self.contrller:
+            if not self.controller:
                 return
         if self.controller.is_incomplete_mask:
             self.saveLabel()
