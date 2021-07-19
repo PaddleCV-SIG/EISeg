@@ -7,6 +7,7 @@ import warnings
 import json
 import collections
 from distutils.util import strtobool
+import imghdr
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -28,6 +29,7 @@ import util
 from util.colormap import ColorMask
 from util.label import Labeler
 from util import MODELS
+from util.remotesensing import *
 
 
 # DEBUG:
@@ -60,6 +62,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currentPath = None
         self.isDirty = False
         self.labelList = Labeler()
+        self.rsRGB = [0, 0, 0]
+        self.rawimg = None
         # worker
         self.workers_show = [True, True, True, True, False, False]
         self.workers = [self.ModelDock, self.DataDock, self.LabelDock, \
@@ -114,6 +118,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
         self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()
+
+        ## 功能区选择
+        self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
+        for bandCombo in self.bandCombos:
+            bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
     def editShortcut(self):
         self.shortcutWindow.show()
@@ -784,7 +793,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(file_path) == 0:
             return
         self.queueEvent(partial(self.loadImage, file_path))
-        self.listFiles.addItems([file_path].replace("\\", "/"))
+        self.listFiles.addItems([file_path.replace("\\", "/")])
         self.filePaths.append(file_path)
 
     def openFolder(self):
@@ -812,12 +821,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
             return
-        image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
-        image = image[:, :, ::-1]  # BGR转RGB
+        if imghdr.what(path) == 'tiff':
+            if self.RSDock.isVisible():
+                self.rawimg, geoinfo = open_tif(path)
+                image = selec_band(self.rawimg, self.rsRGB)
+                self.update_bandList()
+            else:
+                self.warn("未打开遥感工具", "未打开遥感工具，请先在菜单栏-显示中打开遥感区！")
+                return 
+        else:
+            image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
+            image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
         self.currentPath = path
         if self.controller:
-            self.controller.set_image(self.image)
+            self.controller.set_image(
+                twoPercentLinear(image) if (self.RSDock.isVisible() and \
+                self.rsShow.currentIndex() == 1) else image
+            )
         else:
             self.warn("未加载模型", "未加载模型参数，请先加载模型参数！")
             self.changeParam()
@@ -827,7 +848,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.addRecentFile(path)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
         if update_list:
-            self.listFiles.addItems([path].replace("\\", "/"))
+            self.listFiles.addItems([path.replace("\\", "/")])
             self.filePaths.append(path)
 
     def loadLabel(self, imgPath):
@@ -1049,12 +1070,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.prob_thresh = self.segThresh
         self._update_image()
 
-    def rsContrastChanged(self):
-        self.sldContrast.textLab.setText(str(self.sldContrast.value() / 100))
-
-    def rsBrightnessChanged(self):
-        self.sldBrightness.textLab.setText(str(self.sldBrightness.value() / 100))
-
     def undoClick(self):
         if self.image is None:
             return
@@ -1151,8 +1166,27 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.save_status[index] = bool(self.save_status[index] - 1)
 
     def changeWorkerShow(self, index):
+        # 检测遥感所需的gdal环境
+        if index == 4:
+            if check_gdal() == False:
+                self.warn(
+                    "无法导入GDAL",
+                    "请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！",
+                    QMessageBox.Yes,
+                )
+                self.statusbar.showMessage("打开失败，未检出GDAL")
+                return
         self.workers_show[index] = bool(self.workers_show[index] - 1)
         self.refreshWorker()
+
+    def rsBandSet(self, idx):
+        for i in range(len(self.bandCombos)):
+            self.rsRGB[i] = self.bandCombos[i].currentIndex()
+        self.image = selec_band(self.rawimg, self.rsRGB)
+        image = self.image if self.rsShow.currentIndex() == 0 else \
+                twoPercentLinear(self.image)
+        self.controller.image = image
+        self._update_image()
 
     def refreshWorker(self, is_init=False):
         if is_init == True:
@@ -1173,6 +1207,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.filterLargestCC = on
         except:
             pass
+
+    def rsShowModeChange(self, idx):
+        if not self.controller or self.controller.image is None:
+            return
+        if idx == 1:
+            self.controller.image = twoPercentLinear(self.image)
+        else:
+            self.controller.image = self.image
+        self._update_image()
+
+    def update_bandList(self):
+        bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
+        if bands > 1:
+            for bandCombo in self.bandCombos:
+                bandCombo.addItems([("band_" + str(i + 1)) for i in range(1, bands)])
 
     @property
     def opacity(self):

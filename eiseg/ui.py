@@ -182,7 +182,7 @@ class Ui_EISeg(object):
         for txt in text_list:
             lab = create_text(CentralWidget, "band" + txt, txt)
             combo = QtWidgets.QComboBox()
-            combo.addItems(["band_" + txt])
+            combo.addItems(["band_1"])
             self.bandCombos.append(combo)
             hbandLayout = QtWidgets.QHBoxLayout()
             hbandLayout.setObjectName("hbandLayout")

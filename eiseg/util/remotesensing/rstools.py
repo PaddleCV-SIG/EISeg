@@ -13,6 +13,11 @@ import numpy as np
 import cv2
 
 IPT_GDAL = check_gdal()
+if IPT_GDAL:
+    try:
+        import gdal
+    except:
+        from osgeo import gdal
 
 
 def open_tif(geoimg_path):
@@ -21,21 +26,18 @@ def open_tif(geoimg_path):
     '''
     if IPT_GDAL == True:
         geoimg = gdal.Open(geoimg_path)
-        return tif2rgb(geoimg), get_geoinfo(geoimg)
+        return _tif2rgb(geoimg), get_geoinfo(geoimg)
     else:
         raise ImportError('can\'t import gdal!')
 
 
-def tif2rgb(geoimg, rgb):
+def _tif2rgb(geoimg):
     if IPT_GDAL == True:
-        tifarr = geoimg.ReadAsArray().transpose((1, 2, 0))  # 多波段图像默认是[c, h, w]
-        C = tifarr.shape[-1]
-        if C == 1:
-            return cv2.merge([tifarr] * 3)
-        elif C == 3:
-            return tifarr
-        else:
-            return cv2.merge([tifarr[:,:,rgb[0]], tifarr[:,:,rgb[1]], tifarr[:,:,rgb[2]]])
+        tifarr = geoimg.ReadAsArray()
+        print("tif_shape:", tifarr.shape)
+        if len(tifarr) == 3:
+            tifarr = tifarr.transpose((1, 2, 0))  # 多波段图像默认是[c, h, w]
+        return tifarr
     else:
         raise ImportError('can\'t import gdal!')
 
