@@ -6,13 +6,12 @@ import inspect
 import warnings
 import json
 import collections
-
-from PyQt5.QtWidgets import QWidget
+from distutils.util import strtobool
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QFile, QByteArray, QDataStream
 import paddle
 import cv2
 import numpy as np
@@ -51,7 +50,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # app变量
         self.status = self.IDILE
         self.save_status = [False, True]  # 默认不保存伪彩色，保存JSON
-        self.workers_show = [True, True, True, True, False, False]
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -62,23 +60,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currentPath = None
         self.isDirty = False
         self.labelList = Labeler()
+        # worker
+        self.workers_show = [True, True, True, True, False, False]
+        self.workers = [self.ModelDock, self.DataDock, self.LabelDock, \
+                        self.ShowSetDock, self.RSDock, self.MIDock]
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value("recent_models", [])
         self.recentFiles = self.settings.value("recent_files", [])
+        self.workerStatus = self.settings.value("worker_status", [])
+        self.layoutStatus = self.settings.value("layout_status", QByteArray())
         if not self.recentFiles:
             self.recentFiles = []
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
-
         # 初始化action
         self.initActions()
-        self.refreshWorker()
 
         # 更新近期记录
+        self.refreshWorker(True)
         self.updateModelsMenu()
         self.updateRecentFile()
+        self.loadLayout()
 
         # 窗口
         # self.help_dialog = QtWidgets.QDialog()
@@ -334,7 +338,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Net",
             self.tr("模型区"),
             checkable=True,
-            checked=True,
         )
         data_worker = action(
             self.tr("&数据区"),
@@ -343,7 +346,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Data",
             self.tr("数据区"),
             checkable=True,
-            checked=True,
         )
         label_worker = action(
             self.tr("&标签区"),
@@ -352,7 +354,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Label",
             self.tr("标签区"),
             checkable=True,
-            checked=True,
         )
         set_worker = action(
             self.tr("&设置区"),
@@ -361,7 +362,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Setting",
             self.tr("设置区"),
             checkable=True,
-            checked=True,
         )
         rs_worker = action(
             self.tr("&遥感区"),
@@ -1154,10 +1154,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.workers_show[index] = bool(self.workers_show[index] - 1)
         self.refreshWorker()
 
-    def refreshWorker(self):
-        worker = [self.ModelDock, self.DataDock, self.LabelDock, \
-                  self.ShowSetDock, self.RSDock, self.MIDock]
-        for t, w in zip(self.workers_show, worker):
+    def refreshWorker(self, is_init=False):
+        if is_init == True:
+            if self.workerStatus != []:
+                self.workers_show = [strtobool(w) for w in self.workerStatus]
+            for i in range(len(self.menus.showMenu)):
+                self.menus.showMenu[i].setChecked(bool(self.workers_show[i]))
+        else:
+            self.settings.setValue("worker_status", self.workers_show)
+        for t, w in zip(self.workers_show, self.workers):
             if t == True:
                 w.show()
             else:
@@ -1194,3 +1199,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def showShortcuts(self):
         self.toBeImplemented()
+
+    # 加载界面
+    def loadLayout(self):
+        self.restoreState(self.layoutStatus)
+        print("Load Layout")
+
+    def closeEvent(self, event):
+        # 保存界面
+        self.settings.setValue("layout_status", QByteArray(self.saveState()))
+        # 关闭主窗体退出程序，子窗体也关闭
+        sys.exit(0)

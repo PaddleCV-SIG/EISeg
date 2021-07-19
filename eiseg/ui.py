@@ -170,15 +170,20 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         bandRegion = QtWidgets.QVBoxLayout()
         bandRegion.setObjectName("bandRegion")
-        labFiles = create_text(CentralWidget, "bandSelection", "波段设置")
-        bandRegion.addWidget(labFiles)
+        showWay = create_text(CentralWidget, "showWay", "显示方法")
+        bandRegion.addWidget(showWay)
+        self.rsShow = QtWidgets.QComboBox()
+        self.rsShow.addItems(["原图", "2%线性拉伸"])
+        bandRegion.addWidget(self.rsShow)
+        bandSelection = create_text(CentralWidget, "bandSelection", "波段设置")
+        bandRegion.addWidget(bandSelection)
         text_list = ["R", "G", "B"]
-        combos = []
+        self.bandCombos = []
         for txt in text_list:
             lab = create_text(CentralWidget, "band" + txt, txt)
             combo = QtWidgets.QComboBox()
             combo.addItems(["band_" + txt])
-            combos.append(combo)
+            self.bandCombos.append(combo)
             hbandLayout = QtWidgets.QHBoxLayout()
             hbandLayout.setObjectName("hbandLayout")
             hbandLayout.addWidget(lab)
@@ -246,7 +251,3 @@ class Ui_EISeg(object):
             max_value,
             text_rate,
         )
-
-    def closeEvent(self, event):
-        # 关闭主窗体退出程序，子窗体也关闭
-        sys.exit(0)
