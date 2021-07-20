@@ -39,7 +39,7 @@ class ShortcutWindow(QWidget):
         super().__init__()
         self.setWindowTitle("编辑快捷键")
         self.setWindowIcon(QIcon(osp.join(pjpath, "resource/Shortcut.png")))
-        self.setFixedSize(self.width(), self.height()); 
+        # self.setFixedSize(self.width(), self.height()); 
         self.actions = actions
         self.recorder = None
         self.initUI()

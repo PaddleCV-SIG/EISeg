@@ -30,6 +30,7 @@ from util.colormap import ColorMask
 from util.label import Labeler
 from util import MODELS
 from util.remotesensing import *
+from util.language import TransUI
 
 
 # DEBUG:
@@ -46,8 +47,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
+        # language
+        self.settings = QtCore.QSettings(
+            osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
+        )
+        if self.settings.value("language_state") is None:
+            self.settings.setValue("language_state", False)
+        is_trans = strtobool(self.settings.value("language_state"))
+        self.trans = TransUI(is_trans)
+
         # 初始化界面
-        self.setupUi(self)
+        self.setupUi(self, self.trans)
 
         # app变量
         self.status = self.IDILE
@@ -68,14 +78,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.workers_show = [True, True, True, True, False, False]
         self.workers = [self.ModelDock, self.DataDock, self.LabelDock, \
                         self.ShowSetDock, self.RSDock, self.MIDock]
-        self.settings = QtCore.QSettings(
-            osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
-        )
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value("recent_models", [])
         self.recentFiles = self.settings.value("recent_files", [])
         self.workerStatus = self.settings.value("worker_status", [])
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
+        self.languageState = self.settings.value("language_state", bool)
         if not self.recentFiles:
             self.recentFiles = []
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
@@ -139,261 +147,270 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions = util.struct()
         start = dir()
         edit_shortcuts = action(
-            self.tr("&编辑快捷键"),
+            self.tr("&" + self.trans.put("编辑快捷键")),
             self.editShortcut,
             "edit_shortcuts",
             "Shortcut",
-            self.tr("编辑软件快捷键"),
+            self.tr(self.trans.put("编辑软件快捷键")),
         )
         turn_prev = action(
-            self.tr("&上一张"),
+            self.tr("&" + self.trans.put("上一张")),
             partial(self.turnImg, -1),
             "turn_prev",
             "Prev",
-            self.tr("翻到上一张图片"),
+            self.tr(self.trans.put("翻到上一张图片")),
         )
         turn_next = action(
-            self.tr("&下一张"),
+            self.tr("&" + self.trans.put("下一张")),
             partial(self.turnImg, 1),
             "turn_next",
             "Next",
-            self.tr("翻到下一张图片"),
+            self.tr(self.trans.put("翻到下一张图片")),
         )
         open_image = action(
-            self.tr("&打开图像"),
+            self.tr("&" + self.trans.put("打开图像")),
             self.openImage,
             "open_image",
             "OpenImage",
-            self.tr("打开一张图像进行标注"),
+            self.tr(self.trans.put("打开一张图像进行标注")),
         )
         open_folder = action(
-            self.tr("&打开文件夹"),
+            self.tr("&" + self.trans.put("打开文件夹")),
             self.openFolder,
             "open_folder",
             "OpenFolder",
-            self.tr("打开一个文件夹下所有的图像进行标注"),
+            self.tr(self.trans.put("打开一个文件夹下所有的图像进行标注")),
         )
         change_output_dir = action(
-            self.tr("&改变标签保存路径"),
+            self.tr("&" + self.trans.put("改变标签保存路径")),
             self.changeOutputDir,
             "change_output_dir",
             "ChangeLabelPath",
-            self.tr("打开一个文件夹下所有的图像进行标注"),
+            self.tr(self.trans.put("改变标签保存的文件夹路径")),
         )
         load_param = action(
-            self.tr("&加载模型参数"),
+            self.tr("&" + self.trans.put("加载模型参数")),
             self.changeParam,
             "load_param",
             "Model",
-            self.tr("加载一个模型参数"),
+            self.tr(self.trans.put("加载一个模型参数")),
         )
         quick_start = action(
-            self.tr("&快速上手"),
+            self.tr("&" + self.trans.put("快速上手")),
             self.toBeImplemented,
             "quick_start",
             "Use",
-            self.tr("快速上手介绍"),
+            self.tr(self.trans.put("快速上手介绍")),
         )
         about = action(
-            self.tr("&关于软件"),
+            self.tr("&" + self.trans.put("关于软件")),
             self.toBeImplemented,
             "about",
             "About",
-            self.tr("关于这个软件和开发团队"),
+            self.tr(self.trans.put("关于这个软件和开发团队")),
         )
         grid_ann = action(
-            self.tr("&N²宫格标注"),
+            self.tr("&" + self.trans.put("N2宫格标注")),
             self.toBeImplemented,
             "grid_ann",
             "N2",
-            self.tr("使用N²宫格进行细粒度标注"),
+            self.tr(self.trans.put("使用N2宫格进行细粒度标注")),
         )
         finish_object = action(
-            self.tr("&完成当前目标"),
+            self.tr("&" + self.trans.put("完成当前目标")),
             self.finishObject,
             "finish_object",
             "Ok",
-            self.tr("完成当前目标的标注"),
+            self.tr(self.trans.put("完成当前目标的标注")),
         )
         clear = action(
-            self.tr("&清除所有标注"),
+            self.tr("&" + self.trans.put("清除所有标注")),
             self.undoAll,
             "clear",
             "Clear",
-            self.tr("清除所有标注信息"),
+            self.tr(self.trans.put("清除所有标注信息")),
         )
         undo = action(
-            self.tr("&撤销"),
+            self.tr("&" + self.trans.put("撤销")),
             self.undoClick,
             "undo",
             "Undo",
-            self.tr("撤销一次点击"),
+            self.tr(self.trans.put("撤销一次点击")),
         )
         redo = action(
-            self.tr("&重做"),
+            self.tr("&" + self.trans.put("重做")),
             self.redoClick,
             "redo",
             "Redo",
-            self.tr("重做一次点击"),
+            self.tr(self.trans.put("重做一次点击")),
         )
         save = action(
-            self.tr("&保存"),
+            self.tr("&" + self.trans.put("保存")),
             self.saveLabel,
             "save",
             "Save",
-            self.tr("保存图像标签"),
+            self.tr(self.trans.put("保存图像标签")),
         )
         save_as = action(
-            self.tr("&另存为"),
+            self.tr("&" + self.trans.put("另存为")),
             partial(self.saveLabel, True),
             "save_as",
             "OtherSave",
-            self.tr("指定标签保存路径"),
+            self.tr(self.trans.put("指定标签保存路径")),
         )
         auto_save = action(
-            self.tr("&自动保存"),
+            self.tr("&" + self.trans.put("自动保存")),
             self.toggleAutoSave,
             "auto_save",
             "AutoSave",
-            self.tr("翻页同时自动保存"),
+            self.tr(self.trans.put("翻页同时自动保存")),
             checkable=True,
         )
         # auto_save.setChecked(self.config.get("auto_save", False))
         del_active_point = action(
-            self.tr("&删除点"),
+            self.tr("&" + self.trans.put("删除点")),
             self.delActivePoint,
             "del_active_point",
             "RemovePolygonPoint",
-            self.tr("删除当前选中的点"),
+            self.tr(self.trans.put("删除当前选中的点")),
         )
         del_active_polygon = action(
-            self.tr("&删除多边形"),
+            self.tr("&" + self.trans.put("删除多边形")),
             self.delActivePolygon,
             "del_active_polygon",
             "RemovePolygon",
-            self.tr("删除当前选中的多边形"),
+            self.tr(self.trans.put("删除当前选中的多边形")),
         )
         largest_component = action(
-            self.tr("&保留最大连通块"),
+            self.tr("&" + self.trans.put("保留最大连通块")),
             self.toggleLargestCC,
             "largest_component",
             "SaveMaxPolygon",
-            self.tr("保留最大的连通块"),
+            self.tr(self.trans.put("保留最大的连通块")),
             checkable=True,
         )
         save_color = action(
-            self.tr("&伪彩色保存"),
+            self.tr("&" + self.trans.put("伪彩色保存")),
             partial(self.changeSave, 0),
             "save_color",
             "SavePseudoColor",
-            self.tr("保存为伪彩色图像"),
+            self.tr(self.trans.put("保存为伪彩色图像")),
             checkable=True,
         )
         save_json = action(
-            self.tr("&JSON保存"),
+            self.tr("&" + self.trans.put("JSON保存")),
             partial(self.changeSave, 1),
             "save_json",
             "SaveJson",
-            self.tr("保存为JSON格式"),
+            self.tr(self.trans.put("保存为JSON格式")),
             checkable=True,
             checked=True,
         )
         close = action(
-            self.tr("&关闭"),
+            self.tr("&" + self.trans.put("关闭")),
             self.toBeImplemented,
             "close",
             "End",
-            self.tr("关闭当前图像"),
+            self.tr(self.trans.put("关闭当前图像")),
         )
         quit = action(
-            self.tr("&退出"),
+            self.tr("&" + self.trans.put("退出")),
             self.close,
             "quit",
             "Close",
-            self.tr("退出软件"),
+            self.tr(self.trans.put("退出软件")),
         )
         save_label = action(
-            self.tr("&保存标签列表"),
+            self.tr("&" + self.trans.put("保存标签列表")),
             self.saveLabelList,
             "save_label",
             "ExportLabel",
-            self.tr("将标签保存成标签配置文件"),
+            self.tr(self.trans.put("将标签保存成标签配置文件")),
         )
         load_label = action(
-            self.tr("&加载标签列表"),
+            self.tr("&" + self.trans.put("加载标签列表")),
             self.loadLabelList,
             "load_label",
             "ImportLabel",
-            self.tr("从标签配置文件中加载标签"),
+            self.tr(self.trans.put("从标签配置文件中加载标签")),
         )
         clear_label = action(
-            self.tr("&清空标签列表"),
+            self.tr("&" + self.trans.put("清空标签列表")),
             self.clearLabelList,
             "clear_label",
             "ClearLabel",
-            self.tr("清空所有的标签"),
+            self.tr(self.trans.put("清空所有的标签")),
         )
         clear_recent = action(
-            self.tr("&清除标注记录"),
+            self.tr("&" + self.trans.put("清除标注记录")),
             self.clearRecentFile,
             "clear_recent",
             "ClearRecent",
-            self.tr("清除近期标注记录"),
+            self.tr(self.trans.put("清除近期标注记录")),
         )
         model_worker = action(
-            self.tr("&模型区"),
+            self.tr("&" + self.trans.put("模型区")),
             partial(self.changeWorkerShow, 0),
             "model_worker",
             "Net",
-            self.tr("模型区"),
+            self.tr(self.trans.put("模型区")),
             checkable=True,
         )
         data_worker = action(
-            self.tr("&数据区"),
+            self.tr("&" + self.trans.put("数据区")),
             partial(self.changeWorkerShow, 1),
             "data_worker",
             "Data",
-            self.tr("数据区"),
+            self.tr(self.trans.put("数据区")),
             checkable=True,
         )
         label_worker = action(
-            self.tr("&标签区"),
+            self.tr("&" + self.trans.put("标签区")),
             partial(self.changeWorkerShow, 2),
             "label_worker",
             "Label",
-            self.tr("标签区"),
+            self.tr(self.trans.put("标签区")),
             checkable=True,
         )
         set_worker = action(
-            self.tr("&设置区"),
+            self.tr("&" + self.trans.put("设置区")),
             partial(self.changeWorkerShow, 3),
             "set_worker",
             "Setting",
-            self.tr("设置区"),
+            self.tr(self.trans.put("设置区")),
             checkable=True,
         )
         rs_worker = action(
-            self.tr("&遥感区"),
+            self.tr("&" + self.trans.put("遥感区")),
             partial(self.changeWorkerShow, 4),
             "remote_worker",
             "RemoteSensing",
-            self.tr("遥感区"),
+            self.tr(self.trans.put("遥感区")),
             checkable=True,
         )
         mi_worker = action(
-            self.tr("&医疗区"),
+            self.tr("&" + self.trans.put("医疗区")),
             partial(self.changeWorkerShow, 5),
             "medical_worker",
             "MedicalImaging",
-            self.tr("医疗区"),
+            self.tr(self.trans.put("医疗区")),
             checkable=True,
+        )
+        language = action(
+            self.tr("&" + self.trans.put("中国中文")),
+            self.setLanguage,
+            "language",
+            "Language",
+            self.tr(self.trans.put("切换语言，重启生效")),
+            checkable=True,
+            checked=bool(strtobool(self.settings.value("language_state")) - 1)
         )
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
-        recent_files = QtWidgets.QMenu(self.tr("近期文件"))
+        recent_files = QtWidgets.QMenu(self.tr(self.trans.put("近期文件")))
         recent_files.aboutToShow.connect(self.updateRecentFile)
-        recent_params = QtWidgets.QMenu(self.tr("近期模型及参数"))
+        recent_params = QtWidgets.QMenu(self.tr(self.trans.put("近期模型及参数")))
         recent_params.aboutToShow.connect(self.updateModelsMenu)
 
         self.menus = util.struct(
@@ -437,7 +454,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 set_worker, 
                 rs_worker, 
                 mi_worker),
-            helpMenu=(quick_start, about, edit_shortcuts),
+            helpMenu=(language, quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
                 clear,
@@ -452,11 +469,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 largest_component,
             ),
         )
-        menu("文件", self.menus.fileMenu)
-        menu("标注", self.menus.labelMenu)
-        menu("功能", self.menus.workMenu)
-        menu("显示", self.menus.showMenu)
-        menu("帮助", self.menus.helpMenu)
+        menu(self.trans.put("文件"), self.menus.fileMenu)
+        menu(self.trans.put("标注"), self.menus.labelMenu)
+        menu(self.trans.put("功能"), self.menus.workMenu)
+        menu(self.trans.put("显示"), self.menus.showMenu)
+        menu(self.trans.put("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
     def updateRecentFile(self):
@@ -474,7 +491,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             action.triggered.connect(partial(self.loadImage, f, True))
             menu.addAction(action)
         if len(files) == 0:
-            menu.addAction("无近期文件")
+            menu.addAction(self.trans.put("无近期文件"))
         self.settings.setValue("recent_files", files)
 
     def addRecentFile(self, path):
@@ -492,7 +509,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def clearRecentFile(self):
         self.settings.remove("recent_files")
-        self.statusbar.showMessage("已清除最近打开文件", 10000)
+        self.statusbar.showMessage(self.trans.put("已清除最近打开文件"), 10000)
 
     def updateModelsMenu(self):
         menu = self.menus.recent_params
@@ -518,7 +535,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeParam(self):
         if not self.modelClass:
-            self.warn("选择模型结构", "尚未选择模型结构，请在右侧下拉菜单进行选择！")
+            self.warn(self.trans.put("选择模型结构"), 
+            self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
         formats = ["*.pdparams"]
         filters = self.tr("paddle model param files (%s)") % " ".join(formats)
         start_path = (
@@ -528,7 +546,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择模型参数") % __APPNAME__,
+            self.tr("%s - " + self.trans.put("选择模型参数")) % __APPNAME__,
             start_path,
             filters,
         )
@@ -562,10 +580,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             model = model()
         if not isinstance(model, models.EISegModel):
             print("not a instance")
-            self.warn("选择模型结构", "尚未选择模型结构，请在右侧下拉菜单进行选择")
+            self.warn(self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
             return False
         modelIdx = MODELS.idx(model.__name__)
-        self.statusbar.showMessage(f"正在加载 {model.__name__} 模型")  # 这里没显示
+        self.statusbar.showMessage(self.trans.put("正在加载") + model.__name__)  # 这里没显示
         model = model.load_param(param_path)
         if model is not None:
             if self.controller is None:
@@ -591,18 +609,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.controller.set_image(self.image)
             else:
                 self.controller.reset_predictor(model)
-            self.statusbar.showMessage(f"{osp.basename(param_path)} 模型加载完成", 20000)
+            self.statusbar.showMessage(osp.basename(param_path) + self.trans.put("模型加载完成"), 20000)
             self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
-            self.warn("模型和参数不匹配", "当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！")
-            self.statusbar.showMessage("模型和参数不匹配，请重新加载", 20000)
+            self.warn(self.trans.put("模型和参数不匹配"), 
+                      self.trans.put("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"))
+            self.statusbar.showMessage(self.trans.put("模型和参数不匹配，请重新加载"), 20000)
             self.controller = None  # 清空controller
             return False
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
-            self.statusbar.showMessage("没有最近使用模型信息，请加载模型", 10000)
+            self.statusbar.showMessage(self.trans.put("没有最近使用模型信息，请加载模型"), 10000)
             return
         m = self.recentModels[-1]
         model = MODELS[m["model_name"]]
@@ -610,10 +629,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadModelParam(param_path, model)
 
     def loadLabelList(self):
-        filters = self.tr("标签配置文件 (*.txt)")
+        filters = self.tr(self.trans.put("标签配置文件") + " (*.txt)")
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择标签配置文件路径") % __APPNAME__,
+            self.tr("%s - " + self.trans.put("选择标签配置文件路径")) % __APPNAME__,
             ".",
             filters,
         )
@@ -626,16 +645,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def saveLabelList(self):
         if len(self.labelList) == 0:
-            self.warn("没有需要保存的标签", "请先添加标签之后再进行保存")
+            self.warn(self.trans.put("没有需要保存的标签"), 
+                      self.trans.put("请先添加标签之后再进行保存"))
             return
-        filters = self.tr("标签配置文件 (*.txt)")
-        dlg = QtWidgets.QFileDialog(self, "保存标签配置文件", ".", filters)
+        filters = self.tr(self.trans.put("标签配置文件") + "(*.txt)")
+        dlg = QtWidgets.QFileDialog(self, self.trans.put("保存标签配置文件"), ".", filters)
         dlg.setDefaultSuffix("txt")
         dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
         dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
         dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
         savePath, _ = dlg.getSaveFileName(
-            self, self.tr("%s - 选择保存标签配置文件路径") % __APPNAME__, ".", filters
+            self, self.tr("%s - " + self.trans.put("选择保存标签配置文件路径")) % __APPNAME__, ".", filters
         )
         self.labelList.saveLabel(savePath)
         print("Save label list:", self.labelList.list, savePath)
@@ -761,8 +781,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for idx, polygon in enumerate(self.scene.polygon_items):
             if polygon.hasFocus():
                 res = self.warn(
-                    "确认删除？",
-                    "确认要删除当前选中多边形标注？",
+                    self.trans.put("确认删除？"),
+                    self.trans.put("确认要删除当前选中多边形标注？"),
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Yes:
@@ -786,7 +806,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = self.tr("Image & Label files (%s)") % " ".join(formats)
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            self.tr("%s - 选择待标注图片") % __APPNAME__,
+            self.tr("%s - " + self.trans.put("选择待标注图片")) % __APPNAME__,
             recentPath,
             filters,
         )
@@ -799,7 +819,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            self.tr("%s - 选择待标注图片文件夹") % __APPNAME__,
+            self.tr("%s - " + self.trans.put("选择待标注图片文件夹")) % __APPNAME__,
             "/home/lin/Desktop",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
@@ -831,7 +851,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     image = selec_band(self.rawimg, self.rsRGB)
                 self.update_bandList()
             else:
-                self.warn("未打开遥感工具", "未打开遥感工具，请先在菜单栏-显示中打开遥感区！")
+                self.warn(self.trans.put("未打开遥感工具"), 
+                          self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感区！"))
                 return 
         else:
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
@@ -845,7 +866,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 # self.rsShow.currentIndex() == 1) else image
             )
         else:
-            self.warn("未加载模型", "未加载模型参数，请先加载模型参数！")
+            self.warn(self.trans.put("未加载模型"), 
+                      self.trans.put("未加载模型参数，请先加载模型参数！"))
             self.changeParam()
             print("please load model params first!")
             return 0
@@ -892,7 +914,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currIdx += delta
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
-            self.statusbar.showMessage(f"没有{'后一张'if delta==1 else '前一张'}图片")
+            self.statusbar.showMessage(self.trans.put(f"没有{'后一张'if delta==1 else '前一张'}图片"))
             return
         self.completeLastMask()
         if self.isDirty:
@@ -900,8 +922,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.saveLabel()
             else:
                 res = self.warn(
-                    "保存标签？",
-                    "标签尚未保存，是否保存标签",
+                    self.trans.put("保存标签？"),
+                    self.trans.put("标签尚未保存，是否保存标签"),
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Yes:
@@ -919,7 +941,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def listClicked(self):
         if not self.controller:
-            self.warn("模型未加载", "尚未加载模型，请先加载模型")
+            self.warn(self.trans.put("模型未加载"), self.trans.put("尚未加载模型，请先加载模型！"))
             self.changeParam()
             if not self.controller:
                 return
@@ -955,8 +977,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller.is_incomplete_mask:
             return True
         res = self.warn(
-            "完成最后一个目标？",
-            "是否完成最后一个目标的标注，不完成不会进行保存。",
+            self.trans.put("完成最后一个目标？"),
+            self.trans.put("是否完成最后一个目标的标注，不完成不会进行保存。"),
             QMessageBox.Yes | QMessageBox.Cancel,
         )
         if res == QMessageBox.Yes:
@@ -978,7 +1000,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 filters = self.tr("Label files (*.png)")
                 dlg = QtWidgets.QFileDialog(
-                    self, "保存标签文件路径", osp.dirname(self.imagePath), filters
+                    self, self.trans.put("保存标签文件路径"), osp.dirname(self.imagePath), filters
                 )
                 dlg.setDefaultSuffix("png")
                 dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
@@ -986,7 +1008,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
                 savePath, _ = dlg.getSaveFileName(
                     self,
-                    self.tr("选择标签文件保存路径"),
+                    self.tr(self.trans.put("选择标签文件保存路径")),
                     osp.basename(self.imagePath).split(".")[0] + ".png",
                 )
         if savePath is None or not osp.exists(osp.dirname(savePath)):
@@ -1027,7 +1049,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 保存路径带有中文
         # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
-        self.statusbar.showMessage(f"标签成功保存至 {savePath}")
+        self.statusbar.showMessage(self.trans.put("标签成功保存至 ") + savePath)
 
     def setClean(self):
         self.isDirty = False
@@ -1038,7 +1060,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeOutputDir(self):
         outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            self.tr("%s - 选择标签保存路径") % __APPNAME__,
+            self.tr("%s - " + self.trans.put("选择标签保存路径")) % __APPNAME__,
             "/home/lin/Desktop/output/",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
@@ -1106,8 +1128,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not currLabel or currLabel == 0:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("未选择当前标签")
-            msg.setText("请先在标签列表中单击点选标签")
+            msg.setWindowTitle(self.trans.put("未选择当前标签"))
+            msg.setText(self.trans.put("请先在标签列表中单击点选标签"))
             msg.setStandardButtons(QMessageBox.Yes)
             res = msg.exec_()
             return
@@ -1175,11 +1197,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if index == 4:
             if check_gdal() == False:
                 self.warn(
-                    "无法导入GDAL",
-                    "请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！",
+                    self.trans.put("无法导入GDAL"),
+                    self.trans.put("请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！"),
                     QMessageBox.Yes,
                 )
-                self.statusbar.showMessage("打开失败，未检出GDAL")
+                self.statusbar.showMessage(self.trans.put("打开失败，未检出GDAL"))
                 return
         self.workers_show[index] = bool(self.workers_show[index] - 1)
         self.refreshWorker()
@@ -1234,6 +1256,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         except:
             pass
 
+    def setLanguage(self):
+        tmp = bool(strtobool(self.settings.value("language_state")) - 1)
+        self.settings.setValue("language_state", tmp)
+
     @property
     def opacity(self):
         return self.sldOpacity.value() / 100
@@ -1255,7 +1281,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         return msg.exec_()
 
     def toBeImplemented(self):
-        self.statusbar.showMessage("功能尚在开发")
+        self.statusbar.showMessage(self.trans.put("功能尚在开发"))
 
     def showShortcuts(self):
         self.toBeImplemented()
