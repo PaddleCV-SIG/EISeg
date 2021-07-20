@@ -120,7 +120,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.refreshLabelList()
 
         ## 功能区选择
-        self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
+        # self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
@@ -824,7 +824,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if imghdr.what(path) == 'tiff':
             if self.RSDock.isVisible():
                 self.rawimg, geoinfo = open_tif(path)
-                image = selec_band(self.rawimg, self.rsRGB)
+                try:
+                    image = selec_band(self.rawimg, self.rsRGB)
+                except IndexError:
+                    self.rsRGB = [0, 0, 0]
+                    image = selec_band(self.rawimg, self.rsRGB)
                 self.update_bandList()
             else:
                 self.warn("未打开遥感工具", "未打开遥感工具，请先在菜单栏-显示中打开遥感区！")
@@ -836,8 +840,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currentPath = path
         if self.controller:
             self.controller.set_image(
-                twoPercentLinear(image) if (self.RSDock.isVisible() and \
-                self.rsShow.currentIndex() == 1) else image
+                image
+                # twoPercentLinear(image) if (self.RSDock.isVisible() and \
+                # self.rsShow.currentIndex() == 1) else image
             )
         else:
             self.warn("未加载模型", "未加载模型参数，请先加载模型参数！")
@@ -1183,8 +1188,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
         self.image = selec_band(self.rawimg, self.rsRGB)
-        image = self.image if self.rsShow.currentIndex() == 0 else \
-                twoPercentLinear(self.image)
+        image = self.image  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
         self.controller.image = image
         self._update_image()
 
@@ -1202,26 +1206,33 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 w.hide()
 
+    # def rsShowModeChange(self, idx):
+    #     if not self.controller or self.controller.image is None:
+    #         return
+    #     # if idx == 1:
+    #     #     self.controller.image = twoPercentLinear(self.image)
+    #     # else:
+    #     self.controller.image = self.image
+    #     self._update_image()
+
+    def update_bandList(self):
+        bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
+        for i in range(len(self.bandCombos)):
+            self.bandCombos[i].currentIndexChanged.disconnect()
+            self.bandCombos[i].clear()
+            self.bandCombos[i].addItems([("band_" + str(j + 1)) for j in range(bands)])
+            try:
+                self.bandCombos[i].setCurrentIndex(self.rsRGB[i])
+            except IndexError:
+                pass
+        for bandCombo in self.bandCombos:
+            bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
+
     def toggleLargestCC(self, on):
         try:
             self.controller.filterLargestCC = on
         except:
             pass
-
-    def rsShowModeChange(self, idx):
-        if not self.controller or self.controller.image is None:
-            return
-        if idx == 1:
-            self.controller.image = twoPercentLinear(self.image)
-        else:
-            self.controller.image = self.image
-        self._update_image()
-
-    def update_bandList(self):
-        bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
-        if bands > 1:
-            for bandCombo in self.bandCombos:
-                bandCombo.addItems([("band_" + str(i + 1)) for i in range(1, bands)])
 
     @property
     def opacity(self):
