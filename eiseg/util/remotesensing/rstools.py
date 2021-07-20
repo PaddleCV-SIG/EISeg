@@ -35,7 +35,7 @@ def _tif2rgb(geoimg):
     if IPT_GDAL == True:
         tifarr = geoimg.ReadAsArray()
         print("tif_shape:", tifarr.shape)
-        if len(tifarr) == 3:
+        if len(tifarr.shape) == 3:
             tifarr = tifarr.transpose((1, 2, 0))  # 多波段图像默认是[c, h, w]
         return tifarr
     else:
