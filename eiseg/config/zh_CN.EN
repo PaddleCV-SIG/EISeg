@@ -1,122 +1,122 @@
-ÎÄ¼ş@Documents
-±ê×¢@Tagging
-¹¦ÄÜ@Function
-ÏÔÊ¾@Display
-°ïÖú@Help
-´ò¿ªÍ¼Ïñ@Open image
-´ò¿ªÒ»ÕÅÍ¼Ïñ½øĞĞ±ê×¢@Open an image for annotation
-´ò¿ªÎÄ¼ş¼Ğ@Open folder
-±à¼­¿ì½İ¼ü@Edit shortcut
-±à¼­Èí¼ş¿ì½İ¼ü@Edit software shortcut key
-ÉÏÒ»ÕÅ@Last one
-·­µ½ÉÏÒ»ÕÅÍ¼Æ¬@Turn to the previous picture
-ÏÂÒ»ÕÅ@Next one
-·­µ½ÏÂÒ»ÕÅÍ¼Æ¬@Turn to the next picture
-¸Ä±ä±êÇ©±£´æÂ·¾¶@Change label save path
-¸Ä±ä±êÇ©±£´æµÄÎÄ¼ş¼ĞÂ·¾¶@Change the folder path for label saving
-¼ÓÔØÄ£ĞÍ²ÎÊı@Loading model parameters
-¼ÓÔØÒ»¸öÄ£ĞÍ²ÎÊı@Load a model parameter
-¿ìËÙÉÏÊÖ@Get started quickly
-¿ìËÙÉÏÊÖ½éÉÜ@Quick introduction
-¹ØÓÚÈí¼ş@About software
-¹ØÓÚÕâ¸öÈí¼şºÍ¿ª·¢ÍÅ¶Ó@About the software and development team
-N2¹¬¸ñ±ê×¢@N2 Palace grid label
-Ê¹ÓÃN2¹¬¸ñ½øĞĞÏ¸Á£¶È±ê×¢@Use N2 Fine grained labeling with grid
-Íê³Éµ±Ç°Ä¿±ê@Achieve current goals
-Íê³Éµ±Ç°Ä¿±êµÄ±ê×¢@Complete the annotation of the current target
-Çå³ıËùÓĞ±ê×¢@Clear all annotations
-Çå³ıËùÓĞ±ê×¢ĞÅÏ¢@Clear all dimension information
-³·Ïú@Revoke
-³·ÏúÒ»´Îµã»÷@Undo one click
-ÖØ×ö@Redo
-ÖØ×öÒ»´Îµã»÷@Redo one click
-±£´æ@preservation
-±£´æÍ¼Ïñ±êÇ©@Save image label
-Áí´æÎª@Save as
-Ö¸¶¨±êÇ©±£´æÂ·¾¶@Specify label save path
-×Ô¶¯±£´æ@Auto save
-·­Ò³Í¬Ê±×Ô¶¯±£´æ@Auto save while turning pages
-É¾³ıµã@Delete point
-É¾³ıµ±Ç°Ñ¡ÖĞµÄµã@Delete the currently selected point
-É¾³ı¶à±ßĞÎ@Delete polygon
-É¾³ıµ±Ç°Ñ¡ÖĞµÄ¶à±ßĞÎ@Delete the currently selected polygon
-±£Áô×î´óÁ¬Í¨¿é@Keep the most connected block
-±£Áô×î´óµÄÁ¬Í¨¿é@Keep the largest connected block
-Î±²ÊÉ«±£´æ@Pseudo color preservation
-±£´æÎªÎ±²ÊÉ«Í¼Ïñ@Save as pseudo color image
-JSON±£´æ@Save in JSON
-±£´æÎªJSON¸ñÊ½@Save to JSON format
-¹Ø±Õ@Close
-¹Ø±Õµ±Ç°Í¼Ïñ@Close the current image
-ÍË³ö@Sign out
-ÍË³öÈí¼ş@Exit software
-±£´æ±êÇ©ÁĞ±í@Save label list
-½«±êÇ©±£´æ³É±êÇ©ÅäÖÃÎÄ¼ş@Save label as label profile
-¼ÓÔØ±êÇ©ÁĞ±í@Load tag list
-´Ó±êÇ©ÅäÖÃÎÄ¼şÖĞ¼ÓÔØ±êÇ©@Loading labels from a label profile
-Çå¿Õ±êÇ©ÁĞ±í@Clear label list
-Çå¿ÕËùÓĞµÄ±êÇ©@Clear all labels
-Çå³ı±ê×¢¼ÇÂ¼@Clear label record
-Çå³ı½üÆÚ±ê×¢¼ÇÂ¼@Clear recent notes
-Ä£ĞÍÇø@Model area
-Êı¾İÇø@Data area
-±êÇ©Çø@Label area
-ÉèÖÃÇø@Setting area
-Ò£¸ĞÇø@Remote sensing area
-Ò½ÁÆÇø@Medical district
-ÖĞ¹úÖĞÎÄ@Chinese
-Ó¢ÎÄ@English
-ÇĞ»»ÓïÑÔ£¬ÖØÆôÉúĞ§@Switch language, restart and take effect
-½üÆÚÎÄ¼ş@Recent documents
-½üÆÚÄ£ĞÍ¼°²ÎÊı@Recent models and parameters
-ÎŞ½üÆÚÎÄ¼ş@No recent documents
-ÒÑÇå³ı×î½ü´ò¿ªÎÄ¼ş@Recently opened files cleared
-Ñ¡ÔñÄ£ĞÍ½á¹¹@Select model structure
-ÉĞÎ´Ñ¡ÔñÄ£ĞÍ½á¹¹£¬ÇëÔÚÓÒ²àÏÂÀ­²Ëµ¥½øĞĞÑ¡Ôñ£¡@The model structure has not been selected, please select from the drop-down menu on the right!
-Ñ¡ÔñÄ£ĞÍ²ÎÊı@Select model parameters
-Ñ¡ÔñÄ£ĞÍ½á¹¹@Select model structure
-ÉĞÎ´Ñ¡ÔñÄ£ĞÍ½á¹¹£¬ÇëÔÚÓÒ²àÏÂÀ­²Ëµ¥½øĞĞÑ¡Ôñ£¡@The model structure has not been selected, please select from the drop-down menu on the right!
-ÕıÔÚ¼ÓÔØ@Loading
-Ä£ĞÍ¼ÓÔØÍê³É@Model loading completed
-Ä£ĞÍºÍ²ÎÊı²»Æ¥Åä@Model and parameters do not match
-µ±Ç°ÍøÂç½á¹¹ÖĞµÄ²ÎÊıÓëÄ£ĞÍ²ÎÊı²»Æ¥Åä£¬Çë¸ü»»ÍøÂç½á¹¹»òÊ¹ÓÃÆäËû²ÎÊı£¡@The parameters in the current network structure do not match the model parameters, please change the network structure or use other parameters!
-Ä£ĞÍºÍ²ÎÊı²»Æ¥Åä£¬ÇëÖØĞÂ¼ÓÔØ@Model and parameters do not match, please reload
-Ã»ÓĞ×î½üÊ¹ÓÃÄ£ĞÍĞÅÏ¢£¬Çë¼ÓÔØÄ£ĞÍ@No recently used model information, please load the model
-±êÇ©ÅäÖÃÎÄ¼ş@Label profile
-Ñ¡Ôñ±êÇ©ÅäÖÃÎÄ¼şÂ·¾¶@Select label profile path
-Ã»ÓĞĞèÒª±£´æµÄ±êÇ©@There are no labels to save
-±êÇ©ÅäÖÃÎÄ¼ş@Label profile
-±£´æ±êÇ©ÅäÖÃÎÄ¼ş@Save label profile
-Ñ¡Ôñ±£´æ±êÇ©ÅäÖÃÎÄ¼şÂ·¾¶@Select the path to save the label profile
-È·ÈÏÉ¾³ı£¿@Are you sure you want to delete?
-È·ÈÏÒªÉ¾³ıµ±Ç°Ñ¡ÖĞ¶à±ßĞÎ±ê×¢£¿@Are you sure you want to delete the currently selected polygon annotation?
-Ñ¡Ôñ´ı±ê×¢Í¼Æ¬@Select the picture to be marked
-Ñ¡Ôñ´ı±ê×¢Í¼Æ¬ÎÄ¼ş¼Ğ@Select the picture folder to be marked
-Î´´ò¿ªÒ£¸Ğ¹¤¾ß@Remote sensing tool not opened
-Î´´ò¿ªÒ£¸Ğ¹¤¾ß£¬ÇëÏÈÔÚ²Ëµ¥À¸-ÏÔÊ¾ÖĞ´ò¿ªÒ£¸ĞÇø£¡@The remote sensing tool has not been opened, please open the remote sensing area in the menu bar - display first!
-Î´¼ÓÔØÄ£ĞÍ@Model not loaded
-Î´¼ÓÔØÄ£ĞÍ²ÎÊı£¬ÇëÏÈ¼ÓÔØÄ£ĞÍ²ÎÊı£¡@Model parameters not loaded, please load model parameters first!
-Ã»ÓĞºóÒ»ÕÅÍ¼Æ¬@There is no last picture
-Ã»ÓĞÇ°Ò»ÕÅÍ¼Æ¬@There is no previous picture
-±£´æ±êÇ©£¿@Save label?
-±êÇ©ÉĞÎ´±£´æ£¬ÊÇ·ñ±£´æ±êÇ©@The label has not been saved. Do you want to save the label
-Ä£ĞÍÎ´¼ÓÔØ@Model not loaded
-ÉĞÎ´¼ÓÔØÄ£ĞÍ£¬ÇëÏÈ¼ÓÔØÄ£ĞÍ£¡@The model has not been loaded, please load the model first!
-Íê³É×îºóÒ»¸öÄ¿±ê£¿@Finish the last goal?
-ÊÇ·ñÍê³É×îºóÒ»¸öÄ¿±êµÄ±ê×¢£¬²»Íê³É²»»á½øĞĞ±£´æ¡£@Whether to mark the last target or not. If not, it will not be saved.
-±£´æ±êÇ©ÎÄ¼şÂ·¾¶@Save label file path
-±êÇ©³É¹¦±£´æÖÁ@Label successfully saved to
-Ñ¡Ôñ±êÇ©±£´æÂ·¾¶@Select label save path
-Î´Ñ¡Ôñµ±Ç°±êÇ©@The current label is not selected
-ÇëÏÈÔÚ±êÇ©ÁĞ±íÖĞµ¥»÷µãÑ¡±êÇ©@Please click to select the label in the label list first
-ÎŞ·¨µ¼ÈëGDAL@Unable to import GDAL
-Çë¼ì²é»·¾³ÖĞÊÇ·ñ´æÔÚGDAL£¬Èô²»´æÔÚÔòÎŞ·¨Ê¹ÓÃÒ£¸Ğ¹¤¾ß£¡@Please check whether GDAL exists in the environment, if not, remote sensing tools cannot be used!
-´ò¿ªÊ§°Ü£¬Î´¼ì³öGDAL@Failed to open, GDAL not detected
-¹¦ÄÜÉĞÔÚ¿ª·¢@The function is still under development
-¼ÓÔØÍøÂç²ÎÊı@Load network parameters
-·Ö¸îãĞÖµ£º@Segmentation threshold:
-±êÇ©Í¸Ã÷¶È£º@Label transparency:
-µã»÷¿ÉÊÓ»¯°ë¾¶£º@Click the visualization radius:
-²¨¶ÎÉèÖÃ@Band setting
-Ò½ÁÆÉèÖÃ@Medical settings
-Ìí¼Ó±êÇ©@Add label
+æ–‡ä»¶@Documents
+æ ‡æ³¨@Tagging
+åŠŸèƒ½@Function
+æ˜¾ç¤º@Display
+å¸®åŠ©@Help
+æ‰“å¼€å›¾åƒ@Open image
+æ‰“å¼€ä¸€å¼ å›¾åƒè¿›è¡Œæ ‡æ³¨@Open an image for annotation
+æ‰“å¼€æ–‡ä»¶å¤¹@Open folder
+ç¼–è¾‘å¿«æ·é”®@Edit shortcut
+ç¼–è¾‘è½¯ä»¶å¿«æ·é”®@Edit software shortcut key
+ä¸Šä¸€å¼ @Last one
+ç¿»åˆ°ä¸Šä¸€å¼ å›¾ç‰‡@Turn to the previous picture
+ä¸‹ä¸€å¼ @Next one
+ç¿»åˆ°ä¸‹ä¸€å¼ å›¾ç‰‡@Turn to the next picture
+æ”¹å˜æ ‡ç­¾ä¿å­˜è·¯å¾„@Change label save path
+æ”¹å˜æ ‡ç­¾ä¿å­˜çš„æ–‡ä»¶å¤¹è·¯å¾„@Change the folder path for label saving
+åŠ è½½æ¨¡å‹å‚æ•°@Loading model parameters
+åŠ è½½ä¸€ä¸ªæ¨¡å‹å‚æ•°@Load a model parameter
+å¿«é€Ÿä¸Šæ‰‹@Get started quickly
+å¿«é€Ÿä¸Šæ‰‹ä»‹ç»@Quick introduction
+å…³äºè½¯ä»¶@About software
+å…³äºè¿™ä¸ªè½¯ä»¶å’Œå¼€å‘å›¢é˜Ÿ@About the software and development team
+N2å®«æ ¼æ ‡æ³¨@N2 Palace grid label
+ä½¿ç”¨N2å®«æ ¼è¿›è¡Œç»†ç²’åº¦æ ‡æ³¨@Use N2 Fine grained labeling with grid
+å®Œæˆå½“å‰ç›®æ ‡@Achieve current goals
+å®Œæˆå½“å‰ç›®æ ‡çš„æ ‡æ³¨@Complete the annotation of the current target
+æ¸…é™¤æ‰€æœ‰æ ‡æ³¨@Clear all annotations
+æ¸…é™¤æ‰€æœ‰æ ‡æ³¨ä¿¡æ¯@Clear all dimension information
+æ’¤é”€@Revoke
+æ’¤é”€ä¸€æ¬¡ç‚¹å‡»@Undo one click
+é‡åš@Redo
+é‡åšä¸€æ¬¡ç‚¹å‡»@Redo one click
+ä¿å­˜@preservation
+ä¿å­˜å›¾åƒæ ‡ç­¾@Save image label
+å¦å­˜ä¸º@Save as
+æŒ‡å®šæ ‡ç­¾ä¿å­˜è·¯å¾„@Specify label save path
+è‡ªåŠ¨ä¿å­˜@Auto save
+ç¿»é¡µåŒæ—¶è‡ªåŠ¨ä¿å­˜@Auto save while turning pages
+åˆ é™¤ç‚¹@Delete point
+åˆ é™¤å½“å‰é€‰ä¸­çš„ç‚¹@Delete the currently selected point
+åˆ é™¤å¤šè¾¹å½¢@Delete polygon
+åˆ é™¤å½“å‰é€‰ä¸­çš„å¤šè¾¹å½¢@Delete the currently selected polygon
+ä¿ç•™æœ€å¤§è¿é€šå—@Keep the most connected block
+ä¿ç•™æœ€å¤§çš„è¿é€šå—@Keep the largest connected block
+ä¼ªå½©è‰²ä¿å­˜@Pseudo color preservation
+ä¿å­˜ä¸ºä¼ªå½©è‰²å›¾åƒ@Save as pseudo color image
+JSONä¿å­˜@Save in JSON
+ä¿å­˜ä¸ºJSONæ ¼å¼@Save to JSON format
+å…³é—­@Close
+å…³é—­å½“å‰å›¾åƒ@Close the current image
+é€€å‡º@Sign out
+é€€å‡ºè½¯ä»¶@Exit software
+ä¿å­˜æ ‡ç­¾åˆ—è¡¨@Save label list
+å°†æ ‡ç­¾ä¿å­˜æˆæ ‡ç­¾é…ç½®æ–‡ä»¶@Save label as label profile
+åŠ è½½æ ‡ç­¾åˆ—è¡¨@Load tag list
+ä»æ ‡ç­¾é…ç½®æ–‡ä»¶ä¸­åŠ è½½æ ‡ç­¾@Loading labels from a label profile
+æ¸…ç©ºæ ‡ç­¾åˆ—è¡¨@Clear label list
+æ¸…ç©ºæ‰€æœ‰çš„æ ‡ç­¾@Clear all labels
+æ¸…é™¤æ ‡æ³¨è®°å½•@Clear label record
+æ¸…é™¤è¿‘æœŸæ ‡æ³¨è®°å½•@Clear recent notes
+æ¨¡å‹åŒº@Model area
+æ•°æ®åŒº@Data area
+æ ‡ç­¾åŒº@Label area
+è®¾ç½®åŒº@Setting area
+é¥æ„ŸåŒº@Remote sensing area
+åŒ»ç–—åŒº@Medical district
+ä¸­å›½ä¸­æ–‡@Chinese
+è‹±æ–‡@English
+åˆ‡æ¢è¯­è¨€ï¼Œé‡å¯ç”Ÿæ•ˆ@Switch language, restart and take effect
+è¿‘æœŸæ–‡ä»¶@Recent documents
+è¿‘æœŸæ¨¡å‹åŠå‚æ•°@Recent models and parameters
+æ— è¿‘æœŸæ–‡ä»¶@No recent documents
+å·²æ¸…é™¤æœ€è¿‘æ‰“å¼€æ–‡ä»¶@Recently opened files cleared
+é€‰æ‹©æ¨¡å‹ç»“æ„@Select model structure
+å°šæœªé€‰æ‹©æ¨¡å‹ç»“æ„ï¼Œè¯·åœ¨å³ä¾§ä¸‹æ‹‰èœå•è¿›è¡Œé€‰æ‹©ï¼@The model structure has not been selected, please select from the drop-down menu on the right!
+é€‰æ‹©æ¨¡å‹å‚æ•°@Select model parameters
+é€‰æ‹©æ¨¡å‹ç»“æ„@Select model structure
+å°šæœªé€‰æ‹©æ¨¡å‹ç»“æ„ï¼Œè¯·åœ¨å³ä¾§ä¸‹æ‹‰èœå•è¿›è¡Œé€‰æ‹©ï¼@The model structure has not been selected, please select from the drop-down menu on the right!
+æ­£åœ¨åŠ è½½@Loading
+æ¨¡å‹åŠ è½½å®Œæˆ@Model loading completed
+æ¨¡å‹å’Œå‚æ•°ä¸åŒ¹é…@Model and parameters do not match
+å½“å‰ç½‘ç»œç»“æ„ä¸­çš„å‚æ•°ä¸æ¨¡å‹å‚æ•°ä¸åŒ¹é…ï¼Œè¯·æ›´æ¢ç½‘ç»œç»“æ„æˆ–ä½¿ç”¨å…¶ä»–å‚æ•°ï¼@The parameters in the current network structure do not match the model parameters, please change the network structure or use other parameters!
+æ¨¡å‹å’Œå‚æ•°ä¸åŒ¹é…ï¼Œè¯·é‡æ–°åŠ è½½@Model and parameters do not match, please reload
+æ²¡æœ‰æœ€è¿‘ä½¿ç”¨æ¨¡å‹ä¿¡æ¯ï¼Œè¯·åŠ è½½æ¨¡å‹@No recently used model information, please load the model
+æ ‡ç­¾é…ç½®æ–‡ä»¶@Label profile
+é€‰æ‹©æ ‡ç­¾é…ç½®æ–‡ä»¶è·¯å¾„@Select label profile path
+æ²¡æœ‰éœ€è¦ä¿å­˜çš„æ ‡ç­¾@There are no labels to save
+æ ‡ç­¾é…ç½®æ–‡ä»¶@Label profile
+ä¿å­˜æ ‡ç­¾é…ç½®æ–‡ä»¶@Save label profile
+é€‰æ‹©ä¿å­˜æ ‡ç­¾é…ç½®æ–‡ä»¶è·¯å¾„@Select the path to save the label profile
+ç¡®è®¤åˆ é™¤ï¼Ÿ@Are you sure you want to delete?
+ç¡®è®¤è¦åˆ é™¤å½“å‰é€‰ä¸­å¤šè¾¹å½¢æ ‡æ³¨ï¼Ÿ@Are you sure you want to delete the currently selected polygon annotation?
+é€‰æ‹©å¾…æ ‡æ³¨å›¾ç‰‡@Select the picture to be marked
+é€‰æ‹©å¾…æ ‡æ³¨å›¾ç‰‡æ–‡ä»¶å¤¹@Select the picture folder to be marked
+æœªæ‰“å¼€é¥æ„Ÿå·¥å…·@Remote sensing tool not opened
+æœªæ‰“å¼€é¥æ„Ÿå·¥å…·ï¼Œè¯·å…ˆåœ¨èœå•æ -æ˜¾ç¤ºä¸­æ‰“å¼€é¥æ„ŸåŒºï¼@The remote sensing tool has not been opened, please open the remote sensing area in the menu bar - display first!
+æœªåŠ è½½æ¨¡å‹@Model not loaded
+æœªåŠ è½½æ¨¡å‹å‚æ•°ï¼Œè¯·å…ˆåŠ è½½æ¨¡å‹å‚æ•°ï¼@Model parameters not loaded, please load model parameters first!
+æ²¡æœ‰åä¸€å¼ å›¾ç‰‡@There is no last picture
+æ²¡æœ‰å‰ä¸€å¼ å›¾ç‰‡@There is no previous picture
+ä¿å­˜æ ‡ç­¾ï¼Ÿ@Save label?
+æ ‡ç­¾å°šæœªä¿å­˜ï¼Œæ˜¯å¦ä¿å­˜æ ‡ç­¾@The label has not been saved. Do you want to save the label
+æ¨¡å‹æœªåŠ è½½@Model not loaded
+å°šæœªåŠ è½½æ¨¡å‹ï¼Œè¯·å…ˆåŠ è½½æ¨¡å‹ï¼@The model has not been loaded, please load the model first!
+å®Œæˆæœ€åä¸€ä¸ªç›®æ ‡ï¼Ÿ@Finish the last goal?
+æ˜¯å¦å®Œæˆæœ€åä¸€ä¸ªç›®æ ‡çš„æ ‡æ³¨ï¼Œä¸å®Œæˆä¸ä¼šè¿›è¡Œä¿å­˜ã€‚@Whether to mark the last target or not. If not, it will not be saved.
+ä¿å­˜æ ‡ç­¾æ–‡ä»¶è·¯å¾„@Save label file path
+æ ‡ç­¾æˆåŠŸä¿å­˜è‡³@Label successfully saved to
+é€‰æ‹©æ ‡ç­¾ä¿å­˜è·¯å¾„@Select label save path
+æœªé€‰æ‹©å½“å‰æ ‡ç­¾@The current label is not selected
+è¯·å…ˆåœ¨æ ‡ç­¾åˆ—è¡¨ä¸­å•å‡»ç‚¹é€‰æ ‡ç­¾@Please click to select the label in the label list first
+æ— æ³•å¯¼å…¥GDAL@Unable to import GDAL
+è¯·æ£€æŸ¥ç¯å¢ƒä¸­æ˜¯å¦å­˜åœ¨GDALï¼Œè‹¥ä¸å­˜åœ¨åˆ™æ— æ³•ä½¿ç”¨é¥æ„Ÿå·¥å…·ï¼@Please check whether GDAL exists in the environment, if not, remote sensing tools cannot be used!
+æ‰“å¼€å¤±è´¥ï¼Œæœªæ£€å‡ºGDAL@Failed to open, GDAL not detected
+åŠŸèƒ½å°šåœ¨å¼€å‘@The function is still under development
+åŠ è½½ç½‘ç»œå‚æ•°@Load network parameters
+åˆ†å‰²é˜ˆå€¼ï¼š@Segmentation threshold:
+æ ‡ç­¾é€æ˜åº¦ï¼š@Label transparency:
+ç‚¹å‡»å¯è§†åŒ–åŠå¾„ï¼š@Click the visualization radius:
+æ³¢æ®µè®¾ç½®@Band setting
+åŒ»ç–—è®¾ç½®@Medical settings
+æ·»åŠ æ ‡ç­¾@Add label
