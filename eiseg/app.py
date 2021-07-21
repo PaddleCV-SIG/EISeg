@@ -52,7 +52,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        # self.settings.value("language_state", "False")
         is_trans = strtobool(self.settings.value("language_state", "False"))
         self.trans = TransUI(is_trans)
 
@@ -156,7 +155,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions = util.struct()
         start = dir()
         edit_shortcuts = action(
-            tr("&编辑快捷键"),
+            "&" + self.trans.put("编辑快捷键"),
             self.editShortcut,
             "edit_shortcuts",
             "Shortcut",
