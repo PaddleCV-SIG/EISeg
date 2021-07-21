@@ -583,7 +583,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.warn(self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
             return False
         modelIdx = MODELS.idx(model.__name__)
-        self.statusbar.showMessage(self.trans.put("正在加载") + model.__name__)  # 这里没显示
+        self.statusbar.showMessage(self.trans.put("正在加载") + " " + model.__name__)  # 这里没显示
         model = model.load_param(param_path)
         if model is not None:
             if self.controller is None:
@@ -609,7 +609,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.controller.set_image(self.image)
             else:
                 self.controller.reset_predictor(model)
-            self.statusbar.showMessage(osp.basename(param_path) + self.trans.put("模型加载完成"), 20000)
+            self.statusbar.showMessage(osp.basename(param_path) + " " + \
+                                       self.trans.put("模型加载完成"), 20000)
             self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
@@ -1024,7 +1025,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             mask_pil.putpalette(mask_map)
             mask_pil.save(savePath)
         else:
-            cv2.imwrite(savePath, self.controller.result_mask)
+            # cv2.imwrite(savePath, self.controller.result_mask)
+            # 保存路径带有中文
+            cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
         # 是否保存json
@@ -1046,10 +1049,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             savePath = savePath[: -len("png")] + "json"
             open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
         self.setClean()
-
-        # 保存路径带有中文
-        # cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
-        self.statusbar.showMessage(self.trans.put("标签成功保存至 ") + savePath)
+        self.statusbar.showMessage(self.trans.put("标签成功保存至") + " " + savePath)
 
     def setClean(self):
         self.isDirty = False
