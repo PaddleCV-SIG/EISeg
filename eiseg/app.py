@@ -546,7 +546,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            "%s - " + self.trans.put("选择模型参数") % __APPNAME__,
+            self.trans.put("选择模型参数") + " - " + __APPNAME__,
             start_path,
             filters,
         )
@@ -632,7 +632,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = self.trans.put("标签配置文件") + " (*.txt)"
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            "%s - " + self.trans.put("选择标签配置文件路径") % __APPNAME__,
+            self.trans.put("选择标签配置文件路径") + " - " + __APPNAME__,
             ".",
             filters,
         )
@@ -655,7 +655,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
         dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
         savePath, _ = dlg.getSaveFileName(
-            self, "%s - " + self.trans.put("选择保存标签配置文件路径") % __APPNAME__, ".", filters
+            self, self.trans.put("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
         )
         self.labelList.saveLabel(savePath)
         print("Save label list:", self.labelList.list, savePath)
@@ -806,7 +806,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filters = "Image & Label files (%s)" % " ".join(formats)
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
-            "%s - " + self.trans.put("选择待标注图片") % __APPNAME__,
+            self.trans.put("选择待标注图片") + " - " + __APPNAME__,
             recentPath,
             filters,
         )
@@ -819,7 +819,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def openFolder(self):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            "%s - " + self.trans.put("选择待标注图片文件夹") % __APPNAME__,
+            self.trans.put("选择待标注图片文件夹") + " - " + __APPNAME__,
             "/home/lin/Desktop",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
@@ -1060,7 +1060,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeOutputDir(self):
         outputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            "%s - " + self.trans.put("选择标签保存路径") % __APPNAME__,
+            self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
             "/home/lin/Desktop/output/",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,

@@ -30,7 +30,7 @@ N2宫格标注@N2 Palace grid label
 撤销一次点击@Undo one click
 重做@Redo
 重做一次点击@Redo one click
-保存@preservation
+保存@Save
 保存图像标签@Save image label
 另存为@Save as
 指定标签保存路径@Specify label save path
@@ -65,7 +65,6 @@ JSON保存@Save in JSON
 遥感区@Remote sensing area
 医疗区@Medical district
 中国中文@Chinese
-英文@English
 切换语言，重启生效@Switch language, restart and take effect
 近期文件@Recent documents
 近期模型及参数@Recent models and parameters
@@ -118,5 +117,5 @@ JSON保存@Save in JSON
 标签透明度：@Label transparency:
 点击可视化半径：@Click the visualization radius:
 波段设置@Band setting
-医疗设置@Medical settings
+医疗设置@Medical setting
 添加标签@Add label
