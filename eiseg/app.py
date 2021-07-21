@@ -687,7 +687,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         c = self.maskColormap.get_color()
         table = self.labelListTable
         idx = table.rowCount()
-        print("idx", idx)
         table.insertRow(table.rowCount())
         self.labelList.add(idx + 1, "", c)
         print("append", self.labelList)
@@ -704,7 +703,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
-        print("here")
         self.adjustTableSize()
 
     def adjustTableSize(self):
@@ -1025,12 +1023,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not savePath:  # 参数没传存到哪
             if not saveAs and self.outputDir is not None:
                 # 指定了标签文件夹，而且不是另存为
+                name, ext = osp.splitext(osp.basename(self.imagePath))
+                if not self.origExt:
+                    ext = ".png"
                 savePath = osp.join(
                     # self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
                     # 名字带点问题
                     self.outputDir,
-                    ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
-                    + ".png",
+                    name + ext,
+                    # ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
+                )
+                print(
+                    "save path",
                 )
             else:
                 filters = "Label files (*.png)"

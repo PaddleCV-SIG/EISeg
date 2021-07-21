@@ -68,3 +68,6 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         path = QtGui.QPainterPath()
         path.addRect(QtCore.QRectF(-s, -s, 2 * s, 2 * s))
         return path
+
+    def mouseDoubleClickEvent(self, ev):
+        self.m_annotation_item.removeFocusPoint()
