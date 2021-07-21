@@ -931,8 +931,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.saveLabel()
 
         imagePath = self.filePaths[self.currIdx]
-        for p in self.scene.polygon_items:
+        # print("polygon_items1:", self.scene.polygon_items)
+        # 倒序删除可以完全删除
+        for p in self.scene.polygon_items[::-1]:
             p.remove()
+        # print("polygon_items2:", self.scene.polygon_items)
         self.scene.polygon_items = []
 
         self.loadImage(imagePath)
@@ -1065,8 +1068,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self,
             self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
             "/home/lin/Desktop/output/",
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
+            QtWidgets.QFileDialog.ShowDirsOnly | 
+            QtWidgets.QFileDialog.DontResolveSymlinks,
         )
         if len(outputDir) == 0 or not osp.exists(outputDir):
             return False
