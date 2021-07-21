@@ -54,7 +54,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if self.settings.value("language_state") is None:
             self.settings.setValue("language_state", False)
-        is_trans = strtobool(self.settings.value("language_state"))
+        is_trans = strtobool(self.settings.value("language_state", False))
         self.trans = TransUI(is_trans)
 
         # 初始化界面
@@ -451,11 +451,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ),
             workMenu=(save_color, save_json),
             showMenu=(
-                model_worker, 
-                data_worker, 
-                label_worker, 
-                set_worker, 
-                rs_worker, 
+                model_worker,
+                data_worker,
+                label_worker,
+                set_worker,
+                rs_worker,
                 mi_worker),
             helpMenu=(language, quick_start, about, edit_shortcuts),
             toolBar=(
@@ -538,7 +538,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeParam(self):
         if not self.modelClass:
-            self.warn(self.trans.put("选择模型结构"), 
+            self.warn(self.trans.put("选择模型结构"),
             self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
         formats = ["*.pdparams"]
         filters = "paddle model param files (%s)" % " ".join(formats)
@@ -617,7 +617,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
-            self.warn(self.trans.put("模型和参数不匹配"), 
+            self.warn(self.trans.put("模型和参数不匹配"),
                       self.trans.put("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"))
             self.statusbar.showMessage(self.trans.put("模型和参数不匹配，请重新加载"), 20000)
             self.controller = None  # 清空controller
@@ -653,7 +653,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def saveLabelList(self, auto_save_path=None):
         if len(self.labelList) == 0:
-            self.warn(self.trans.put("没有需要保存的标签"), 
+            self.warn(self.trans.put("没有需要保存的标签"),
                       self.trans.put("请先添加标签之后再进行保存！"))
             return
         if auto_save_path is None:
@@ -859,9 +859,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     image = selec_band(self.rawimg, self.rsRGB)
                 self.update_bandList()
             else:
-                self.warn(self.trans.put("未打开遥感工具"), 
+                self.warn(self.trans.put("未打开遥感工具"),
                           self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感区！"))
-                return 
+                return
         else:
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
@@ -874,7 +874,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 # self.rsShow.currentIndex() == 1) else image
             )
         else:
-            self.warn(self.trans.put("未加载模型"), 
+            self.warn(self.trans.put("未加载模型"),
                       self.trans.put("未加载模型参数，请先加载模型参数！"))
             self.changeParam()
             print("please load model params first!")
@@ -1077,7 +1077,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self,
             self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
             "/home/lin/Desktop/output/",
-            QtWidgets.QFileDialog.ShowDirsOnly | 
+            QtWidgets.QFileDialog.ShowDirsOnly |
             QtWidgets.QFileDialog.DontResolveSymlinks,
         )
         if len(outputDir) == 0 or not osp.exists(outputDir):
