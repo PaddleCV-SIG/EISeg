@@ -12,6 +12,7 @@ test.txt
 output/
 temp*
 temp/
+tool/ts/
 
 # C extensions
 *.so

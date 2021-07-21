@@ -52,8 +52,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        self.settings.setValue("language_state", "False")
-        is_trans = strtobool(self.settings.value("language_state", False))
+        # self.settings.value("language_state", "False")
+        is_trans = strtobool(self.settings.value("language_state", "False"))
         self.trans = TransUI(is_trans)
 
         # 初始化界面
@@ -74,6 +74,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList = LabeleList()
         self.rsRGB = [0, 0, 0]
         self.rawimg = None
+        self.origExt = False
         # worker
         self.workers_show = [True, True, True, True, False, False]
         self.workers = [
@@ -149,12 +150,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 util.addActions(menu, actions)
             return menu
 
+        tr = self.tr
         action = partial(util.newAction, self)
         # shortcuts = self.config["shortcut"]
         self.actions = util.struct()
         start = dir()
         edit_shortcuts = action(
-            "&" + self.trans.put("编辑快捷键"),
+            tr("&编辑快捷键"),
             self.editShortcut,
             "edit_shortcuts",
             "Shortcut",
@@ -1017,25 +1019,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         return False
 
     def saveLabel(self, saveAs=False, savePath=None):
+        # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
             return
+        # 2. 完成正在交互式标注的标签
         self.completeLastMask()
-        if not savePath:  # 参数没传存到哪
+        # 3. 确定保存路径
+        if not savePath:
+            # 3.1 指定了标签文件夹，而且不是另存为：根据标签文件夹和文件名出保存路径
             if not saveAs and self.outputDir is not None:
-                # 指定了标签文件夹，而且不是另存为
                 name, ext = osp.splitext(osp.basename(self.imagePath))
                 if not self.origExt:
                     ext = ".png"
                 savePath = osp.join(
-                    # self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
-                    # 名字带点问题
                     self.outputDir,
                     name + ext,
                     # ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
                 )
-                print(
-                    "save path",
-                )
+                print("save path", savePath)
             else:
                 filters = "Label files (*.png)"
                 dlg = QtWidgets.QFileDialog(
