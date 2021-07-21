@@ -28,7 +28,7 @@ from widget import PolygonAnnotation
 from eiseg import pjpath, __APPNAME__
 import util
 from util.colormap import ColorMask
-from util.label import Labeler
+from util.label import LabeleList
 from util import MODELS
 from util.remotesensing import *
 from util.language import TransUI
@@ -48,12 +48,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
-        # language
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        if self.settings.value("language_state") is None:
-            self.settings.setValue("language_state", False)
+        # if self.settings.value("language_state") is None:
+        self.settings.setValue("language_state", "False")
         is_trans = strtobool(self.settings.value("language_state", False))
         self.trans = TransUI(is_trans)
 
@@ -72,13 +71,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.currentPath = None
         self.isDirty = False
-        self.labelList = Labeler()
+        self.labelList = LabeleList()
         self.rsRGB = [0, 0, 0]
         self.rawimg = None
         # worker
         self.workers_show = [True, True, True, True, False, False]
-        self.workers = [self.ModelDock, self.DataDock, self.LabelDock, \
-                        self.ShowSetDock, self.RSDock, self.MIDock]
+        self.workers = [
+            self.ModelDock,
+            self.DataDock,
+            self.LabelDock,
+            self.ShowSetDock,
+            self.RSDock,
+            self.MIDock,
+        ]
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value("recent_models", [])
         self.recentFiles = self.settings.value("recent_files", [])
@@ -127,7 +132,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
         # self.labelList.readLabel(self.settings.value("label_list_file"))
         self.refreshLabelList()  # 不先刷新就无法创建
-        if self.settings.value("label_list_file") is not None:
+        label_list_file = self.settings.value("label_list_file", None)
+        if label_list_file is not None:
             self.loadLabelList(self.settings.value("label_list_file"))
 
         ## 功能区选择
@@ -406,7 +412,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Language",
             self.trans.put("切换语言，重启生效"),
             checkable=True,
-            checked=bool(strtobool(self.settings.value("language_state")) - 1)
+            checked=bool(strtobool(self.settings.value("language_state")) - 1),
         )
         for name in dir():
             if name not in start:
@@ -456,7 +462,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 label_worker,
                 set_worker,
                 rs_worker,
-                mi_worker),
+                mi_worker,
+            ),
             helpMenu=(language, quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
@@ -538,8 +545,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeParam(self):
         if not self.modelClass:
-            self.warn(self.trans.put("选择模型结构"),
-            self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
+            self.warn(
+                self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！")
+            )
         formats = ["*.pdparams"]
         filters = "paddle model param files (%s)" % " ".join(formats)
         start_path = (
@@ -583,10 +591,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             model = model()
         if not isinstance(model, models.EISegModel):
             print("not a instance")
-            self.warn(self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
+            self.warn(
+                self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！")
+            )
             return False
         modelIdx = MODELS.idx(model.__name__)
-        self.statusbar.showMessage(self.trans.put("正在加载") + " " + model.__name__)  # 这里没显示
+        self.statusbar.showMessage(
+            self.trans.put("正在加载") + " " + model.__name__
+        )  # 这里没显示
         model = model.load_param(param_path)
         if model is not None:
             if self.controller is None:
@@ -612,13 +624,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.controller.set_image(self.image)
             else:
                 self.controller.reset_predictor(model)
-            self.statusbar.showMessage(osp.basename(param_path) + " " + \
-                                       self.trans.put("模型加载完成"), 20000)
+            self.statusbar.showMessage(
+                osp.basename(param_path) + " " + self.trans.put("模型加载完成"), 20000
+            )
             self.comboModelSelect.setCurrentIndex(modelIdx)
             return True
         else:  # 模型和参数不匹配
-            self.warn(self.trans.put("模型和参数不匹配"),
-                      self.trans.put("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"))
+            self.warn(
+                self.trans.put("模型和参数不匹配"),
+                self.trans.put("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"),
+            )
             self.statusbar.showMessage(self.trans.put("模型和参数不匹配，请重新加载"), 20000)
             self.controller = None  # 清空controller
             return False
@@ -632,8 +647,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         param_path = m["param_path"]
         self.loadModelParam(param_path, model)
 
-    def loadLabelList(self, auto_load_path=None):
-        if auto_load_path is None:
+    def loadLabelList(self, file_path=None):
+        if file_path is None:
             filters = self.trans.put("标签配置文件") + " (*.txt)"
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
@@ -641,20 +656,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 ".",
                 filters,
             )
-        else:
-            file_path = auto_load_path
         if not osp.exists(file_path):
             return
         self.labelList.readLabel(file_path)
         self.maskColormap.index = len(self.labelList)  # 颜色表跟上
         print("Loaded label list:", self.labelList.list)
         self.refreshLabelList()
-        # self.settings.setValue("label_list_file", file_path)
+        self.settings.setValue("label_list_file", file_path)
 
     def saveLabelList(self, auto_save_path=None):
         if len(self.labelList) == 0:
-            self.warn(self.trans.put("没有需要保存的标签"),
-                      self.trans.put("请先添加标签之后再进行保存！"))
+            self.warn(self.trans.put("没有需要保存的标签"), self.trans.put("请先添加标签之后再进行保存！"))
             return
         if auto_save_path is None:
             filters = self.trans.put("标签配置文件") + "(*.txt)"
@@ -849,7 +861,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
             return
-        if imghdr.what(path) == 'tiff':
+        if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
                 self.rawimg, geoinfo = open_tif(path)
                 try:
@@ -859,8 +871,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     image = selec_band(self.rawimg, self.rsRGB)
                 self.update_bandList()
             else:
-                self.warn(self.trans.put("未打开遥感工具"),
-                          self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感区！"))
+                self.warn(
+                    self.trans.put("未打开遥感工具"),
+                    self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感区！"),
+                )
                 return
         else:
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
@@ -874,8 +888,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 # self.rsShow.currentIndex() == 1) else image
             )
         else:
-            self.warn(self.trans.put("未加载模型"),
-                      self.trans.put("未加载模型参数，请先加载模型参数！"))
+            self.warn(self.trans.put("未加载模型"), self.trans.put("未加载模型参数，请先加载模型参数！"))
             self.changeParam()
             print("please load model params first!")
             return 0
@@ -912,7 +925,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             color = label["color"]
             labelIdx = label["labelIdx"]
             points = label["points"]
-            poly = PolygonAnnotation(labelIdx, color, color, self.opacity)  # , self.scene)
+            poly = PolygonAnnotation(
+                labelIdx, color, color, self.opacity
+            )  # , self.scene)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
@@ -922,7 +937,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currIdx += delta
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
-            self.statusbar.showMessage(self.trans.put(f"没有{'后一张'if delta==1 else '前一张'}图片"))
+            self.statusbar.showMessage(
+                self.trans.put(f"没有{'后一张'if delta==1 else '前一张'}图片")
+            )
             return
         self.completeLastMask()
         if self.isDirty:
@@ -1011,12 +1028,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     # self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
                     # 名字带点问题
                     self.outputDir,
-                    ".".join((os.path.basename(self.imagePath).split('.')[0:-1])) + ".png"
+                    ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
+                    + ".png",
                 )
             else:
                 filters = "Label files (*.png)"
                 dlg = QtWidgets.QFileDialog(
-                    self, self.trans.put("保存标签文件路径"), osp.dirname(self.imagePath), filters
+                    self,
+                    self.trans.put("保存标签文件路径"),
+                    osp.dirname(self.imagePath),
+                    filters,
                 )
                 dlg.setDefaultSuffix("png")
                 dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
@@ -1025,7 +1046,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 savePath, _ = dlg.getSaveFileName(
                     self,
                     self.trans.put("选择标签文件保存路径"),
-                    ".".join((os.path.basename(self.imagePath).split('.')[0:-1])) + ".png",
+                    ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
+                    + ".png",
                 )
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
@@ -1042,7 +1064,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         else:
             # cv2.imwrite(savePath, self.controller.result_mask)
             # 保存路径带有中文
-            cv2.imencode('.png', self.controller.result_mask)[1].tofile(savePath)
+            cv2.imencode(".png", self.controller.result_mask)[1].tofile(savePath)
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
         # 是否保存json
@@ -1077,8 +1099,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self,
             self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
             "/home/lin/Desktop/output/",
-            QtWidgets.QFileDialog.ShowDirsOnly |
-            QtWidgets.QFileDialog.DontResolveSymlinks,
+            QtWidgets.QFileDialog.ShowDirsOnly
+            | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
         if len(outputDir) == 0 or not osp.exists(outputDir):
             return False
@@ -1233,7 +1255,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
         self.image = selec_band(self.rawimg, self.rsRGB)
-        image = self.image  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
+        image = (
+            self.image
+        )  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
         self.controller.image = image
         self._update_image()
 
