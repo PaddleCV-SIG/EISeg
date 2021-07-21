@@ -48,10 +48,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
+        # 多语言
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        # if self.settings.value("language_state") is None:
         self.settings.setValue("language_state", "False")
         is_trans = strtobool(self.settings.value("language_state", False))
         self.trans = TransUI(is_trans)
@@ -93,6 +93,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.recentFiles:
             self.recentFiles = []
         self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
+
         # 初始化action
         self.initActions()
 
@@ -103,9 +104,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadLayout()
 
         # 窗口
-        # self.help_dialog = QtWidgets.QDialog()
-        # help_ui = Ui_Help()
-        # help_ui.setupUi(self.help_dialog)
+        ## 快捷键
         self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
 
         ## 画布部分
@@ -130,8 +129,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
-        # self.labelList.readLabel(self.settings.value("label_list_file"))
-        self.refreshLabelList()  # 不先刷新就无法创建
+        # self.refreshLabelList()
         label_list_file = self.settings.value("label_list_file", None)
         if label_list_file is not None:
             self.loadLabelList(self.settings.value("label_list_file"))
@@ -688,8 +686,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def addLabel(self):
         c = self.maskColormap.get_color()
         table = self.labelListTable
+        idx = table.rowCount()
+        print("idx", idx)
         table.insertRow(table.rowCount())
-        idx = table.rowCount() - 1
         self.labelList.add(idx + 1, "", c)
         print("append", self.labelList)
         numberItem = QTableWidgetItem(str(idx + 1))
@@ -705,6 +704,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
+        print("here")
         self.adjustTableSize()
 
     def adjustTableSize(self):
@@ -719,6 +719,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             2, QtWidgets.QHeaderView.Fixed
         )
         self.labelListTable.setColumnWidth(2, 50)
+        print("end")
 
     def clearLabelList(self):
         self.labelList.clear()

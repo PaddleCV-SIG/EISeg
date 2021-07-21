@@ -88,7 +88,7 @@ def creat_dock(parent, name, text, widget):
     sizePolicy.setHeightForWidth(dock.sizePolicy().hasHeightForWidth())
     dock.setSizePolicy(sizePolicy)
     dock.setMinimumWidth(230)
-    # TODO: 研究给windows title一个和背景稍微有差别的颜色
+    # TODO: 研究给windows title一个和背景稍微有差别的颜色，让用户对几个panel的范围有明确的感觉
     dock.setWindowTitle(text)
     dock.setWidget(widget)
     return dock
