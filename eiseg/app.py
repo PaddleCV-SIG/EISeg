@@ -195,7 +195,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         change_output_dir = action(
             "&" + self.trans.put("改变标签保存路径"),
-            self.changeOutputDir,
+            partial(self.changeOutputDir, None),
             "change_output_dir",
             "ChangeLabelPath",
             self.trans.put("改变标签保存的文件夹路径"),
@@ -737,7 +737,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelList.clear()
         if self.controller:
             self.controller.label_list = []
-            self.controller.curr_label_number = None
+            self.controller.curr_label_number = 0
         self.labelListTable.clear()
         self.labelListTable.setRowCount(0)
 
@@ -860,6 +860,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.inputDir) == 0:
             return
         filePaths = os.listdir(self.inputDir)
+        # 不设置默认保存到当前文件夹下
+        opd = osp.join(self.inputDir, "label")
+        self.outputDir = opd
         exts = QtGui.QImageReader.supportedImageFormats()
         filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
@@ -868,6 +871,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.filePaths.append(p)
                 self.listFiles.addItem(p.replace("\\", "/"))
         # self.listFiles.addItems(filePaths)
+        # 有已经标注的就加载
+        if osp.exists(self.outputDir):
+            self.changeOutputDir(self.outputDir)
         self.currIdx = 0
         self.turnImg(0)
 
@@ -1120,14 +1126,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setDirty(self):
         self.isDirty = True
 
-    def changeOutputDir(self):
-        outputDir = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
-            "/home/lin/Desktop/output/",
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
+    def changeOutputDir(self, dir=None):
+        if dir is None:
+            outputDir = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                self.trans.put("选择标签保存路径") + " - " + __APPNAME__,
+                "/home/lin/Desktop/output/",
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks,
+            )
+        else:
+            outputDir = dir
         if len(outputDir) == 0 or not osp.exists(outputDir):
             return False
         labelPaths = os.listdir(outputDir)
@@ -1139,6 +1148,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("labelpaths:", self.labelPaths)
         # 加载对应的标签列表
         lab_auto_save = osp.join(self.outputDir, "autosave_label.txt")
+        if osp.exists(lab_auto_save) == False:
+            lab_auto_save = osp.join(self.outputDir, "label/autosave_label.txt")
         print("lab_auto_save:", lab_auto_save)
         if osp.exists(lab_auto_save):
             try:
@@ -1254,7 +1265,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def toggleAutoSave(self, save):
         if save and not self.outputDir:
-            self.changeOutputDir()
+            self.changeOutputDir(None)
         if save and not self.outputDir:
             save = False
         self.actions.auto_save.setChecked(save)
