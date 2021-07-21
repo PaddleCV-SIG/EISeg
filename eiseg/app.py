@@ -1,3 +1,4 @@
+from genericpath import exists
 import os
 import os.path as osp
 from functools import partial
@@ -124,8 +125,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
-        self.labelList.readLabel(self.settings.value("label_list_file"))
-        self.refreshLabelList()
+        # self.labelList.readLabel(self.settings.value("label_list_file"))
+        self.refreshLabelList()  # 不先刷新就无法创建
+        if self.settings.value("label_list_file") is not None:
+            self.loadLabelList(self.settings.value("label_list_file"))
 
         ## 功能区选择
         # self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
@@ -322,14 +325,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         save_label = action(
             "&" + self.trans.put("保存标签列表"),
-            self.saveLabelList,
+            partial(self.saveLabelList, None),
             "save_label",
             "ExportLabel",
             self.trans.put("将标签保存成标签配置文件"),
         )
         load_label = action(
             "&" + self.trans.put("加载标签列表"),
-            self.loadLabelList,
+            partial(self.loadLabelList, None),
             "load_label",
             "ImportLabel",
             self.trans.put("从标签配置文件中加载标签"),
@@ -629,38 +632,46 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         param_path = m["param_path"]
         self.loadModelParam(param_path, model)
 
-    def loadLabelList(self):
-        filters = self.trans.put("标签配置文件") + " (*.txt)"
-        file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            self.trans.put("选择标签配置文件路径") + " - " + __APPNAME__,
-            ".",
-            filters,
-        )
+    def loadLabelList(self, auto_load_path=None):
+        if auto_load_path is None:
+            filters = self.trans.put("标签配置文件") + " (*.txt)"
+            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                self.trans.put("选择标签配置文件路径") + " - " + __APPNAME__,
+                ".",
+                filters,
+            )
+        else:
+            file_path = auto_load_path
         if not osp.exists(file_path):
             return
         self.labelList.readLabel(file_path)
+        self.maskColormap.index = len(self.labelList)  # 颜色表跟上
         print("Loaded label list:", self.labelList.list)
         self.refreshLabelList()
-        self.settings.setValue("label_list_file", file_path)
+        # self.settings.setValue("label_list_file", file_path)
 
-    def saveLabelList(self):
+    def saveLabelList(self, auto_save_path=None):
         if len(self.labelList) == 0:
             self.warn(self.trans.put("没有需要保存的标签"), 
-                      self.trans.put("请先添加标签之后再进行保存"))
+                      self.trans.put("请先添加标签之后再进行保存！"))
             return
-        filters = self.trans.put("标签配置文件") + "(*.txt)"
-        dlg = QtWidgets.QFileDialog(self, self.trans.put("保存标签配置文件"), ".", filters)
-        dlg.setDefaultSuffix("txt")
-        dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
-        dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
-        dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
-        savePath, _ = dlg.getSaveFileName(
-            self, self.trans.put("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
-        )
+        if auto_save_path is None:
+            filters = self.trans.put("标签配置文件") + "(*.txt)"
+            dlg = QtWidgets.QFileDialog(self, self.trans.put("保存标签配置文件"), ".", filters)
+            dlg.setDefaultSuffix("txt")
+            dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+            dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
+            dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
+            savePath, _ = dlg.getSaveFileName(
+                self, self.trans.put("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
+            )
+        else:
+            savePath = auto_save_path
         self.labelList.saveLabel(savePath)
         print("Save label list:", self.labelList.list, savePath)
-        self.settings.setValue("label_list_file", savePath)
+        if auto_save_path is None:
+            self.settings.setValue("label_list_file", savePath)
 
     def addLabel(self):
         c = self.maskColormap.get_color()
@@ -672,20 +683,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 0, numberItem)
-
         table.setItem(idx, 1, QTableWidgetItem())
-
         colorItem = QTableWidgetItem()
         colorItem.setBackground(QtGui.QColor(c[0], c[1], c[2]))
         colorItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 2, colorItem)
-
         delItem = QTableWidgetItem()
         delItem.setIcon(util.newIcon("Clear"))
         delItem.setTextAlignment(Qt.AlignCenter)
         delItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 3, delItem)
-
         self.adjustTableSize()
 
     def adjustTableSize(self):
@@ -968,6 +975,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(points) < 3:
                     continue
                 poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
+                # TODO：编号问题在这里
+                # 每次完成编辑后多边形的编号都变了
                 poly.labelIndex = self.currLabelIdx
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
@@ -1079,7 +1088,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         labelPaths = [osp.join(outputDir, n) for n in labelPaths]
         self.outputDir = outputDir
         self.labelPaths = labelPaths
-        print("labelpaths", self.labelPaths)
+        print("labelpaths:", self.labelPaths)
+        # 加载对应的标签列表
+        lab_auto_save = osp.join(self.outputDir, "autosave_label.txt")
+        print("lab_auto_save:", lab_auto_save)
+        if osp.exists(lab_auto_save):
+            try:
+                self.loadLabelList(lab_auto_save)
+            except:
+                pass
         return True
 
     def maskOpacityChanged(self):
@@ -1300,5 +1317,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def closeEvent(self, event):
         # 保存界面
         self.settings.setValue("layout_status", QByteArray(self.saveState()))
+        # 如果设置了保存路径，把标签也保存下
+        if self.outputDir is not None:
+            self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))
+            print("autosave label finished!")
         # 关闭主窗体退出程序，子窗体也关闭
         sys.exit(0)
