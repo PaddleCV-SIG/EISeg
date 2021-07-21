@@ -996,7 +996,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not saveAs and self.outputDir is not None:
                 # 指定了标签文件夹，而且不是另存为
                 savePath = osp.join(
-                    self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
+                    # self.outputDir, osp.basename(self.imagePath).split(".")[0] + ".png"
+                    # 名字带点问题
+                    self.outputDir,
+                    ".".join((os.path.basename(self.imagePath).split('.')[0:-1])) + ".png"
                 )
             else:
                 filters = "Label files (*.png)"
@@ -1010,7 +1013,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 savePath, _ = dlg.getSaveFileName(
                     self,
                     self.trans.put("选择标签文件保存路径"),
-                    osp.basename(self.imagePath).split(".")[0] + ".png",
+                    ".".join((os.path.basename(self.imagePath).split('.')[0:-1])) + ".png",
                 )
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
