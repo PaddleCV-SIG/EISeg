@@ -156,12 +156,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions = util.struct()
         start = dir()
         edit_shortcuts = action(
-            tr("&编辑快捷键"),
+            self.translate("APP_EISeg", "&编辑快捷键"),
             self.editShortcut,
             "edit_shortcuts",
             "Shortcut",
             self.trans.put("编辑软件快捷键"),
         )
+        print(self.tr("&编辑快捷键"))
         turn_prev = action(
             "&" + self.trans.put("上一张"),
             partial(self.turnImg, -1),
