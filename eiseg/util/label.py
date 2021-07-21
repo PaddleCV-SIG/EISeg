@@ -2,21 +2,6 @@ import os
 import os.path as osp
 
 
-# def _saveLabel(labelList, path):
-#     print("save label", labelList, path)
-#     print(osp.exists(osp.dirname(path)), osp.dirname(path))
-#     if not path or len(path) == 0 or not osp.exists(osp.dirname(path)):
-#         print("save label error")
-#         return
-#     with open(path, "w", encoding="utf-8") as f:
-#         for ml in labelList:
-#             print(ml.idx, end=" ", file=f)
-#             print(ml.name, end=" ", file=f)
-#             for idx in range(3):
-#                 print(ml.color[idx], end=" ", file=f)
-#             print(file=f)
-
-
 class Label:
     def __init__(self, idx=None, name=None, color=None):
         self.idx = idx
@@ -66,7 +51,6 @@ class LabeleList(object):
             label = Label(self.toint(lab[0]), str(lab[1]), self.toint(lab[2:]))
             labelList.append(label)
         self.list = labelList
-        # self.list = _readLabel(path)
 
     def saveLabel(self, path):
         print("save label", self.list, path)
@@ -85,10 +69,7 @@ class LabeleList(object):
         # _saveLabel(self.list, path)
 
     def __repr__(self):
-        s = ""
-        for lab in self.list:
-            s += str(lab) + ","
-        return s
+        return str(self.list)
 
     def __getitem__(self, index):
         return self.list[index]
