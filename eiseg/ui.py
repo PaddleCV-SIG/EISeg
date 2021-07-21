@@ -88,12 +88,14 @@ class Ui_EISeg(object):
         ModelRegion.addWidget(self.comboModelSelect)
         # 网络参数
         self.btnParamsSelect = p_create_button(
-            "btnParamsLoad", transer.put("加载网络参数"), \
-            osp.join(pjpath, "resource/Model.png"), "Ctrl+D"
+            "btnParamsLoad",
+            transer.put("加载网络参数"),
+            osp.join(pjpath, "resource/Model.png"),
+            "Ctrl+D",
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         horizontalLayout.addLayout(ModelRegion)
-        self.ModelDock = p_create_dock("ModelDock", transer.put("模型区"), widget)
+        self.ModelDock = p_create_dock("ModelDock", transer.put("模型选择"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ModelDock)
         # 数据列表
         # TODO: 数据列表加一个搜索功能
@@ -108,11 +110,14 @@ class Ui_EISeg(object):
         ListRegion.addWidget(self.listFiles)
         # 保存
         self.btnSave = p_create_button(
-            "btnSave", transer.put("保存"), osp.join(pjpath, "resource/Save.png"), "Ctrl+S"
+            "btnSave",
+            transer.put("保存"),
+            osp.join(pjpath, "resource/Save.png"),
+            "Ctrl+S",
         )
         ListRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ListRegion)
-        self.DataDock = p_create_dock("DataDock", transer.put("数据区"), widget)
+        self.DataDock = p_create_dock("DataDock", transer.put("数据列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DataDock)
         # 标签列表
         widget = QtWidgets.QWidget()
@@ -137,7 +142,7 @@ class Ui_EISeg(object):
         )
         LabelRegion.addWidget(self.btnAddClass)
         horizontalLayout.addLayout(LabelRegion)
-        self.LabelDock = p_create_dock("LabelDock", transer.put("标签区"), widget)
+        self.LabelDock = p_create_dock("LabelDock", transer.put("标签列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.LabelDock)
         ## 滑块设置
         # 分割阈值
@@ -164,7 +169,7 @@ class Ui_EISeg(object):
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
         horizontalLayout.addLayout(ShowSetRegion)
-        self.ShowSetDock = p_create_dock("ShowSetDock", transer.put("设置区"), widget)
+        self.ShowSetDock = p_create_dock("ShowSetDock", transer.put("分割设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
         ## 专业功能区工作区
         widget = QtWidgets.QWidget()

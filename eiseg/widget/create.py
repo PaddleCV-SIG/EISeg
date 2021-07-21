@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDockWidget
+from qtpy.QtWidgets import QDockWidget
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
@@ -11,6 +11,7 @@ def create_text(parent, text_name=None, text_text=None):
     if text_text is not None:
         text.setText(text_text)
     return text
+
 
 ## 创建按钮
 def create_button(parent, btn_name, btn_text, ico_path=None, curt=None):
@@ -32,6 +33,7 @@ def create_button(parent, btn_name, btn_text, ico_path=None, curt=None):
     if curt is not None:
         btn.setShortcut(curt)
     return btn
+
 
 ## 创建滑块区域
 def create_slider(
@@ -71,18 +73,13 @@ def create_slider(
     sld.textLab = labShow
     return sld, Region
 
+
 ## 创建dock
 def creat_dock(parent, name, text, widget):
     dock = QDockWidget(parent)
     dock.setObjectName(name)
-    dock.setAllowedAreas(
-        Qt.RightDockWidgetArea | 
-        Qt.LeftDockWidgetArea
-    )
-    dock.setFeatures(
-        QDockWidget.DockWidgetMovable | 
-        QDockWidget.DockWidgetFloatable
-    )
+    dock.setAllowedAreas(Qt.RightDockWidgetArea | Qt.LeftDockWidgetArea)
+    dock.setFeatures(QDockWidget.AllDockWidgetFeatures)
     sizePolicy = QtWidgets.QSizePolicy(
         QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
     )
@@ -90,7 +87,8 @@ def creat_dock(parent, name, text, widget):
     sizePolicy.setVerticalStretch(0)
     sizePolicy.setHeightForWidth(dock.sizePolicy().hasHeightForWidth())
     dock.setSizePolicy(sizePolicy)
-    dock.setMinimumWidth(280)
+    dock.setMinimumWidth(230)
+    # TODO: 研究给windows title一个和背景稍微有差别的颜色
     dock.setWindowTitle(text)
     dock.setWidget(widget)
     return dock
