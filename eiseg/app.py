@@ -309,6 +309,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.trans.put("保存为伪彩色图像"),
             checkable=True,
         )
+        save_pseudo.setChecked(self.save_status["pseudo_color"])
         save_grayscale = action(
             "&" + self.trans.put("灰度保存"),
             partial(self.toggleSave, "gray_scale"),
@@ -317,6 +318,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.trans.put("保存为灰度图像，像素的灰度为对应类型的标签"),
             checkable=True,
         )
+        save_grayscale.setChecked(self.save_status["gray_scale"])
         save_json = action(
             "&" + self.trans.put("JSON保存"),
             partial(self.toggleSave, "json"),
@@ -324,8 +326,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "SaveJson",
             self.trans.put("保存为JSON格式"),
             checkable=True,
-            checked=True,
         )
+        save_json.setChecked(self.save_status["json"])
         close = action(
             "&" + self.trans.put("关闭"),
             self.toBeImplemented,
@@ -853,7 +855,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             self.trans.put("选择待标注图片文件夹") + " - " + __APPNAME__,
-            "/home/lin/Desktop",
+            # DEBUG:
+            "/home/lin/Desktop/dzq",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
@@ -863,6 +866,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 不设置默认保存到当前文件夹下
         opd = osp.join(self.inputDir, "label")
         self.outputDir = opd
+        if not osp.exists(opd):
+            os.makedirs(opd)
         exts = QtGui.QImageReader.supportedImageFormats()
         filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
@@ -870,9 +875,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if p not in self.filePaths:
                 self.filePaths.append(p)
                 self.listFiles.addItem(p.replace("\\", "/"))
-        # self.listFiles.addItems(filePaths)
         # 有已经标注的就加载
-        if osp.exists(self.outputDir):
+        if self.outputDir is not None and osp.exists(self.outputDir):
             self.changeOutputDir(self.outputDir)
         self.currIdx = 0
         self.turnImg(0)
@@ -1078,6 +1082,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     osp.splitext(osp.basename(self.imagePath))[0] + ".png",
                 )
         print("save path", savePath)
+        # if not self.outputDir:
+        #     self.outputDir = osp.dirname(savePath)
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
 
@@ -1094,13 +1100,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             mask_pil.save(pseudoPath)
 
         # 4.2 保存灰度图
+        ext = osp.splitext(savePath)[1]
         if self.save_status["gray_scale"]:
-            cv2.imencode(".png", self.controller.result_mask)[1].tofile(savePath)
+            cv2.imencode(ext, self.controller.result_mask)[1].tofile(savePath)
 
-        if savePath not in self.labelPaths:
-            self.labelPaths.append(savePath)
-        # 是否保存json
-        if self.save_status[1]:
+        # 4.3 保存json
+        if self.save_status["json"]:
             polygons = self.scene.polygon_items
             labels = []
             for polygon in polygons:
@@ -1117,8 +1122,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 labels.append(label)
             savePath = savePath[: -len("png")] + "json"
             open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
+
+        if savePath not in self.labelPaths:
+            self.labelPaths.append(savePath)
+
         self.setClean()
-        self.statusbar.showMessage(self.trans.put("标签成功保存至") + " " + savePath)
+        self.statusbar.showMessage(self.trans.put("标签成功保存至 ") + savePath, 5000)
 
     def setClean(self):
         self.isDirty = False
