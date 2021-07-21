@@ -124,8 +124,6 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         LabelRegion = QtWidgets.QVBoxLayout()
         LabelRegion.setObjectName("LabelRegion")
-        # labelListLab = self.create_text(CentralWidget, "labelListLab", "标签列表")
-        # LabelRegion.addWidget(labelListLab)
         self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 铺满
@@ -136,6 +134,10 @@ class Ui_EISeg(object):
         self.labelListTable.setColumnWidth(0, 10)
         # self.labelListTable.setMinimumWidth()
         self.labelListTable.setObjectName("labelListTable")
+        self.labelListTable.clearContents()
+        self.labelListTable.setRowCount(0)
+        self.labelListTable.setColumnCount(4)
+
         LabelRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button(
             "btnAddClass", transer.put("添加标签"), osp.join(pjpath, "resource/Label.png")

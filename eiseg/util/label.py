@@ -63,7 +63,7 @@ class LabeleList(object):
             if len(lab) != 2 and len(lab) != 5:
                 print(f"{lan} 标签不合法")
                 continue
-            label = Label(self.toint(lab[0]), str(lab[1]), _toint(lab[2:]))
+            label = Label(self.toint(lab[0]), str(lab[1]), self.toint(lab[2:]))
             labelList.append(label)
         self.list = labelList
         # self.list = _readLabel(path)
@@ -88,6 +88,7 @@ class LabeleList(object):
         s = ""
         for lab in self.list:
             s += str(lab) + ","
+        return s
 
     def __getitem__(self, index):
         return self.list[index]
