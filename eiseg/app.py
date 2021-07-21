@@ -60,7 +60,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # app变量
         self.status = self.IDILE
-        self.save_status = [False, True]  # 默认不保存伪彩色，保存JSON
+        self.save_status = {
+            "gray_scale": True,
+            "pseudo_color": False,
+            "json": True,
+        }  # 是否保存这几个格式
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -297,17 +301,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.trans.put("保留最大的连通块"),
             checkable=True,
         )
-        save_color = action(
+        save_pseudo = action(
             "&" + self.trans.put("伪彩色保存"),
-            partial(self.changeSave, 0),
-            "save_color",
+            partial(self.toggleSave, "pseudo_color"),
+            "save_pseudo",
             "SavePseudoColor",
             self.trans.put("保存为伪彩色图像"),
             checkable=True,
         )
+        save_grayscale = action(
+            "&" + self.trans.put("灰度保存"),
+            partial(self.toggleSave, "gray_scale"),
+            "save_pseudo",  # TODO: 换一个logo
+            "SaveGrayScale",
+            self.trans.put("保存为灰度图像，像素的灰度为对应类型的标签"),
+            checkable=True,
+        )
         save_json = action(
             "&" + self.trans.put("JSON保存"),
-            partial(self.changeSave, 1),
+            partial(self.toggleSave, "json"),
             "save_json",
             "SaveJson",
             self.trans.put("保存为JSON格式"),
@@ -454,7 +466,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
-            workMenu=(save_color, save_json),
+            workMenu=(save_pseudo, save_grayscale, save_json),
             showMenu=(
                 model_worker,
                 data_worker,
@@ -472,7 +484,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 turn_prev,
                 turn_next,
                 None,
-                save_color,
+                save_pseudo,
+                save_grayscale,
                 save_json,
                 None,
                 largest_component,
@@ -1024,20 +1037,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2. 完成正在交互式标注的标签
         self.completeLastMask()
         # 3. 确定保存路径
+        # 3.1 如果参数指定了保存路径直接存到savePath
         if not savePath:
-            # 3.1 指定了标签文件夹，而且不是另存为：根据标签文件夹和文件名出保存路径
             if not saveAs and self.outputDir is not None:
+                # 3.2 指定了标签文件夹，而且不是另存为：根据标签文件夹和文件名出保存路径
                 name, ext = osp.splitext(osp.basename(self.imagePath))
                 if not self.origExt:
                     ext = ".png"
                 savePath = osp.join(
                     self.outputDir,
                     name + ext,
-                    # ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
                 )
-                print("save path", savePath)
             else:
-                filters = "Label files (*.png)"
+                # filters = "Label files (*.png)"
+                # 3.3 没有指定标签存到哪，或者是另存为：弹框让用户选
+                formats = [
+                    "*.{}".format(fmt.data().decode())
+                    for fmt in QtGui.QImageReader.supportedImageFormats()
+                ]
+                filters = "Label file (%s)" % " ".join(formats)
                 dlg = QtWidgets.QFileDialog(
                     self,
                     self.trans.put("保存标签文件路径"),
@@ -1051,25 +1069,28 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 savePath, _ = dlg.getSaveFileName(
                     self,
                     self.trans.put("选择标签文件保存路径"),
-                    ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
-                    + ".png",
+                    osp.splitext(osp.basename(self.imagePath))[0] + ".png",
                 )
+        print("save path", savePath)
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
-        # 是否保存伪彩色
-        if self.save_status[0]:
-            # 保存带有调色板的
-            # TODO：关于linux保存bug还需要进一步检测修改
+
+        # 4.1 保存伪彩色
+        if self.save_status["pseudo_color"]:
             mask_pil = Image.fromarray(self.controller.result_mask, "P")
             mask_map = [0, 0, 0]
             for lb in self.labelList:
                 mask_map += lb.color
             mask_pil.putpalette(mask_map)
-            mask_pil.save(savePath)
-        else:
-            # cv2.imwrite(savePath, self.controller.result_mask)
-            # 保存路径带有中文
+            pseudoPath, ext = osp.splitext(savePath)
+            pseudoPath = pseudoPath + "_pseudo" + ext
+            print("pseudoPath", pseudoPath)
+            mask_pil.save(pseudoPath)
+
+        # 4.2 保存灰度图
+        if self.save_status["gray_scale"]:
             cv2.imencode(".png", self.controller.result_mask)[1].tofile(savePath)
+
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
         # 是否保存json
@@ -1239,8 +1260,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions.auto_save.setChecked(save)
         self.settings.setValue("auto_save", save)
 
-    def changeSave(self, index):
-        self.save_status[index] = bool(self.save_status[index] - 1)
+    def toggleSave(self, type):
+        self.save_status[type] = not self.save_status[type]
 
     def changeWorkerShow(self, index):
         # 检测遥感所需的gdal环境
