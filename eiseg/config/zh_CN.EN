@@ -58,10 +58,10 @@ JSON保存@Save in JSON
 清空所有的标签@Clear all labels
 清除标注记录@Clear label record
 清除近期标注记录@Clear recent notes
-模型区@Model area
-数据区@Data area
-标签区@Label area
-设置区@Setting area
+数据列表@Data list
+模型选择@Model selection
+标签列表@Tag list
+分割设置@Split settings
 遥感区@Remote sensing area
 医疗区@Medical district
 中国中文@Chinese
