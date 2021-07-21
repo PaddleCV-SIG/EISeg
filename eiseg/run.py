@@ -2,8 +2,8 @@ import sys
 
 from qtpy.QtWidgets import QApplication  # 导入PyQt相关模块
 from qtpy import QtCore
-
-# from qtpy.QtCore import QtCoreApplication
+from eiseg import pjpath
+import os.path as osp
 
 
 def main():
