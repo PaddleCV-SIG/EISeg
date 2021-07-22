@@ -147,6 +147,7 @@ out/
 eiseg/requirements_with_opt.txt
 
 # test
+test/
 test_output/
 *.npy
 

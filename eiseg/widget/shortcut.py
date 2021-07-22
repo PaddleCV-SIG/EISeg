@@ -35,9 +35,10 @@ class RecordShortcutWindow(QKeySequenceEdit):
 
 
 class ShortcutWindow(QWidget):
-    def __init__(self, actions, pjpath):
+    def __init__(self, actions, pjpath, trans):
         super().__init__()
-        self.setWindowTitle("编辑快捷键")
+        self.trans = trans
+        self.setWindowTitle(trans.put("编辑快捷键"))
         self.setWindowIcon(QIcon(osp.join(pjpath, "resource/Shortcut.png")))
         # self.setFixedSize(self.width(), self.height()); 
         self.actions = actions
@@ -53,7 +54,7 @@ class ShortcutWindow(QWidget):
             grid.addWidget(QLabel(action.iconText()[1:]), idx // 2, idx % 2 * 2)
             shortcut = action.shortcut().toString()
             if len(shortcut) == 0:
-                shortcut = "无"
+                shortcut = self.trans.put("无")
             button = QPushButton(shortcut)
             button.setFixedWidth(150)
             button.setFixedHeight(30)
@@ -69,7 +70,7 @@ class ShortcutWindow(QWidget):
         for idx, action in enumerate(actions):
             shortcut = action.shortcut().toString()
             if len(shortcut) == 0:
-                shortcut = "无"
+                shortcut = self.trans.put("无")
             self.layout().itemAtPosition(
                 idx // 2,
                 idx % 2 * 2 + 1,
@@ -94,8 +95,12 @@ class ShortcutWindow(QWidget):
                 key = key.toString()
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Warning)
-                msg.setWindowTitle(f"{key}快捷键冲突")
-                msg.setText(f"{key}快捷键已被{a.data()}使用，请设置其他快捷键或先修改{a.data()}的快捷键")
+                msg.setWindowTitle(key + " " + self.trans.put("快捷键冲突"))
+                msg.setText(
+                    key + " " +  self.trans.put("快捷键已被") + " " + a.data() + \
+                    " " + self.trans.put("使用，请设置其他快捷键或先修改") + " " + \
+                    a.data() + " " +  self.trans.put("的快捷键")
+                )
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
                 return

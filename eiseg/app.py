@@ -110,7 +110,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 窗口
         ## 快捷键
-        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
+        self.shortcutWindow = ShortcutWindow(self.actions, pjpath, self.trans)
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
@@ -135,9 +135,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
         # self.refreshLabelList()
-        label_list_file = self.settings.value("label_list_file", None)
-        if label_list_file is not None:
-            self.loadLabelList(self.settings.value("label_list_file"))
+        # 不加载了
+        # label_list_file = self.settings.value("label_list_file", None)
+        # if label_list_file is not None:
+        #     self.loadLabelList(self.settings.value("label_list_file"))
 
         ## 功能区选择
         # self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
@@ -280,13 +281,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         # auto_save.setChecked(self.config.get("auto_save", False))
-        del_active_point = action(
-            "&" + self.trans.put("删除点"),
-            self.delActivePoint,
-            "del_active_point",
-            "RemovePolygonPoint",
-            self.trans.put("删除当前选中的点"),
-        )
+        # del_active_point = action(
+        #     "&" + self.trans.put("删除点"),
+        #     self.delActivePoint,
+        #     "del_active_point",
+        #     "RemovePolygonPoint",
+        #     self.trans.put("删除当前选中的点"),
+        # )
         del_active_polygon = action(
             "&" + self.trans.put("删除多边形"),
             self.delActivePolygon,
@@ -314,7 +315,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         save_grayscale = action(
             "&" + self.trans.put("灰度保存"),
             partial(self.toggleSave, "gray_scale"),
-            "save_pseudo",  # TODO: 换一个logo
+            "save_pseudo",
             "SaveGrayScale",
             self.trans.put("保存为灰度图像，像素的灰度为对应类型的标签"),
             checkable=True,
@@ -381,51 +382,51 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.trans.put("清除近期标注记录"),
         )
         model_worker = action(
-            "&" + self.trans.put("模型区"),
+            "&" + self.trans.put("模型选择"),
             partial(self.changeWorkerShow, 0),
             "model_worker",
             "Net",
-            self.trans.put("模型区"),
+            self.trans.put("模型选择"),
             checkable=True,
         )
         data_worker = action(
-            "&" + self.trans.put("数据区"),
+            "&" + self.trans.put("数据列表"),
             partial(self.changeWorkerShow, 1),
             "data_worker",
             "Data",
-            self.trans.put("数据区"),
+            self.trans.put("数据列表"),
             checkable=True,
         )
         label_worker = action(
-            "&" + self.trans.put("标签区"),
+            "&" + self.trans.put("标签列表"),
             partial(self.changeWorkerShow, 2),
             "label_worker",
             "Label",
-            self.trans.put("标签区"),
+            self.trans.put("标签列表"),
             checkable=True,
         )
         set_worker = action(
-            "&" + self.trans.put("设置区"),
+            "&" + self.trans.put("分割设置"),
             partial(self.changeWorkerShow, 3),
             "set_worker",
             "Setting",
-            self.trans.put("设置区"),
+            self.trans.put("分割设置"),
             checkable=True,
         )
         rs_worker = action(
-            "&" + self.trans.put("遥感区"),
+            "&" + self.trans.put("遥感设置"),
             partial(self.changeWorkerShow, 4),
             "remote_worker",
             "RemoteSensing",
-            self.trans.put("遥感区"),
+            self.trans.put("遥感设置"),
             checkable=True,
         )
         mi_worker = action(
-            "&" + self.trans.put("医疗区"),
+            "&" + self.trans.put("医疗设置"),
             partial(self.changeWorkerShow, 5),
             "medical_worker",
             "MedicalImaging",
-            self.trans.put("医疗区"),
+            self.trans.put("医疗设置"),
             checkable=True,
         )
         language = action(
@@ -476,7 +477,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 largest_component,
                 del_active_polygon,
-                del_active_point,
+                # del_active_point,
             ),
             workMenu=(save_pseudo, save_grayscale, save_json),
             showMenu=(
@@ -1423,7 +1424,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 保存界面
         self.settings.setValue("layout_status", QByteArray(self.saveState()))
         # 如果设置了保存路径，把标签也保存下
-        if self.outputDir is not None:
+        if self.outputDir is not None and len(self.labelList) != 0:
             self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))
             print("autosave label finished!")
         # 关闭主窗体退出程序，子窗体也关闭
