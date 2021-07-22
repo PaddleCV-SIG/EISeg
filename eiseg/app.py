@@ -109,7 +109,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 窗口
         ## 快捷键
-        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
+        self.shortcutWindow = ShortcutWindow(self.actions, pjpath, self.trans)
 
         ## 画布部分
         self.scene.clickRequest.connect(self.canvasClick)
