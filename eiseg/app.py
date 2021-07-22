@@ -280,13 +280,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         # auto_save.setChecked(self.config.get("auto_save", False))
-        del_active_point = action(
-            "&" + self.trans.put("删除点"),
-            self.delActivePoint,
-            "del_active_point",
-            "RemovePolygonPoint",
-            self.trans.put("删除当前选中的点"),
-        )
+        # del_active_point = action(
+        #     "&" + self.trans.put("删除点"),
+        #     self.delActivePoint,
+        #     "del_active_point",
+        #     "RemovePolygonPoint",
+        #     self.trans.put("删除当前选中的点"),
+        # )
         del_active_polygon = action(
             "&" + self.trans.put("删除多边形"),
             self.delActivePolygon,
@@ -467,7 +467,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 largest_component,
                 del_active_polygon,
-                del_active_point,
+                # del_active_point,
             ),
             workMenu=(save_pseudo, save_grayscale, save_json),
             showMenu=(
