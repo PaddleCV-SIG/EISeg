@@ -6,6 +6,7 @@ import hashlib
 from urllib import parse
 import http.client
 from tqdm import tqdm
+from collections import defaultdict
 
 
 class BaiduTranslate:
@@ -68,6 +69,15 @@ chinese = list(set(chinese))
 # print(len(chinese))
 # print(chinese)
 
+# 比对（以前有的不重新机翻）
+save_path = "eiseg/config/zh_CN.EN"
+now_words = defaultdict(dict)
+with open(save_path, "r", encoding="utf-8") as f:
+    datas = f.readlines()
+    for data in datas:
+        words = data.strip().split("@")
+        now_words[words[0]] = words[1]
+
 # 翻译
 def firstCharUpper(s):
     return s[:1].upper() + s[1:]
@@ -75,12 +85,14 @@ def firstCharUpper(s):
 translate = []
 baidu_trans = BaiduTranslate('zh','en')
 for cn in tqdm(chinese):
-    en = baidu_trans.BdTrans(cn)
-    tr = cn + "@" + firstCharUpper(en[-1])  # 首字母大写
+    if cn not in now_words.keys():
+        en = baidu_trans.BdTrans(cn)
+        tr = cn + "@" + firstCharUpper(en[-1])  # 首字母大写
+    else:
+        tr = cn + "@" + now_words[cn]
     translate.append(tr)
 
 # 保存翻译内容
-save_path = "eiseg/config/zh_CN.EN"
 with open(save_path, "w", encoding="utf-8") as f:
     for language in translate:
         f.write(language + "\n")
