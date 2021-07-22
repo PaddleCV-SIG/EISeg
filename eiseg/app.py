@@ -974,12 +974,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def turnImg(self, delta):
         self.currIdx += delta
-        if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
-            self.currIdx -= delta
-            self.statusbar.showMessage(
-                self.trans.put(f"没有{'后一张'if delta==1 else '前一张'}图片")
-            )
-            return
         self.completeLastMask()
         if self.isDirty:
             if self.actions.auto_save.isChecked():
@@ -992,6 +986,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 if res == QMessageBox.Yes:
                     self.saveLabel()
+        
+        # 最后一张切换，无法切换也要保存
+        if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
+            self.currIdx -= delta
+            self.statusbar.showMessage(
+                self.trans.put("无法继续翻页了")
+            )
+            return
 
         imagePath = self.filePaths[self.currIdx]
         # print("polygon_items1:", self.scene.polygon_items)
@@ -1143,7 +1145,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.labelPaths.append(savePath)
 
         self.setClean()
-        self.statusbar.showMessage(self.trans.put("标签成功保存至 ") + savePath, 5000)
+        self.statusbar.showMessage(self.trans.put("标签成功保存至") + " " + savePath, 5000)
 
     def setClean(self):
         self.isDirty = False

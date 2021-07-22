@@ -96,6 +96,7 @@ class ShortcutWindow(QWidget):
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Warning)
                 msg.setWindowTitle(key + " " + self.trans.put("快捷键冲突"))
+                # TODO：动态翻译问题待解决
                 msg.setText(
                     key + " " +  self.trans.put("快捷键已被") + " " + a.data() + \
                     " " + self.trans.put("使用，请设置其他快捷键或先修改") + " " + \
