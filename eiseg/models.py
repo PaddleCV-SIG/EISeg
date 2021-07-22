@@ -12,20 +12,30 @@ here = osp.dirname(osp.abspath(__file__))
 class EISegModel:
     @abstractmethod
     def __init__(self):
-        pass
+        try:
+            self.create_model()
+        except AssertionError:
+            ver = paddle.__version__
+            if ver < "2.1.0":
+                raise Exception("模型创建失败。Paddle版本低于2.1.0，请升级paddlepaddle")
+            else:
+                raise Exception("模型创建失败。请参考官网教程检查Paddle安装是否正确，GPU版本请注意是否正确安装显卡驱动。")
 
     def load_param(self, param_path):
         params = self.get_param(param_path)
         if params:
-            self.model.set_dict(params)
-            self.model.eval()
+            try:
+                self.model.set_dict(params)
+                self.model.eval()
+            except:
+                raise Exception("权重设置失败。请参考官网教程检查Paddle安装是否正确，GPU版本请注意是否正确安装显卡驱动。")
             return self.model
         else:
             return None
 
     def get_param(self, param_path):
         if not osp.exists(param_path):
-            return None
+            raise Exception("权重路径不存在。请指定正确的模型路径")
         params = paddle.load(param_path)
         pkeys = params.keys()
         mkeys = self.model.named_parameters()
@@ -33,7 +43,7 @@ class EISegModel:
             return None
         for p, m in zip(pkeys, mkeys):
             if p != m[0]:
-                return None
+                raise Exception("权重和模型不匹配。权重和模型结构不匹配，请确保指定的权重和模型对应")
         return params
 
 
@@ -41,7 +51,7 @@ class EISegModel:
 class HRNet18s_OCR48(EISegModel):
     __name__ = "HRNet18s_OCR48"
 
-    def __init__(self):
+    def create_model(self):
         self.model = HRNetModel(
             width=18,
             ocr_width=48,
@@ -60,7 +70,7 @@ class HRNet18s_OCR48(EISegModel):
 class HRNet18_OCR64(EISegModel):
     __name__ = "HRNet18_OCR64"
 
-    def __init__(self):
+    def create_model(self):
         self.model = HRNetModel(
             width=18,
             ocr_width=64,

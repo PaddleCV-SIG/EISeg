@@ -10,9 +10,9 @@ def main():
     application = QApplication(sys.argv)
     trans = QtCore.QTranslator(application)
     trans.load(osp.join(pjpath, "util/translate/en_US"))
-    print(trans.filePath(), trans.language())
+    # print(trans.filePath(), trans.language())
     # print("app", QtCore.QCoreApplication.translate("APP_EISeg", "&编辑快捷键"))
-    print(trans.isEmpty())
+    # print(trans.isEmpty())
     application.installTranslator(trans)
 
     from app import APP_EISeg  # 导入带槽的界面

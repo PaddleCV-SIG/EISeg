@@ -60,7 +60,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # app变量
         self.status = self.IDILE
-        self.save_status = [False, True]  # 默认不保存伪彩色，保存JSON
+        self.save_status = {
+            "gray_scale": True,
+            "pseudo_color": False,
+            "json": True,
+        }  # 是否保存这几个格式
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.modelClass = MODELS[0]
@@ -298,23 +302,33 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.trans.put("保留最大的连通块"),
             checkable=True,
         )
-        save_color = action(
+        save_pseudo = action(
             "&" + self.trans.put("伪彩色保存"),
-            partial(self.changeSave, 0),
-            "save_color",
+            partial(self.toggleSave, "pseudo_color"),
+            "save_pseudo",
             "SavePseudoColor",
             self.trans.put("保存为伪彩色图像"),
             checkable=True,
         )
+        save_pseudo.setChecked(self.save_status["pseudo_color"])
+        save_grayscale = action(
+            "&" + self.trans.put("灰度保存"),
+            partial(self.toggleSave, "gray_scale"),
+            "save_pseudo",  # TODO: 换一个logo
+            "SaveGrayScale",
+            self.trans.put("保存为灰度图像，像素的灰度为对应类型的标签"),
+            checkable=True,
+        )
+        save_grayscale.setChecked(self.save_status["gray_scale"])
         save_json = action(
             "&" + self.trans.put("JSON保存"),
-            partial(self.changeSave, 1),
+            partial(self.toggleSave, "json"),
             "save_json",
             "SaveJson",
             self.trans.put("保存为JSON格式"),
             checkable=True,
-            checked=True,
         )
+        save_json.setChecked(self.save_status["json"])
         close = action(
             "&" + self.trans.put("关闭"),
             self.toBeImplemented,
@@ -412,7 +426,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Language",
             self.trans.put("切换语言，重启生效"),
             checkable=True,
-            checked=bool(strtobool(self.settings.value("language_state")) - 1),
+            checked=bool(strtobool(self.settings.value("language_state", "False")) - 1),
         )
         for name in dir():
             if name not in start:
@@ -455,7 +469,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del_active_polygon,
                 del_active_point,
             ),
-            workMenu=(save_color, save_json),
+            workMenu=(save_pseudo, save_grayscale, save_json),
             showMenu=(
                 model_worker,
                 data_worker,
@@ -473,7 +487,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 turn_prev,
                 turn_next,
                 None,
-                save_color,
+                save_pseudo,
+                save_grayscale,
                 save_json,
                 None,
                 largest_component,
@@ -580,26 +595,37 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO: 捕获加载模型过程中所有的错误，
         # TODO: 对paddle版本不到2.1.0进行提示
         if model is None:
-            model = self.modelClass()
+            modelClass = self.modelClass
         if isinstance(model, str):
             try:
-                model = MODELS[model]()
+                modelClass = MODELS[model]
             except KeyError:
                 print("Model don't exist")
                 return False
         if inspect.isclass(model):
-            model = model()
+            modelClass = model
+        try:
+            model = modelClass()
+        except Exception as e:
+            self.warnException(e)
+            return False
+
         if not isinstance(model, models.EISegModel):
             print("not a instance")
             self.warn(
-                self.trans.put("选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！")
+                self.trans.put("请选择模型结构"), self.trans.put("尚未选择模型结构，请在右侧下拉菜单进行选择！")
             )
             return False
         modelIdx = MODELS.idx(model.__name__)
         self.statusbar.showMessage(
             self.trans.put("正在加载") + " " + model.__name__
         )  # 这里没显示
-        model = model.load_param(param_path)
+        try:
+            model = model.load_param(param_path)
+        except Exception as e:
+            self.warnException(e)
+            return False
+
         if model is not None:
             if self.controller is None:
                 self.controller = InteractiveController(
@@ -838,10 +864,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.filePaths.append(file_path)
 
     def openFolder(self):
+        # TODO: 要不要在打开文件夹之前清空标签列表
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             self.trans.put("选择待标注图片文件夹") + " - " + __APPNAME__,
-            "/home/lin/Desktop",
+            # DEBUG:
+            "/home/lin/Desktop/dzq",
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
@@ -851,16 +879,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 不设置默认保存到当前文件夹下
         opd = osp.join(self.inputDir, "label")
         self.outputDir = opd
+        if not osp.exists(opd):
+            os.makedirs(opd)
         exts = QtGui.QImageReader.supportedImageFormats()
         filePaths = [n for n in filePaths if n.split(".")[-1] in exts]
+        names = []
+        for name in filePaths:
+            name = osp.splitext(name)[0]
+            if name not in names:
+                names.append(name)
+            else:
+                self.origExt = True
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
         for p in filePaths:
             if p not in self.filePaths:
                 self.filePaths.append(p)
                 self.listFiles.addItem(p.replace("\\", "/"))
-        # self.listFiles.addItems(filePaths)
         # 有已经标注的就加载
-        if osp.exists(self.outputDir):
+        if self.outputDir is not None and osp.exists(self.outputDir):
             self.changeOutputDir(self.outputDir)
         self.currIdx = 0
         self.turnImg(0)
@@ -889,16 +925,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.image = image
         self.currentPath = path
         if self.controller:
-            self.controller.set_image(
-                image
-                # twoPercentLinear(image) if (self.RSDock.isVisible() and \
-                # self.rsShow.currentIndex() == 1) else image
-            )
+            self.controller.set_image(image)
         else:
             self.warn(self.trans.put("未加载模型"), self.trans.put("未加载模型参数，请先加载模型参数！"))
             self.changeParam()
             print("please load model params first!")
-            return 0
+            return
         self.controller.set_label(self.loadLabel(path))
         self.addRecentFile(path)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
@@ -924,7 +956,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         print("label path", labelPath)
 
-        labelPath = labelPath[: -len("png")] + "json"
+        labelPath = osp.splitext(labelPath)[0] + ".json"
         labels = json.loads(open(labelPath, "r").read())
         print(labels)
 
@@ -1031,22 +1063,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2. 完成正在交互式标注的标签
         self.completeLastMask()
         # 3. 确定保存路径
+        # 3.1 如果参数指定了保存路径直接存到savePath
         if not savePath:
-            # 3.1 指定了标签文件夹，而且不是另存为：根据标签文件夹和文件名出保存路径
             if not saveAs and self.outputDir is not None:
-                if osp.exists(self.outputDir) == False:
-                    os.mkdir(self.outputDir)
+                # 3.2 指定了标签文件夹，而且不是另存为：根据标签文件夹和文件名出保存路径
                 name, ext = osp.splitext(osp.basename(self.imagePath))
                 if not self.origExt:
                     ext = ".png"
                 savePath = osp.join(
                     self.outputDir,
                     name + ext,
-                    # ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
                 )
-                print("save path", savePath)
             else:
-                filters = "Label files (*.png)"
+                # 3.3 没有指定标签存到哪，或者是另存为：弹框让用户选
+                formats = [
+                    "*.{}".format(fmt.data().decode())
+                    for fmt in QtGui.QImageReader.supportedImageFormats()
+                ]
+                filters = "Label file (%s)" % " ".join(formats)
                 dlg = QtWidgets.QFileDialog(
                     self,
                     self.trans.put("保存标签文件路径"),
@@ -1060,33 +1094,38 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 savePath, _ = dlg.getSaveFileName(
                     self,
                     self.trans.put("选择标签文件保存路径"),
-                    ".".join((os.path.basename(self.imagePath).split(".")[0:-1]))
-                    + ".png",
+                    osp.splitext(osp.basename(self.imagePath))[0] + ".png",
                 )
+        print("save path", savePath)
+        # if not self.outputDir:
+        #     self.outputDir = osp.dirname(savePath)
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
-        # 是否保存伪彩色
-        if self.save_status[0]:
-            # 保存带有调色板的
-            # TODO：关于linux保存bug还需要进一步检测修改
+
+        # BUG: 如果用了多边形标注从多边形生成mask
+        # 4.1 保存灰度图
+        if self.save_status["gray_scale"]:
+            ext = osp.splitext(savePath)[1]
+            cv2.imencode(ext, self.controller.result_mask)[1].tofile(savePath)
+
+        # 4.2 保存伪彩色
+        if self.save_status["pseudo_color"]:
             mask_pil = Image.fromarray(self.controller.result_mask, "P")
             mask_map = [0, 0, 0]
             for lb in self.labelList:
                 mask_map += lb.color
             mask_pil.putpalette(mask_map)
-            mask_pil.save(savePath)
-        else:
-            # cv2.imwrite(savePath, self.controller.result_mask)
-            # 保存路径带有中文
-            cv2.imencode(".png", self.controller.result_mask)[1].tofile(savePath)
-        if savePath not in self.labelPaths:
-            self.labelPaths.append(savePath)
-        # 是否保存json
-        if self.save_status[1]:
+            pseudoPath, ext = osp.splitext(savePath)
+            pseudoPath = pseudoPath + "_pseudo" + ext
+            print("pseudoPath", pseudoPath)
+            mask_pil.save(pseudoPath)
+
+        # 4.3 保存json
+        if self.save_status["json"]:
             polygons = self.scene.polygon_items
             labels = []
             for polygon in polygons:
-                l = self.labelList[polygon.labelIndex]
+                l = self.labelList[polygon.labelIndex - 1]
                 label = {
                     "name": l.name,
                     "labelIdx": l.idx,
@@ -1097,10 +1136,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in poly:
                     label["points"].append([p.x(), p.y()])
                 labels.append(label)
-            savePath = savePath[: -len("png")] + "json"
+            savePath = osp.splitext(savePath)[0] + ".json"
             open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
+
+        if savePath not in self.labelPaths:
+            self.labelPaths.append(savePath)
+
         self.setClean()
-        self.statusbar.showMessage(self.trans.put("标签成功保存至") + " " + savePath)
+        self.statusbar.showMessage(self.trans.put("标签成功保存至 ") + savePath, 5000)
 
     def setClean(self):
         self.isDirty = False
@@ -1253,8 +1296,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions.auto_save.setChecked(save)
         self.settings.setValue("auto_save", save)
 
-    def changeSave(self, index):
-        self.save_status[index] = bool(self.save_status[index] - 1)
+    def toggleSave(self, type):
+        self.save_status[type] = not self.save_status[type]
 
     def changeWorkerShow(self, index):
         # 检测遥感所需的gdal环境
@@ -1337,6 +1380,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     @property
     def segThresh(self):
         return self.sldThresh.value() / 100
+
+    def warnException(self, e):
+        e = str(e)
+        title = e.split("。")[0]
+        self.warn(title, e)
 
     def warn(self, title, text, buttons=QMessageBox.Yes):
         msg = QMessageBox()
