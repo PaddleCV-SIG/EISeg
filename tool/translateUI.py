@@ -69,11 +69,14 @@ chinese = list(set(chinese))
 # print(chinese)
 
 # 翻译
+def firstCharUpper(s):
+    return s[:1].upper() + s[1:]
+
 translate = []
 baidu_trans = BaiduTranslate('zh','en')
 for cn in tqdm(chinese):
     en = baidu_trans.BdTrans(cn)
-    tr = cn + "@" + en[-1]
+    tr = cn + "@" + firstCharUpper(en[-1])  # 首字母大写
     translate.append(tr)
 
 # 保存翻译内容
