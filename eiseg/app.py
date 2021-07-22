@@ -924,16 +924,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.image = image
         self.currentPath = path
         if self.controller:
-            self.controller.set_image(
-                image
-                # twoPercentLinear(image) if (self.RSDock.isVisible() and \
-                # self.rsShow.currentIndex() == 1) else image
-            )
+            self.controller.set_image(image)
         else:
             self.warn(self.trans.put("未加载模型"), self.trans.put("未加载模型参数，请先加载模型参数！"))
             self.changeParam()
             print("please load model params first!")
-            return 0
+            return
         self.controller.set_label(self.loadLabel(path))
         self.addRecentFile(path)
         self.imagePath = path  # 修复使用近期文件的图像保存label报错
@@ -959,7 +955,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         print("label path", labelPath)
 
-        labelPath = labelPath[: -len("png")] + "json"
+        labelPath = osp.splitext(labelPath)[0] + ".json"
         labels = json.loads(open(labelPath, "r").read())
         print(labels)
 
@@ -1104,6 +1100,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         #     self.outputDir = osp.dirname(savePath)
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
+
+        # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
             ext = osp.splitext(savePath)[1]
@@ -1126,7 +1124,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             polygons = self.scene.polygon_items
             labels = []
             for polygon in polygons:
-                l = self.labelList[polygon.labelIndex]
+                l = self.labelList[polygon.labelIndex - 1]
                 label = {
                     "name": l.name,
                     "labelIdx": l.idx,
