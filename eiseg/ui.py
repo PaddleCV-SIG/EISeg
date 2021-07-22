@@ -199,7 +199,7 @@ class Ui_EISeg(object):
             hbandLayout.setStretch(1, 4)
             bandRegion.addLayout(hbandLayout)
         horizontalLayout.addLayout(bandRegion)
-        self.RSDock = p_create_dock("RSDock", transer.put("遥感区"), widget)
+        self.RSDock = p_create_dock("RSDock", transer.put("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
         # TODO：添加医疗功能的工作区
         widget = QtWidgets.QWidget()
@@ -209,7 +209,7 @@ class Ui_EISeg(object):
         mi_text = create_text(CentralWidget, "bandSelection", transer.put("医疗设置"))
         MIRegion.addWidget(mi_text)
         horizontalLayout.addLayout(MIRegion)
-        self.MIDock = p_create_dock("RSDock", transer.put("医疗区"), widget)
+        self.MIDock = p_create_dock("RSDock", transer.put("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

@@ -62,8 +62,8 @@ JSON保存@Save in JSON
 模型选择@Model selection
 标签列表@Tag list
 分割设置@Split settings
-遥感区@Remote sensing area
-医疗区@Medical district
+遥感设置@Remote sensing settings
+医疗设置@Medical settings
 中国中文@Chinese
 切换语言，重启生效@Switch language, restart and take effect
 近期文件@Recent documents
@@ -117,6 +117,5 @@ JSON保存@Save in JSON
 标签透明度：@Label transparency:
 点击可视化半径：@Click the visualization radius:
 波段设置@Band setting
-医疗设置@Medical setting
 添加标签@Add label
 请先添加标签之后再进行保存！@Please add a label before saving!

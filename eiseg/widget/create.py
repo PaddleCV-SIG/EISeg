@@ -74,21 +74,36 @@ def create_slider(
     return sld, Region
 
 
+class DockWidget(QDockWidget):
+    def __init__(self, parent, name, text):
+        super().__init__(parent=parent)
+        self.setObjectName(name)
+        self.setAllowedAreas(Qt.RightDockWidgetArea | Qt.LeftDockWidgetArea)
+        # 感觉不给关闭好点。可以在显示里面取消显示。有关闭的话显示里面的enable还能判断修改，累了
+        self.setFeatures(
+            QDockWidget.DockWidgetMovable | 
+            QDockWidget.DockWidgetFloatable
+        )
+        sizePolicy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
+        )
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+        self.setSizePolicy(sizePolicy)
+        self.setMinimumWidth(230)
+        self.setWindowTitle(text)
+        self.setStyleSheet("QDockWidget { background-color:rgb(204,204,248); }")
+        self.topLevelChanged.connect(self.changeBackColor)
+
+    def changeBackColor(self, isFloating):
+        if isFloating:
+            self.setStyleSheet("QDockWidget { background-color:rgb(255,255,255); }")
+        else:
+            self.setStyleSheet("QDockWidget { background-color:rgb(204,204,248); }")
+
 ## 创建dock
 def creat_dock(parent, name, text, widget):
-    dock = QDockWidget(parent)
-    dock.setObjectName(name)
-    dock.setAllowedAreas(Qt.RightDockWidgetArea | Qt.LeftDockWidgetArea)
-    dock.setFeatures(QDockWidget.AllDockWidgetFeatures)
-    sizePolicy = QtWidgets.QSizePolicy(
-        QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred
-    )
-    sizePolicy.setHorizontalStretch(0)
-    sizePolicy.setVerticalStretch(0)
-    sizePolicy.setHeightForWidth(dock.sizePolicy().hasHeightForWidth())
-    dock.setSizePolicy(sizePolicy)
-    dock.setMinimumWidth(230)
-    # TODO: 研究给windows title一个和背景稍微有差别的颜色，让用户对几个panel的范围有明确的感觉
-    dock.setWindowTitle(text)
+    dock = DockWidget(parent, name, text)
     dock.setWidget(widget)
     return dock
