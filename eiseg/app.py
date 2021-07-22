@@ -32,7 +32,7 @@ from util.label import LabeleList
 from util import MODELS
 from util.remotesensing import *
 from util.language import TransUI
-
+from util.coco import coco
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -64,6 +64,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "gray_scale": True,
             "pseudo_color": False,
             "json": True,
+            "coco": False,
         }  # 是否保存这几个格式
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
@@ -329,6 +330,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         save_json.setChecked(self.save_status["json"])
+        save_coco = action(
+            "&" + self.trans.put("COCO保存"),
+            partial(self.toggleSave, "coco"),
+            "save_coco",
+            "SaveCoco",
+            self.trans.put("保存为COCO格式"),
+            checkable=True,
+        )
+        save_coco.setChecked(self.save_status["coco"])
         close = action(
             "&" + self.trans.put("关闭"),
             self.toBeImplemented,
@@ -1140,7 +1150,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 labels.append(label)
             savePath = osp.splitext(savePath)[0] + ".json"
             open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
-
+        # 4.4 保存cooc
+        if self.save_status["coco"]:
+            pass
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
 
@@ -1300,6 +1312,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def toggleSave(self, type):
         self.save_status[type] = not self.save_status[type]
+        if type == "coco" and self.save_status["coco"]:
+
+            pass
 
     def changeWorkerShow(self, index):
         # 检测遥感所需的gdal环境
