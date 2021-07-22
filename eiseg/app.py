@@ -314,7 +314,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         save_grayscale = action(
             "&" + self.trans.put("灰度保存"),
             partial(self.toggleSave, "gray_scale"),
-            "save_pseudo",  # TODO: 换一个logo
+            "save_pseudo",
             "SaveGrayScale",
             self.trans.put("保存为灰度图像，像素的灰度为对应类型的标签"),
             checkable=True,
