@@ -6,8 +6,7 @@ shortcut:
   clear_label: ''
   clear_recent: ''
   close: ''
-  del_active_point: Backspace
-  del_active_polygon: Ctrl+Backspace
+  del_active_polygon: Backspace
   edit_shortcuts: E
   finish_object: Space
   grid_ann: ''
