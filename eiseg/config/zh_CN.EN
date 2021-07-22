@@ -1,74 +1,74 @@
 已清除最近打开文件@Recently opened files cleared
 显示@Display
-没有最近使用模型信息，请加载模型@No recently used model information, please load the model
+没有最近使用模型信息，请加载模型@No information about recently used models, please load the model manually
 打开一张图像进行标注@Open an image for annotation
-翻到下一张图片@Turn to the next picture
-翻到上一张图片@Turn to the previous picture
+翻到下一张图片@Turn to the next image
+翻到上一张图片@Turn to the previous image
 清除所有标注@Clear all annotations
-无近期文件@No recent documents
+无近期文件@No recent images
 未加载模型参数，请先加载模型参数！@Model parameters not loaded, please load model parameters first!
-完成最后一个目标？@Finish the last goal?
-快捷键冲突@Shortcut conflict
-灰度保存@Grayscale saving
-切换语言，重启生效@Switch language, restart and take effect
-编辑软件快捷键@Edit software shortcut key
-从标签配置文件中加载标签@Loading labels from a label profile
+完成最后一个目标？@Finish annotating the last object?
+快捷键冲突@Shortcut is in conflict
+灰度保存@Save in grayscale format
+切换语言，重启生效@Switch language, takes effect after restart
+编辑软件快捷键@Edit software shortcut
+从标签配置文件中加载标签@Loading label list from config file
 医疗设置@Medical settings
 完成当前目标的标注@Complete the annotation of the current target
-保存@Preservation
+保存@Save
 的快捷键@Shortcut keys for
 无法导入GDAL@Unable to import GDAL
-模型选择@Model selection
-保存为伪彩色图像@Save as pseudo color image
+模型选择@Model
+保存为伪彩色图像@Save in pseudo color format
 关闭@Close
-是否完成最后一个目标的标注，不完成不会进行保存。@Whether to mark the last target or not. If not, it will not be saved.
+是否完成最后一个目标的标注，不完成不会进行保存。@Finish annotating the last object or not? If not, annotation for the last object won't be saved.
 标签透明度：@Label transparency:
 未打开遥感工具，请先在菜单栏-显示中打开遥感区！@The remote sensing tool has not been opened, please open the remote sensing area in the menu bar - display first!
 删除当前选中的多边形@Delete the currently selected polygon
 选择保存标签配置文件路径@Select the path to save the label profile
 保存标签列表@Save label list
-请先在标签列表中单击点选标签@Please click to select the label in the label list first
+请先在标签列表中单击点选标签@Please select a label in the label list by clicking it first
 保存为灰度图像，像素的灰度为对应类型的标签@Save as grayscale image, the grayscale of pixel is the label of corresponding type
-点击可视化半径：@Click the visualization radius:
+点击可视化半径：@Click visualization radius:
 尚未加载模型，请先加载模型！@The model has not been loaded, please load the model first!
 中国中文@Chinese
 选择模型结构@Select model structure
-关于软件@About software
-删除多边形@Delete polygon 
-选择待标注图片@Select the picture to be marked
+关于软件@About the software
+删除多边形@Delete selected polygon
+选择待标注图片@Select a picture to be annotated
 N2宫格标注@N2 grid labeling
 选择标签保存路径@Select label save path
 选择标签文件保存路径@Select the path to save the label file
 删除当前选中的点@Delete the currently selected point
 清空标签列表@Clear label list
-快速上手@Get started quickly
-模型和参数不匹配，请重新加载@Model and parameters do not match, please reload
+快速上手@Get started guide
+模型和参数不匹配，请重新加载@The paramter chosen don't match the model structure, please check and load again
 波段设置@Band setting
-请先添加标签之后再进行保存！@Please add a label before saving!
+请先添加标签之后再进行保存！@Please add labels before saving!
 自动保存@Auto save
-标注@Tagging
+标注@Annotation
 关闭当前图像@Close the current image
-功能尚在开发@The function is still under development
+功能尚在开发@This function is still under development
 JSON保存@Save in JSON
-加载标签列表@Load tag list
+加载标签列表@Load label list
 退出软件@Exit software
 确认要删除当前选中多边形标注？@Are you sure you want to delete the currently selected polygon annotation?
-清除所有标注信息@Clear all dimension information
+清除所有标注信息@Clear all annotation information
 删除点@Delete point
 使用N2宫格进行细粒度标注@Fine grained annotation using N2 grid
 帮助@Help
 快速上手介绍@Quick introduction
 重做一次点击@Redo one click
 选择标签配置文件路径@Select label profile path
-下一张@Next one
-保存为JSON格式@Save to JSON format
-添加标签@Tagging
-打开文件夹@Open a folder
+下一张@Next image
+保存为JSON格式@Save label in JSON format
+添加标签@Add annotation
+打开文件夹@Open images under a folder
 数据列表@Data list
-清除近期标注记录@Clear recent notes
-选择待标注图片文件夹@Select the picture folder to be marked
-完成当前目标@Achieve current goals
-近期文件@Recent documents
+清除近期标注记录@Clear recent annotation history
+选择待标注图片文件夹@Select the picture folder to be annotated
+完成当前目标@Finish annotating current object
+近期文件@Recent files
 当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！@The parameters in the current network structure do not match the model parameters, please change the network structure or use other parameters!
 尚未选择模型结构，请在右侧下拉菜单进行选择！@The model structure has not been selected, please select from the drop-down menu on the right!
 编辑快捷键@Edit shortcut
