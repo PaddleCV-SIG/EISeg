@@ -97,29 +97,27 @@ JSON保存@Save in JSON
 功能@Function
 标签配置文件@Label profile
 分割阈值：@Segmentation threshold:
-关于这个软件和开发团队@About the software and development team
+关于这个软件和开发团队@About us
 文件@File
 撤销一次点击@Undo one click
 近期模型及参数@Recent models and parameters
-保留最大连通块@Keep the most connected block
+保留最大连通块@Keep the largest connected component
 正在加载@Loading
-上一张@Last one
+上一张@Last image
 指定标签保存路径@Specify label save path
 没有需要保存的标签@There are no labels to save
 未打开遥感工具@Remote sensing tool not opened
-伪彩色保存@Pseudo color preservation
+伪彩色保存@Save in pseudo color format
 保存标签配置文件@Save label profile
 遥感设置@Remote sensing settings
-退出@Sign out
+退出@Exit
 保存标签？@Save label?
 改变标签保存的文件夹路径@Change the folder path for label saving
 模型加载完成@Model loading completed
 请选择模型结构@Please select model structure
-快捷键已被@Shortcut key has been deleted
-使用，请设置其他快捷键或先修改@To use, please set other shortcut keys or modify them first
 打开图像@Open image
 保存图像标签@Save image label
-翻页同时自动保存@Auto save while turning pages
+翻页同时自动保存@Auto save while turning images
 未选择当前标签@The current label is not selected
 请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！@Please check whether GDAL exists in the environment, if not, remote sensing tools cannot be used!
 重做@Redo
