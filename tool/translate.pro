@@ -1,3 +1,3 @@
 CODECFORTR = UTF-8
-SOURCES = ../../app.py; ../../ui.py
-TRANSLATIONS = en_US.ts
+SOURCES = ../eiseg/app.py; ../eiseg/ui.py
+TRANSLATIONS = ./ts/out.ts

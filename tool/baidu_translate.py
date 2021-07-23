@@ -50,7 +50,7 @@ class BaiduTranslate:
             return False, e
 
 
-ts_path = "../eiseg/util/translate/Russian.ts"
+ts_path = "./ts/Russian.ts"
 xml = open(ts_path, "r").read()
 xml = bs(xml, "xml")
 messages = xml.find_all("message")
@@ -60,7 +60,7 @@ trans = bd_trans.trans
 translated = 0
 failed = 0
 for msg in messages:
-    print(f"{translated + failed} / {len(messages)}")
+    msg.location["filename"] = "../../app.py"
     type = msg.translation.get("type", None)
     source = msg.source.string
     trans = msg.translation.string
@@ -71,7 +71,9 @@ for msg in messages:
             translated += 1
         else:
             failed += 1
-        print(f"translation:{source} \t {msg.translation.string}")
+        print(
+            f"{translated + failed} / {len(messages)}:{source} \t {msg.translation.string}"
+        )
 
 for name in xml.find_all("name"):
     name.string = "APP_EISeg"
