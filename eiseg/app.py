@@ -8,8 +8,8 @@ import warnings
 import json
 import collections
 from distutils.util import strtobool
-import imghdr
 
+import imghdr
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
@@ -32,8 +32,9 @@ from util.label import LabeleList
 from util import MODELS
 from util.remotesensing import *
 from util.medical import *
-from util.language import TransUI
 from util.coco import coco
+
+# from util.language import TransUI
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -49,15 +50,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
-        # 多语言
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        is_trans = strtobool(self.settings.value("language_state", "False"))
-        self.trans = TransUI(is_trans)
+        # is_trans = strtobool(self.settings.value("language_state", "False"))
+        # self.trans = TransUI(is_trans)
 
         # 初始化界面
-        self.setupUi(self, self.trans)
+        self.setupUi(self)
 
         # app变量
         self.status = self.IDILE
@@ -112,9 +112,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 窗口
         ## 快捷键
-        self.shortcutWindow = ShortcutWindow(self.actions, pjpath, self.trans)
+        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
 
-        ## 画布部分
+        ## 画布
         self.scene.clickRequest.connect(self.canvasClick)
         self.canvas.zoomRequest.connect(self.viewZoomed)
         self.annImage = QtWidgets.QGraphicsPixmapItem()
@@ -137,20 +137,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
         self.labelListTable.cellClicked.connect(self.labelListClicked)
         self.labelListTable.cellChanged.connect(self.labelListItemChanged)
-        # self.refreshLabelList()
-        # 不加载了
-        # label_list_file = self.settings.value("label_list_file", None)
-        # if label_list_file is not None:
-        #     self.loadLabelList(self.settings.value("label_list_file"))
 
         ## 功能区选择
         # self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
-        self.tr = tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
-
-    def editShortcut(self):
-        self.shortcutWindow.show()
 
     def initActions(self):
         def menu(title, actions=None):
@@ -509,6 +500,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
+    def editShortcut(self):
+        self.shortcutWindow.show()
+
+    # 多语言
     def updateLanguage(self):
         self.menus.languages.clear()
         langs = os.listdir(osp.join(pjpath, "util/translate"))
@@ -524,6 +519,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.setValue("language", lang)
         self.warn("切换语言", "切换语言需要重启软件才能生效")
 
+    # 近期图像
     def updateRecentFile(self):
         menu = self.menus.recent_files
         menu.clear()
@@ -559,6 +555,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.remove("recent_files")
         self.statusbar.showMessage(self.tr("已清除最近打开文件"), 10000)
 
+    # 模型加载
     def updateModelsMenu(self):
         menu = self.menus.recent_params
         menu.clear()
@@ -613,8 +610,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def loadModelParam(self, param_path, model=None):
         print("Call load model param: ", param_path, model, type(model))
-        # TODO: 捕获加载模型过程中所有的错误，
-        # TODO: 对paddle版本不到2.1.0进行提示
         if model is None:
             modelClass = self.modelClass
         if isinstance(model, str):
@@ -690,6 +685,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         param_path = m["param_path"]
         self.loadModelParam(param_path, model)
 
+    # 标签列表
     def loadLabelList(self, file_path=None):
         if file_path is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
@@ -882,12 +878,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.filePaths.append(file_path)
 
     def openFolder(self):
-        # TODO: 要不要在打开文件夹之前清空标签列表
+        # TODO: 在打开文件夹之前清空标签列表
+        recentPath = self.settings.value("recent_files", [])
+        if len(recentPath) == 0:
+            recentPath = "."
+        else:
+            recentPath = osp.dirname(recentPath[-1])
         self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
             self,
-            tr("选择待标注图片文件夹") + " - " + __APPNAME__,
-            # DEBUG:
-            "/home/lin/Desktop/dzq",
+            self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
+            recentPath,
             QtWidgets.QFileDialog.ShowDirsOnly
             | QtWidgets.QFileDialog.DontResolveSymlinks,
         )
@@ -973,7 +973,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.filePaths.append(path)
 
     def loadLabel(self, imgPath):
-        print("load label", imgPath, self.labelPaths)
+        # print("load label", imgPath, self.labelPaths)
         if imgPath == "" or len(self.labelPaths) == 0:
             return None
 
@@ -988,19 +988,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 break
         if not labelPath:
             return
-        print("label path", labelPath)
+        print("load label", imgPath, labelPath)
 
         labelPath = osp.splitext(labelPath)[0] + ".json"
         labels = json.loads(open(labelPath, "r").read())
-        print(labels)
+        # print(labels)
 
         for label in labels:
             color = label["color"]
             labelIdx = label["labelIdx"]
             points = label["points"]
-            poly = PolygonAnnotation(
-                labelIdx, color, color, self.opacity
-            )  # , self.scene)
+            poly = PolygonAnnotation(labelIdx, color, color, self.opacity)
             self.scene.addItem(poly)
             self.scene.polygon_items.append(poly)
             for p in points:
@@ -1350,20 +1348,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if index == 4:
             if check_gdal() == False:
                 self.warn(
-                    tr("无法导入GDAL"),
-                    tr("请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！"),
+                    self.tr("无法导入GDAL"),
+                    self.tr("请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！"),
                     QMessageBox.Yes,
                 )
-                self.statusbar.showMessage(tr("打开失败，未检出GDAL"))
+                self.statusbar.showMessage(self.tr("打开失败，未检出GDAL"))
                 return
         if index == 5:
             if check_sitk() == False:
                 self.warn(
-                    tr("无法导入SimpleITK"),
-                    tr("请检查环境中是否存在SimpleITK，若不存在则无法使用医疗工具！"),
+                    self.tr("无法导入SimpleITK"),
+                    self.tr("请检查环境中是否存在SimpleITK，若不存在则无法使用医疗工具！"),
                     QMessageBox.Yes,
                 )
-                self.statusbar.showMessage(tr("打开失败，未检出SimpleITK"))
+                self.statusbar.showMessage(self.tr("打开失败，未检出SimpleITK"))
                 return
         self.workers_show[index] = bool(self.workers_show[index] - 1)
         self.refreshWorker()

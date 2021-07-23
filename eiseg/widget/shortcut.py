@@ -35,10 +35,10 @@ class RecordShortcutWindow(QKeySequenceEdit):
 
 
 class ShortcutWindow(QWidget):
-    def __init__(self, actions, pjpath, trans):
+    def __init__(self, actions, pjpath):
         super().__init__()
-        self.trans = trans
-        self.setWindowTitle(trans.put("编辑快捷键"))
+        self.tr = partial(QtCore.QCoreApplication.translate, "ShortcutWindow")
+        self.setWindowTitle(self.tr("编辑快捷键"))
         self.setWindowIcon(QIcon(osp.join(pjpath, "resource/Shortcut.png")))
         # self.setFixedSize(self.width(), self.height())
         self.actions = actions
@@ -55,7 +55,7 @@ class ShortcutWindow(QWidget):
             grid.addWidget(QLabel(action.iconText()[1:]), idx // 3, idx % 3 * 3)
             shortcut = action.shortcut().toString()
             if len(shortcut) == 0:
-                shortcut = self.trans.put("无")
+                shortcut = self.tr("无")
             button = QPushButton(shortcut)
             button.setFixedWidth(150)
             button.setFixedHeight(30)
@@ -71,7 +71,7 @@ class ShortcutWindow(QWidget):
         for idx, action in enumerate(actions):
             shortcut = action.shortcut().toString()
             if len(shortcut) == 0:
-                shortcut = self.trans.put("无")
+                shortcut = self.tr("无")
             self.layout().itemAtPosition(
                 idx // 3,
                 idx % 3 * 3 + 1,
@@ -96,10 +96,10 @@ class ShortcutWindow(QWidget):
                 key = key.toString()
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Warning)
-                msg.setWindowTitle(key + " " + self.trans.put("快捷键冲突"))
-                msg.setText(self.trans.tr(
-                    f"{key}快捷键已被{a.data()}使用，请设置其他快捷键或先修改{a.data()}的快捷键"
-                ))
+                msg.setWindowTitle(key + " " + self.tr("快捷键冲突"))
+                msg.setText(
+                    self.tr(f"{key}快捷键已被{a.data()}使用，请设置其他快捷键或先修改{a.data()}的快捷键")
+                )
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
                 return
