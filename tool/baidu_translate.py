@@ -1,5 +1,3 @@
-# import os
-# import os.path as osp
 import json
 import random
 import hashlib
@@ -52,16 +50,17 @@ class BaiduTranslate:
             return False, e
 
 
-ts_path = "../eiseg/util/translate/en_US.ts"
+ts_path = "../eiseg/util/translate/Russian.ts"
 xml = open(ts_path, "r").read()
 xml = bs(xml, "xml")
 messages = xml.find_all("message")
-bd_trans = BaiduTranslate("zh", "en")
+bd_trans = BaiduTranslate("zh", "ru")
 trans = bd_trans.trans
 
 translated = 0
 failed = 0
 for msg in messages:
+    print(f"{translated + failed} / {len(messages)}")
     type = msg.translation.get("type", None)
     source = msg.source.string
     trans = msg.translation.string
