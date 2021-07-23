@@ -13,6 +13,7 @@ output/
 temp*
 temp/
 tool/ts/
+*.ts
 
 # C extensions
 *.so
