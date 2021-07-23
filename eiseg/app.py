@@ -1001,7 +1001,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
             self.currIdx -= delta
             self.statusbar.showMessage(
-                self.trans.put("无法继续翻页了")
+                self.trans.tr(f"没有{'后一张'if delta==1 else '前一张'}图片")
             )
             return
 

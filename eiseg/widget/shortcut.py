@@ -40,7 +40,7 @@ class ShortcutWindow(QWidget):
         self.trans = trans
         self.setWindowTitle(trans.put("编辑快捷键"))
         self.setWindowIcon(QIcon(osp.join(pjpath, "resource/Shortcut.png")))
-        # self.setFixedSize(self.width(), self.height()); 
+        # self.setFixedSize(self.width(), self.height())
         self.actions = actions
         self.recorder = None
         self.initUI()
@@ -51,7 +51,8 @@ class ShortcutWindow(QWidget):
 
         actions = self.actions
         for idx, action in enumerate(actions):
-            grid.addWidget(QLabel(action.iconText()[1:]), idx // 2, idx % 2 * 2)
+            # 2列英文看不清
+            grid.addWidget(QLabel(action.iconText()[1:]), idx // 3, idx % 3 * 3)
             shortcut = action.shortcut().toString()
             if len(shortcut) == 0:
                 shortcut = self.trans.put("无")
@@ -61,8 +62,8 @@ class ShortcutWindow(QWidget):
             button.clicked.connect(partial(self.recordShortcut, action))
             grid.addWidget(
                 button,
-                idx // 2,
-                idx % 2 * 2 + 1,
+                idx // 3,
+                idx % 3 * 3 + 1,
             )
 
     def refreshUi(self):
@@ -72,8 +73,8 @@ class ShortcutWindow(QWidget):
             if len(shortcut) == 0:
                 shortcut = self.trans.put("无")
             self.layout().itemAtPosition(
-                idx // 2,
-                idx % 2 * 2 + 1,
+                idx // 3,
+                idx % 3 * 3 + 1,
             ).widget().setText(shortcut)
 
     def recordShortcut(self, action):
@@ -96,12 +97,9 @@ class ShortcutWindow(QWidget):
                 msg = QMessageBox()
                 msg.setIcon(QMessageBox.Warning)
                 msg.setWindowTitle(key + " " + self.trans.put("快捷键冲突"))
-                # TODO：动态翻译问题待解决
-                msg.setText(
-                    key + " " +  self.trans.put("快捷键已被") + " " + a.data() + \
-                    " " + self.trans.put("使用，请设置其他快捷键或先修改") + " " + \
-                    a.data() + " " +  self.trans.put("的快捷键")
-                )
+                msg.setText(self.trans.tr(
+                    f"{key}快捷键已被{a.data()}使用，请设置其他快捷键或先修改{a.data()}的快捷键"
+                ))
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
                 return

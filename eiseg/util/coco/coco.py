@@ -10,6 +10,7 @@ from . import mask as maskUtils
 import os
 from collections import defaultdict
 import sys
+from datetime import datetime
 
 PYTHON_VERSION = sys.version_info[0]
 if PYTHON_VERSION == 2:
