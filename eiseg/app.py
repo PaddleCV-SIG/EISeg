@@ -425,15 +425,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("医疗设置"),
             checkable=True,
         )
-        language = action(
-            tr("&中国中文"),
-            self.setLanguage,
-            "language",
-            "Language",
-            tr("切换语言，重启生效"),
-            checkable=True,
-            checked=bool(strtobool(self.settings.value("language_state", "False")) - 1),
-        )
+        # language = action(
+        #     tr("&中国中文"),
+        #     self.setLanguage,
+        #     "language",
+        #     "Language",
+        #     tr("切换语言，重启生效"),
+        #     checkable=True,
+        #     checked=bool(strtobool(self.settings.value("language_state", "False")) - 1),
+        # )
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
@@ -486,7 +486,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 rs_worker,
                 mi_worker,
             ),
-            helpMenu=(language, languages, quick_start, about, edit_shortcuts),
+            helpMenu=(languages, quick_start, about, edit_shortcuts),
             toolBar=(
                 finish_object,
                 clear,
@@ -510,10 +510,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         util.addActions(self.toolBar, self.menus.toolBar)
 
     def updateLanguage(self):
+        self.menus.languages.clear()
         langs = os.listdir(osp.join(pjpath, "util/translate"))
         langs = [n.split(".")[0] for n in langs if n.endswith("qm")]
         langs.append("中文")
-        print(langs)
         for lang in langs:
             icon = util.newIcon(lang)
             action = QtWidgets.QAction(icon, lang, self)
@@ -522,6 +522,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeLanguage(self, lang):
         self.settings.setValue("language", lang)
+        self.warn("切换语言", "切换语言需要重启软件才能生效")
 
     def updateRecentFile(self):
         menu = self.menus.recent_files
@@ -1429,9 +1430,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         except:
             pass
 
-    def setLanguage(self):
-        tmp = bool(strtobool(self.settings.value("language_state", "False")) - 1)
-        self.settings.setValue("language_state", tmp)
+    # def setLanguage(self):
+    #     tmp = bool(strtobool(self.settings.value("language_state", "False")) - 1)
+    #     self.settings.setValue("language_state", tmp)
 
     @property
     def opacity(self):
