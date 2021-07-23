@@ -16,7 +16,11 @@ from widget.create import *
 
 
 class Ui_EISeg(object):
-    def setupUi(self, MainWindow, trans):
+    def __init__(self):
+        super(Ui_EISeg, self).__init__()
+        self.tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
+
+    def setupUi(self, MainWindow):
         ## -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
@@ -89,13 +93,13 @@ class Ui_EISeg(object):
         # 网络参数
         self.btnParamsSelect = p_create_button(
             "btnParamsLoad",
-            trans.put("加载网络参数"),
+            self.tr("加载网络参数"),
             osp.join(pjpath, "resource/Model.png"),
             "Ctrl+D",
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         horizontalLayout.addLayout(ModelRegion)
-        self.ModelDock = p_create_dock("ModelDock", trans.put("模型选择"), widget)
+        self.ModelDock = p_create_dock("ModelDock", self.tr("模型选择"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ModelDock)
         # 数据列表
         # TODO: 数据列表加一个搜索功能
@@ -111,13 +115,13 @@ class Ui_EISeg(object):
         # 保存
         self.btnSave = p_create_button(
             "btnSave",
-            trans.put("保存"),
+            self.tr("保存"),
             osp.join(pjpath, "resource/Save.png"),
             "Ctrl+S",
         )
         ListRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ListRegion)
-        self.DataDock = p_create_dock("DataDock", trans.put("数据列表"), widget)
+        self.DataDock = p_create_dock("DataDock", self.tr("数据列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DataDock)
         # 标签列表
         widget = QtWidgets.QWidget()
@@ -140,11 +144,11 @@ class Ui_EISeg(object):
 
         LabelRegion.addWidget(self.labelListTable)
         self.btnAddClass = p_create_button(
-            "btnAddClass", trans.put("添加标签"), osp.join(pjpath, "resource/Label.png")
+            "btnAddClass", self.tr("添加标签"), osp.join(pjpath, "resource/Label.png")
         )
         LabelRegion.addWidget(self.btnAddClass)
         horizontalLayout.addLayout(LabelRegion)
-        self.LabelDock = p_create_dock("LabelDock", trans.put("标签列表"), widget)
+        self.LabelDock = p_create_dock("LabelDock", self.tr("标签列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.LabelDock)
         ## 滑块设置
         # 分割阈值
@@ -154,24 +158,24 @@ class Ui_EISeg(object):
         ShowSetRegion = QtWidgets.QVBoxLayout()
         ShowSetRegion.setObjectName("ShowSetRegion")
         self.sldThresh, SegShowRegion = p_create_slider(
-            "sldThresh", "labThresh", trans.put("分割阈值：")
+            "sldThresh", "labThresh", self.tr("分割阈值：")
         )
         ShowSetRegion.addLayout(SegShowRegion)
         ShowSetRegion.addWidget(self.sldThresh)
         # 透明度
         self.sldOpacity, MaskShowRegion = p_create_slider(
-            "sldOpacity", "labOpacity", trans.put("标签透明度：")
+            "sldOpacity", "labOpacity", self.tr("标签透明度：")
         )
         ShowSetRegion.addLayout(MaskShowRegion)
         ShowSetRegion.addWidget(self.sldOpacity)
         # 点大小
         self.sldClickRadius, PointShowRegion = p_create_slider(
-            "sldClickRadius", "labClickRadius", trans.put("点击可视化半径："), 3, 10, 1
+            "sldClickRadius", "labClickRadius", self.tr("点击可视化半径："), 3, 10, 1
         )
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
         horizontalLayout.addLayout(ShowSetRegion)
-        self.ShowSetDock = p_create_dock("ShowSetDock", trans.put("分割设置"), widget)
+        self.ShowSetDock = p_create_dock("ShowSetDock", self.tr("分割设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
         ## 专业功能区工作区
         widget = QtWidgets.QWidget()
@@ -183,7 +187,7 @@ class Ui_EISeg(object):
         # self.rsShow = QtWidgets.QComboBox()
         # self.rsShow.addItems(["原图", "2%线性拉伸"])
         # bandRegion.addWidget(self.rsShow)
-        bandSelection = create_text(CentralWidget, "bandSelection", trans.put("波段设置"))
+        bandSelection = create_text(CentralWidget, "bandSelection", self.tr("波段设置"))
         bandRegion.addWidget(bandSelection)
         text_list = ["R", "G", "B"]
         self.bandCombos = []
@@ -199,23 +203,23 @@ class Ui_EISeg(object):
             hbandLayout.setStretch(1, 4)
             bandRegion.addLayout(hbandLayout)
         horizontalLayout.addLayout(bandRegion)
-        self.RSDock = p_create_dock("RSDock", trans.put("遥感设置"), widget)
+        self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
         # TODO：添加医疗功能的工作区
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         MIRegion = QtWidgets.QVBoxLayout()
         MIRegion.setObjectName("MIRegion")
-        # mi_text = create_text(CentralWidget, "sliceSelection", trans.put("切片选择"))
+        # mi_text = create_text(CentralWidget, "sliceSelection", self.tr("切片选择"))
         # MIRegion.addWidget(mi_text)
         self.sldMISlide, slideRegion = p_create_slider(
-            "sldMISlide", "labMISlide", trans.put("切片选择："), 1, 1, 1
+            "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
         )
         self.sldMISlide.setMinimum(1)
         MIRegion.addLayout(slideRegion)
         MIRegion.addWidget(self.sldMISlide)
         horizontalLayout.addLayout(MIRegion)
-        self.MIDock = p_create_dock("RSDock", trans.put("医疗设置"), widget)
+        self.MIDock = p_create_dock("RSDock", self.tr("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)

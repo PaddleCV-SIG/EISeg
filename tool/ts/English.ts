@@ -311,7 +311,7 @@
     <message>
         <location filename="../../app.py" line="393"/>
         <source>数据列表</source>
-        <translation>Toggle image list widget visibility</translation>
+        <translation>Image List</translation>
     </message>
     <message>
         <location filename="../../app.py" line="401"/>
@@ -321,7 +321,7 @@
     <message>
         <location filename="../../app.py" line="401"/>
         <source>标签列表</source>
-        <translation>Toggle label list widget visibility</translation>
+        <translation>Label List</translation>
     </message>
     <message>
         <location filename="../../app.py" line="409"/>
@@ -331,7 +331,7 @@
     <message>
         <location filename="../../app.py" line="409"/>
         <source>分割设置</source>
-        <translation>Toggle Segmentation Setting Widget</translation>
+        <translation>Segmentation Setting</translation>
     </message>
     <message>
         <location filename="../../app.py" line="417"/>
@@ -341,7 +341,7 @@
     <message>
         <location filename="../../app.py" line="417"/>
         <source>遥感设置</source>
-        <translation>Toggle remote sensing setting widget</translation>
+        <translation>Remote Sensing Setting</translation>
     </message>
     <message>
         <location filename="../../app.py" line="425"/>
@@ -351,12 +351,7 @@
     <message>
         <location filename="../../app.py" line="425"/>
         <source>医疗设置</source>
-        <translation>Toggle medical settings widget visibillity</translation>
-    </message>
-    <message>
-        <location filename="../../app.py" line="433"/>
-        <source>&amp;中国中文</source>
-        <translation>&amp;Chinese</translation>
+        <translation>Medical Imaging Settings</translation>
     </message>
     <message>
         <location filename="../../app.py" line="433"/>
@@ -632,6 +627,59 @@
         <location filename="../../app.py" line="708"/>
         <source>选择保存标签配置文件路径</source>
         <translation>Select the path to save the label profile</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>加载网络参数</source>
+        <translation>Select Model Parameter</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>保存</source>
+        <translation>Save</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>添加标签</source>
+        <translation>Add Label</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>分割阈值：</source>
+        <translation>Segmentation Threshold</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>标签透明度：</source>
+        <translation>Label Transparency</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>点击可视化半径：</source>
+        <translation>Click Visualization Radius</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>波段设置</source>
+        <translation>Wave length setting</translation>
+    </message>
+    <message>
+        <location filename="../../ui.py" line="708"/>
+        <source>切片选择：</source>
+        <translation>Choose Slice</translation>
+    </message>
+</context>
+<context>
+    <name>ShortcutWindow</name>
+    <message>
+        <location filename="../../widget/shortcut.py" line="708"/>
+        <source>无</source>
+        <translation>Na</translation>
+    </message>
+    <message>
+        <location filename="../../widget/shortcut.py" line="708"/>
+        <source>编辑快捷键</source>
+        <translation>Edit Keyboard Shortcuts</translation>
     </message>
 </context>
 </TS>
