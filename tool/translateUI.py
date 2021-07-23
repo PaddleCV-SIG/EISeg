@@ -13,31 +13,31 @@ class BaiduTranslate:
     def __init__(self, fromLang, toLang):
         self.url = "/api/trans/vip/translate"
         self.appid = "20200311000396156"
-        self.secretKey = 's6c3ZeYTI9lhrwQVugnM'
+        self.secretKey = "s6c3ZeYTI9lhrwQVugnM"
         self.fromLang = fromLang
         self.toLang = toLang
         self.salt = random.randint(32768, 65536)
 
-    def BdTrans(self,text):
+    def BdTrans(self, text):
         sign = self.appid + text + str(self.salt) + self.secretKey
         md = hashlib.md5()
-        md.update(sign.encode(encoding='utf-8'))
+        md.update(sign.encode(encoding="utf-8"))
         sign = md.hexdigest()
         myurl = self.url + \
-                '?appid=' + self.appid + \
-                '&q=' + parse.quote(text) + \
-                '&from=' + self.fromLang + \
-                '&to=' + self.toLang + \
-                '&salt=' + str(self.salt) + \
-                '&sign=' + sign
+                "?appid=" + self.appid + \
+                "&q=" + parse.quote(text) + \
+                "&from=" + self.fromLang + \
+                "&to=" + self.toLang + \
+                "&salt=" + str(self.salt) + \
+                "&sign=" + sign
         try:
-            httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
-            httpClient.request('GET', myurl)
+            httpClient = http.client.HTTPConnection("api.fanyi.baidu.com")
+            httpClient.request("GET", myurl)
             response = httpClient.getresponse()
-            html = response.read().decode('utf-8')
+            html = response.read().decode("utf-8")
             html = json.loads(html)
             dst = html["trans_result"][0]["dst"]
-            return  True , dst
+            return True, dst
         except Exception as e:
             return False , e
 
@@ -83,7 +83,7 @@ def firstCharUpper(s):
     return s[:1].upper() + s[1:]
 
 translate = []
-baidu_trans = BaiduTranslate('zh','en')
+baidu_trans = BaiduTranslate("zh","en")
 for cn in tqdm(chinese):
     if cn not in now_words.keys():
         en = baidu_trans.BdTrans(cn)
