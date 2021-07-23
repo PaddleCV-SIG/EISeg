@@ -22,18 +22,18 @@ from functools import reduce
 def selec_band(tifarr, rgb):
     C = tifarr.shape[-1] if len(tifarr.shape) == 3 else 1
     if C == 1:
-        return _sample_norm(cv2.merge([np.uint16(tifarr)] * 3))
+        return sample_norm(cv2.merge([np.uint16(tifarr)] * 3))
     elif C == 2:
         return None
     else:
-        return _sample_norm(
+        return sample_norm(
             cv2.merge([np.uint16(tifarr[:, :, rgb[0]]),
                        np.uint16(tifarr[:, :, rgb[1]]),
                        np.uint16(tifarr[:, :, rgb[2]])]))
 
 
 # DEBUG：test
-def _sample_norm(image, NUMS=65536):
+def sample_norm(image, NUMS=65536):
     stretched_r = stretch(image[:, :, 0], NUMS)
     stretched_g = stretch(image[:, :, 1], NUMS)
     stretched_b = stretch(image[:, :, 2], NUMS)

@@ -31,6 +31,7 @@ from util.colormap import ColorMask
 from util.label import LabeleList
 from util import MODELS
 from util.remotesensing import *
+from util.medical import *
 from util.language import TransUI
 from util.coco import coco
 
@@ -76,7 +77,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currentPath = None
         self.isDirty = False
         self.labelList = LabeleList()
-        self.rsRGB = [0, 0, 0]
+        self.rsRGB = [0, 0, 0]  # 遥感RGB索引
+        self.midx = 0  # 医疗切片索引
         self.rawimg = None
         self.origExt = False
         # worker
@@ -129,6 +131,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
+        self.sldMISlide.valueChanged.connect(self.slideChanged)
 
         ## 标签列表点击
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
@@ -855,6 +858,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "*.{}".format(fmt.data().decode())
             for fmt in QtGui.QImageReader.supportedImageFormats()
         ]
+        formats.extend(["*.nii", "*.nii.gz"])  # 医疗图像
         recentPath = self.settings.value("recent_files", [])
         if len(recentPath) == 0:
             recentPath = "."
@@ -914,6 +918,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path, update_list=False):
         if len(path) == 0 or not osp.exists(path):
             return
+        _, ext = os.path.splitext(path)
         if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
                 self.rawimg, geoinfo = open_tif(path)
@@ -926,7 +931,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 self.warn(
                     self.trans.put("未打开遥感工具"),
-                    self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感区！"),
+                    self.trans.put("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
+                )
+                return
+        elif ext == ".nii" or ext == ".gz":  # nii.gz
+            if self.RSDock.isVisible():
+                self.rawimg = open_nii(path)
+                try:
+                    image = slice_img(self.rawimg, self.midx)
+                except IndexError:
+                    self.midx = 0
+                    image = slice_img(self.rawimg, self.midx)
+                self.update_slideSld()
+            else:
+                self.warn(
+                    self.trans.put("未打开医疗工具"),
+                    self.trans.put("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"),
                 )
                 return
         else:
@@ -1218,6 +1238,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.prob_thresh = self.segThresh
         self._update_image()
 
+    def slideChanged(self):
+        self.sldMISlide.textLab.setText(str(self.slideMi))
+        if not self.controller or self.controller.image is None:
+            return
+        self.midx = int(self.slideMi) - 1
+        self.miSlideSet()
+        self._update_image()
+
     def undoClick(self):
         if self.image is None:
             return
@@ -1270,7 +1298,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if reset_canvas:
             self.resetZoom(width, height)
         self.annImage.setPixmap(QPixmap(image))
-
         # BUG: 一直有两张图片在scene里，研究是为什么
         # print(self.scene.items())
 
@@ -1313,11 +1340,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toggleSave(self, type):
         self.save_status[type] = not self.save_status[type]
         if type == "coco" and self.save_status["coco"]:
-
             pass
 
     def changeWorkerShow(self, index):
-        # 检测遥感所需的gdal环境
         if index == 4:
             if check_gdal() == False:
                 self.warn(
@@ -1327,6 +1352,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 self.statusbar.showMessage(self.trans.put("打开失败，未检出GDAL"))
                 return
+        if index == 5:
+            if check_sitk() == False:
+                self.warn(
+                    self.trans.put("无法导入SimpleITK"),
+                    self.trans.put("请检查环境中是否存在SimpleITK，若不存在则无法使用医疗工具！"),
+                    QMessageBox.Yes,
+                )
+                self.statusbar.showMessage(self.trans.put("打开失败，未检出SimpleITK"))
+                return
         self.workers_show[index] = bool(self.workers_show[index] - 1)
         self.refreshWorker()
 
@@ -1334,9 +1368,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
         self.image = selec_band(self.rawimg, self.rsRGB)
-        image = (
-            self.image
-        )  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
+        image = self.image  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
+        self.controller.image = image
+        self._update_image()
+
+    def miSlideSet(self):
+        self.image = slice_img(self.rawimg, self.midx)
+        image = self.image
         self.controller.image = image
         self._update_image()
 
@@ -1376,6 +1414,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
+    def update_slideSld(self):
+        C = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
+        self.sldMISlide.setMaximum(C)
+
     def toggleLargestCC(self, on):
         try:
             self.controller.filterLargestCC = on
@@ -1397,6 +1439,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     @property
     def segThresh(self):
         return self.sldThresh.value() / 100
+
+    @property
+    def slideMi(self):
+        return self.sldMISlide.value()
 
     def warnException(self, e):
         e = str(e)

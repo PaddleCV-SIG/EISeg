@@ -26,12 +26,12 @@ def open_tif(geoimg_path):
     '''
     if IPT_GDAL == True:
         geoimg = gdal.Open(geoimg_path)
-        return _tif2rgb(geoimg), get_geoinfo(geoimg)
+        return _tif2arr(geoimg), get_geoinfo(geoimg)
     else:
         raise ImportError('can\'t import gdal!')
 
 
-def _tif2rgb(geoimg):
+def _tif2arr(geoimg):
     if IPT_GDAL == True:
         tifarr = geoimg.ReadAsArray()
         print("tif_shape:", tifarr.shape)

@@ -1,125 +1,129 @@
-选择待标注图片文件夹@Select the picture folder to be annotated
-加载一个模型参数@Load a model parameter
-关闭@Close
-未加载模型参数，请先加载模型参数！@Model parameters not loaded, please load model parameters first!
-撤销@Revoke
-快速上手介绍@Quick introduction
-快捷键冲突@Shortcut is in conflict
-选择标签保存路径@Select label save path
-选择保存标签配置文件路径@Select the path to save the label profile
-清除所有标注@Clear all annotations
-撤销一次点击@Undo one click
-请先添加标签之后再进行保存！@Please add labels before saving!
-退出软件@Exit software
-清空所有的标签@Clear all labels
-删除多边形@Delete selected polygon
+关于软件@About the software
+保存为伪彩色图像@Save in pseudo color format
 翻页同时自动保存@Auto save while turning images
-保存为JSON格式@Save label in JSON format
-波段设置@Band setting
-标签尚未保存，是否保存标签@The label has not been saved. Do you want to save the label
-清空标签列表@Clear label list
-选择标签配置文件路径@Select label profile path
-功能@Function
-完成当前目标的标注@Complete the annotation of the current target
-N2宫格标注@N2 grid labeling
-显示@Display
-选择模型参数@Select model parameters
-未加载模型@Model not loaded
-保存标签文件路径@Save label file path
-改变标签保存的文件夹路径@Change the folder path for label saving
-未打开遥感工具，请先在菜单栏-显示中打开遥感区！@The remote sensing tool has not been opened, please open the remote sensing area in the menu bar - display first!
-保存标签列表@Save label list
-完成最后一个目标？@Finish annotating the last object?
-保留最大的连通块@Keep the largest connected block
-清除所有标注信息@Clear all annotation information
-自动保存@Auto save
-编辑快捷键@Edit shortcut
-加载网络参数@Load network parameters
-当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！@The parameters in the current network structure do not match the model parameters, please change the network structure or use other parameters!
-正在加载@Loading
-快速上手@Get started guide
+切片选择：@Slice selection:
+清除标注记录@Clear label record
+加载一个模型参数@Load a model parameter
+近期文件@Recent files
+伪彩色保存@Save in pseudo color format
 清除近期标注记录@Clear recent annotation history
-文件@File
+保存@Save
+切片选择@Slice selection
+保存图像标签@Save image label
+数据列表@Data list
+选择待标注图片文件夹@Select the picture folder to be annotated
 标签成功保存至@Label successfully saved to
+改变标签保存路径@Change label save path
 关于这个软件和开发团队@About us
-没有最近使用模型信息，请加载模型@No information about recently used models, please load the model manually
-标签列表@Tag list
-标注@Annotation
+标签配置文件@Label profile
+未加载模型@Model not loaded
+快速上手介绍@Quick introduction
+选择标签保存路径@Select label save path
+功能@Function
 JSON保存@Save in JSON
 未打开遥感工具@Remote sensing tool not opened
-没有需要保存的标签@There are no labels to save
-保存为伪彩色图像@Save in pseudo color format
-无@Nothing
-中国中文@Chinese
-打开文件夹@Open images under a folder
-退出@Exit
-确认删除？@Are you sure you want to delete?
-帮助@Help
-点击可视化半径：@Click visualization radius:
-尚未加载模型，请先加载模型！@The model has not been loaded, please load the model first!
-完成当前目标@Finish annotating current object
-模型加载完成@Model loading completed
-保存标签配置文件@Save label profile
-标签配置文件@Label profile
-编辑软件快捷键@Edit software shortcut
-无法导入GDAL@Unable to import GDAL
-删除当前选中的点@Delete the currently selected point
-未选择当前标签@The current label is not selected
-下一张@Next image
-保存图像标签@Save image label
-保存为灰度图像，像素的灰度为对应类型的标签@Save as grayscale image, the grayscale of pixel is the label of corresponding type
-选择标签文件保存路径@Select the path to save the label file
-请选择模型结构@Please select model structure
-加载标签列表@Load label list
-保存标签？@Save label?
-翻到上一张图片@Turn to the previous image
-重做一次点击@Redo one click
-灰度保存@Save in grayscale format
-从标签配置文件中加载标签@Loading label list from config file
-使用N2宫格进行细粒度标注@Fine grained annotation using N2 grid
-打开一张图像进行标注@Open an image for annotation
-分割设置@Split settings
-近期模型及参数@Recent models and parameters
-指定标签保存路径@Specify label save path
-请先在标签列表中单击点选标签@Please select a label in the label list by clicking it first
+标签尚未保存，是否保存标签@The label has not been saved. Do you want to save the label
+标签列表@Tag list
 分割阈值：@Segmentation threshold:
-另存为@Save as
-清除标注记录@Clear label record
-功能尚在开发@This function is still under development
-打开一个文件夹下所有的图像进行标注@Open all the images in a folder for annotation
-模型未加载@Model not loaded
-重做@Redo
+清除所有标注@Clear all annotations
+选择模型参数@Select model parameters
+保存为灰度图像，像素的灰度为对应类型的标签@Save as grayscale image, the grayscale of pixel is the label of corresponding type
+未加载模型参数，请先加载模型参数！@Model parameters not loaded, please load model parameters first!
+清空所有的标签@Clear all labels
+确认删除？@Are you sure you want to delete?
+无@Nothing
+使用N2宫格进行细粒度标注@Fine grained annotation using N2 grid
 打开失败，未检出GDAL@Failed to open, GDAL not detected
-添加标签@Add annotation
-关闭当前图像@Close the current image
-模型和参数不匹配@Model and parameters do not match
+保存标签配置文件@Save label profile
 确认要删除当前选中多边形标注？@Are you sure you want to delete the currently selected polygon annotation?
-无近期文件@No recent images
-上一张@Last image
+打开一张图像进行标注@Open an image for annotation
+模型加载完成@Model loading completed
+保留最大连通块@Keep the largest connected component
+清除所有标注信息@Clear all annotation information
+模型和参数不匹配，请重新加载@The paramter chosen don't match the model structure, please check and load again
+翻到下一张图片@Turn to the next image
+选择标签配置文件路径@Select label profile path
+关闭当前图像@Close the current image
+保存为COCO格式@Save to coco format
+删除当前选中的多边形@Delete the currently selected polygon
+保存标签文件路径@Save label file path
+未选择当前标签@The current label is not selected
+医疗设置@Medical settings
+退出软件@Exit software
+保存标签列表@Save label list
+分割设置@Split settings
+模型选择@Model
+删除多边形@Delete selected polygon
+完成当前目标@Finish annotating current object
+模型和参数不匹配@Model and parameters do not match
+编辑软件快捷键@Edit software shortcut
+帮助@Help
+当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！@The parameters in the current network structure do not match the model parameters, please change the network structure or use other parameters!
+删除点@Delete point
+保存为JSON格式@Save label in JSON format
+另存为@Save as
+重做@Redo
+波段设置@Band setting
+下一张@Next image
+选择待标注图片@Select a picture to be annotated
+清空标签列表@Clear label list
+没有需要保存的标签@There are no labels to save
+请选择模型结构@Please select model structure
+翻到上一张图片@Turn to the previous image
+打开文件夹@Open images under a folder
+删除当前选中的点@Delete the currently selected point
 尚未选择模型结构，请在右侧下拉菜单进行选择！@The model structure has not been selected, please select from the drop-down menu on the right!
 将标签保存成标签配置文件@Save label as label profile
-近期文件@Recent files
-是否完成最后一个目标的标注，不完成不会进行保存。@Finish annotating the last object or not? If not, annotation for the last object won't be saved.
-打开图像@Open image
-选择模型结构@Select model structure
-医疗设置@Medical settings
-已清除最近打开文件@Recently opened files cleared
-选择待标注图片@Select a picture to be annotated
-切换语言，重启生效@Switch language, takes effect after restart
-伪彩色保存@Save in pseudo color format
 遥感设置@Remote sensing settings
-改变标签保存路径@Change label save path
-保存@Save
-加载模型参数@Loading model parameters
-模型和参数不匹配，请重新加载@The paramter chosen don't match the model structure, please check and load again
-保留最大连通块@Keep the largest connected component
-翻到下一张图片@Turn to the next image
-关于软件@About the software
-删除当前选中的多边形@Delete the currently selected polygon
-模型选择@Model
+选择保存标签配置文件路径@Select the path to save the label profile
+保留最大的连通块@Keep the largest connected block
+未打开遥感工具，请先在菜单栏-显示中打开遥感设置！@Remote sensing tool is not opened, please open remote sensing settings in menu bar - display first!
+是否完成最后一个目标的标注，不完成不会进行保存。@Finish annotating the last object or not? If not, annotation for the last object won't be saved.
 标签透明度：@Label transparency:
+N2宫格标注@N2 grid labeling
+未打开医疗工具@Medical tools not opened
+显示@Display
+打开一个文件夹下所有的图像进行标注@Open all the images in a folder for annotation
+从标签配置文件中加载标签@Loading label list from config file
+功能尚在开发@This function is still under development
+没有最近使用模型信息，请加载模型@No information about recently used models, please load the model manually
+近期模型及参数@Recent models and parameters
+请先添加标签之后再进行保存！@Please add labels before saving!
+正在加载@Loading
+退出@Exit
+指定标签保存路径@Specify label save path
+撤销@Revoke
+编辑快捷键@Edit shortcut
+尚未加载模型，请先加载模型！@The model has not been loaded, please load the model first!
+选择标签文件保存路径@Select the path to save the label file
+已清除最近打开文件@Recently opened files cleared
 请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！@Please check whether GDAL exists in the environment, if not, remote sensing tools cannot be used!
-数据列表@Data list
+模型未加载@Model not loaded
+未打开医疗工具，请先在菜单栏-显示中打开医疗设置！@Medical tools are not opened, please open medical settings in menu bar - display first!
+中国中文@Chinese
+上一张@Last image
+改变标签保存的文件夹路径@Change the folder path for label saving
+标注@Annotation
+重做一次点击@Redo one click
+文件@File
+添加标签@Add annotation
+灰度保存@Save in grayscale format
+选择模型结构@Select model structure
+无法导入GDAL@Unable to import GDAL
+加载标签列表@Load label list
 COCO保存@Coco save
-保存为COCO格式@Save to coco format
-删除点@Delete point
+完成当前目标的标注@Complete the annotation of the current target
+点击可视化半径：@Click visualization radius:
+请先在标签列表中单击点选标签@Please select a label in the label list by clicking it first
+打开图像@Open image
+保存标签？@Save label?
+完成最后一个目标？@Finish annotating the last object?
+加载网络参数@Load network parameters
+切换语言，重启生效@Switch language, takes effect after restart
+自动保存@Auto save
+关闭@Close
+快速上手@Get started guide
+快捷键冲突@Shortcut is in conflict
+撤销一次点击@Undo one click
+加载模型参数@Loading model parameters
+无近期文件@No recent images
