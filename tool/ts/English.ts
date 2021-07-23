@@ -646,17 +646,17 @@
     <message>
         <location filename="../../ui.py" line="708"/>
         <source>分割阈值：</source>
-        <translation>Segmentation Threshold</translation>
+        <translation>Segmentation Threshold:</translation>
     </message>
     <message>
         <location filename="../../ui.py" line="708"/>
         <source>标签透明度：</source>
-        <translation>Label Transparency</translation>
+        <translation>Label Transparency:</translation>
     </message>
     <message>
         <location filename="../../ui.py" line="708"/>
         <source>点击可视化半径：</source>
-        <translation>Click Visualization Radius</translation>
+        <translation>Click Visualization Radius:</translation>
     </message>
     <message>
         <location filename="../../ui.py" line="708"/>
@@ -666,7 +666,7 @@
     <message>
         <location filename="../../ui.py" line="708"/>
         <source>切片选择：</source>
-        <translation>Choose Slice</translation>
+        <translation>Choose Slice:</translation>
     </message>
 </context>
 <context>
@@ -680,6 +680,21 @@
         <location filename="../../widget/shortcut.py" line="708"/>
         <source>编辑快捷键</source>
         <translation>Edit Keyboard Shortcuts</translation>
+    </message>
+    <message>
+        <location filename="../../widget/shortcut.py" line="708"/>
+        <source>快捷键已被</source>
+        <translation>shortcut has been used by</translation>
+    </message>
+    <message>
+        <location filename="../../widget/shortcut.py" line="708"/>
+        <source>使用，请设置其他快捷键或先修改</source>
+        <translation>. Please set another key sequence or modify the keyboard shotcut of</translation>
+    </message>
+    <message>
+        <location filename="../../widget/shortcut.py" line="708"/>
+        <source>的快捷键</source>
+        <translation>first!</translation>
     </message>
 </context>
 </TS>

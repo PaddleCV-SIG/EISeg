@@ -98,7 +98,17 @@ class ShortcutWindow(QWidget):
                 msg.setIcon(QMessageBox.Warning)
                 msg.setWindowTitle(key + " " + self.tr("快捷键冲突"))
                 msg.setText(
-                    self.tr(f"{key}快捷键已被{a.data()}使用，请设置其他快捷键或先修改{a.data()}的快捷键")
+                    key
+                    + " "
+                    + self.tr("快捷键已被")
+                    + " "
+                    + a.data()
+                    + " "
+                    + self.tr("使用，请设置其他快捷键或先修改")
+                    + " "
+                    + a.data()
+                    + " "
+                    + self.tr("的快捷键")
                 )
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.exec_()
