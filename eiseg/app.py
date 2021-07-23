@@ -468,7 +468,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 largest_component,
                 del_active_polygon,
             ),
-            workMenu=(save_pseudo, save_grayscale, save_json),
+            workMenu=(save_pseudo, save_grayscale, save_json, save_coco),
             showMenu=(
                 model_worker,
                 data_worker,
@@ -1200,6 +1200,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             outputDir = dir
         if len(outputDir) == 0 or not osp.exists(outputDir):
             return False
+        if self.save_status["coco"]:
+            self.readCoco()
+            # asdf
         labelPaths = os.listdir(outputDir)
         exts = ["png"]
         labelPaths = [n for n in labelPaths if n.split(".")[-1] in exts]
@@ -1342,7 +1345,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toggleSave(self, type):
         self.save_status[type] = not self.save_status[type]
         if type == "coco" and self.save_status["coco"]:
-            pass
+            self.readCoco()
+
+    def readCoco(self, path=None):
+        pass
 
     def changeWorkerShow(self, index):
         if index == 4:
