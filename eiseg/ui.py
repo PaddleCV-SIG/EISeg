@@ -206,8 +206,14 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         MIRegion = QtWidgets.QVBoxLayout()
         MIRegion.setObjectName("MIRegion")
-        mi_text = create_text(CentralWidget, "bandSelection", trans.put("医疗设置"))
-        MIRegion.addWidget(mi_text)
+        # mi_text = create_text(CentralWidget, "sliceSelection", trans.put("切片选择"))
+        # MIRegion.addWidget(mi_text)
+        self.sldMISlide, slideRegion = p_create_slider(
+            "sldMISlide", "labMISlide", trans.put("切片选择："), 1, 1, 1
+        )
+        self.sldMISlide.setMinimum(1)
+        MIRegion.addLayout(slideRegion)
+        MIRegion.addWidget(self.sldMISlide)
         horizontalLayout.addLayout(MIRegion)
         self.MIDock = p_create_dock("RSDock", trans.put("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)

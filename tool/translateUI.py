@@ -83,7 +83,7 @@ def firstCharUpper(s):
     return s[:1].upper() + s[1:]
 
 translate = []
-baidu_trans = BaiduTranslate("zh","en")
+baidu_trans = BaiduTranslate("zh", "en")
 for cn in tqdm(chinese):
     if cn not in now_words.keys():
         en = baidu_trans.BdTrans(cn)
