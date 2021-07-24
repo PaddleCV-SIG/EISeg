@@ -13,6 +13,7 @@ from util.vis import draw_with_blend_and_clicks
 import matplotlib.pyplot as plt
 
 
+# TODO: 研究标签从0开始的时候怎么处理
 class InteractiveController:
     def __init__(self, net, predictor_params, update_image_callback, prob_thresh=0.5):
         self.net = net
@@ -86,12 +87,14 @@ class InteractiveController:
         if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
             print("点击越界")
             return False
-        
+
         if len(self.states) == 0:  # 保存最初状态
-            self.states.append({
-                "clicker": self.clicker.get_state(),
-                "predictor": self.predictor.get_states(),
-            })
+            self.states.append(
+                {
+                    "clicker": self.clicker.get_state(),
+                    "predictor": self.predictor.get_states(),
+                }
+            )
 
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
         self.clicker.add_click(click)
@@ -106,10 +109,12 @@ class InteractiveController:
         print("cost time", end - start)
 
         # 保存最新状态
-        self.states.append({
+        self.states.append(
+            {
                 "clicker": self.clicker.get_state(),
                 "predictor": self.predictor.get_states(),
-            })
+            }
+        )
 
         if self.probs_history:
             self.probs_history.append((self.probs_history[-1][0], pred))
@@ -120,7 +125,6 @@ class InteractiveController:
         # # test
         # res = [i.coords for i in self.states[-1]["clicker"]]
         # print(res)
-
 
     def set_label(self, label):
         # if label is None:
@@ -153,7 +157,6 @@ class InteractiveController:
             self.predictor.set_states(next_state["predictor"])
             self.probs_history.append(self.undo_probs_history.pop())
             self.update_image_callback()
-
 
     def partially_finish_object(self):
         """部分完成

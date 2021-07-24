@@ -606,7 +606,7 @@
     <message>
         <location filename="../../app.py" line="663"/>
         <source>当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！</source>
-        <translation>The parameters in the current network structure do not match the model parameters. Please replace the network structure or use other parameters!</translation>
+        <translation>The model parameter selected don't match the current architecture. Please choose another parameter file!</translation>
     </message>
     <message>
         <location filename="../../app.py" line="667"/>

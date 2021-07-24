@@ -1,4 +1,4 @@
-from genericpath import exists
+# from genericpath import exists
 import os
 import os.path as osp
 from functools import partial
@@ -20,21 +20,15 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 
-from widget import ShortcutWindow
-import models
+from eiseg import pjpath, __APPNAME__
+from widget import ShortcutWindow, PolygonAnnotation
+from models import EISegModel
 from controller import InteractiveController
 from ui import Ui_EISeg
-from widget import PolygonAnnotation
-from eiseg import pjpath, __APPNAME__
 import util
-from util.colormap import ColorMask
-from util.label import LabeleList
-from util import MODELS
+from util import MODELS, COCO
 from util.remotesensing import *
 from util.medical import *
-from util import COCO
-
-# from util.language import TransUI
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -61,28 +55,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.status = self.IDILE
         self.save_status = {
             "gray_scale": True,
-            "pseudo_color": False,
+            "pseudo_color": True,
             "json": True,
             "coco": True,
         }  # 是否保存这几个格式
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
-        self.modelClass = MODELS[0]
+        self.modelClass = MODELS[0]  # 模型class
         self.outputDir = None  # 标签保存路径
-        self.labelPaths = []  # 保存所有从outputdir发现的标签文件路径
+        self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.filePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
-        self.currentPath = None
-        self.isDirty = False
-        self.labelList = LabeleList()
+        self.isDirty = False  # 是否需要保存
+        self.labelList = util.LabelList()  # 标签列表
+        self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
+        self.coco = None
+        self.colorMap = util.colorMap
+
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
         self.midx = 0  # 医疗切片索引
         self.rawimg = None
-        self.origExt = False
-        self.coco = None
         # worker
-        self.workers_show = [True, True, True, True, False, False]
-        self.workers = [
+        self.display_dockwidget = [True, True, True, True, False, False]
+        self.dock_widgets = [
             self.ModelDock,
             self.DataDock,
             self.LabelDock,
@@ -93,18 +88,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value("recent_models", [])
         self.recentFiles = self.settings.value("recent_files", [])
-        self.workerStatus = self.settings.value("worker_status", [])
+        self.dockStatus = self.settings.value("dock_status", [])
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
-        self.languageState = self.settings.value("language_state", bool)
-        if not self.recentFiles:
-            self.recentFiles = []
-        self.maskColormap = ColorMask(osp.join(pjpath, "config/colormap.txt"))
+        # if not self.recentFiles:
+        #     self.recentFiles = []
 
         # 初始化action
         self.initActions()
 
         # 更新近期记录
-        self.refreshWorker(True)
+        self.toggleDockWidgets(True)
         self.updateModelsMenu()
         self.updateRecentFile()
         self.loadLayout()
@@ -143,12 +136,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
     def initActions(self):
-        def menu(title, actions=None):
-            menu = self.menuBar().addMenu(title)
-            if actions:
-                util.addActions(menu, actions)
-            return menu
-
         tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
         action = partial(util.newAction, self)
         self.actions = util.struct()
@@ -260,7 +247,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         save_as = action(
             tr("&另存为"),
-            partial(self.saveLabel, True),
+            partial(self.saveLabel, saveAs=True),
             "save_as",
             "OtherSave",
             tr("指定标签保存路径"),
@@ -287,6 +274,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "largest_component",
             "SaveMaxPolygon",
             tr("保留最大的连通块"),
+            checkable=True,
+        )
+        origional_extension = action(
+            tr("&标签和图像使用相同拓展名"),
+            self.toggleOrigExt,
+            "origional_extension",
+            "SavePseudoColor",
+            tr("标签和图像使用相同拓展名，用于图像中有文件名相同，拓展名不同的情况"),
             checkable=True,
         )
         save_pseudo = action(
@@ -415,15 +410,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("医疗设置"),
             checkable=True,
         )
-        # language = action(
-        #     tr("&中国中文"),
-        #     self.setLanguage,
-        #     "language",
-        #     "Language",
-        #     tr("切换语言，重启生效"),
-        #     checkable=True,
-        #     checked=bool(strtobool(self.settings.value("language_state", "False")) - 1),
-        # )
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
@@ -466,6 +452,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 largest_component,
                 del_active_polygon,
+                origional_extension,
             ),
             workMenu=(save_pseudo, save_grayscale, save_json, save_coco),
             showMenu=(
@@ -488,10 +475,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_pseudo,
                 save_grayscale,
                 save_json,
+                save_coco,
+                origional_extension,
                 None,
                 largest_component,
             ),
         )
+
+        def menu(title, actions=None):
+            menu = self.menuBar().addMenu(title)
+            if actions:
+                util.addActions(menu, actions)
+            return menu
+
         menu(tr("文件"), self.menus.fileMenu)
         menu(tr("标注"), self.menus.labelMenu)
         menu(tr("功能"), self.menus.workMenu)
@@ -500,12 +496,27 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         util.addActions(self.toolBar, self.menus.toolBar)
 
     def closeImage(self):
-        if not self.controller or self.controller.image is None:
-            return
-        # 2. 完成正在交互式标注的标签
-        self.completeLastMask()
-
-        # if self.isDirty:
+        if self.controller and self.controller.image is not None:
+            # 1. 完成正在交互式标注的标签
+            self.completeLastMask()
+            # 2. 进行保存
+            if self.isDirty:
+                if self.actions.auto_save.isChecked():
+                    self.saveLabel()
+                else:
+                    res = self.warn(
+                        self.tr("保存标签？"),
+                        self.tr("标签尚未保存，是否保存标签"),
+                        QMessageBox.Yes | QMessageBox.Cancel,
+                    )
+                    if res == QMessageBox.Yes:
+                        self.saveLabel()
+                self.setClean()
+            # 3. 清空多边形标注，删掉图片
+            for p in self.scene.polygon_items[::-1]:
+                p.remove()
+            self.scene.polygon_items = []
+        self.annImage.setPixmap(QPixmap())
 
     def editShortcut(self):
         self.shortcutWindow.show()
@@ -602,7 +613,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             filters,
         )
         if not osp.exists(param_path):
-            return
+            return False
         res = self.loadModelParam(param_path)
         if res:
             model_dict = {
@@ -614,6 +625,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(self.recentModels) > 10:
                     del self.recentModels[0]
                 self.settings.setValue("recent_models", self.recentModels)
+            return True
+        return False
 
     def loadModelParam(self, param_path, model=None):
         print("Call load model param: ", param_path, model, type(model))
@@ -633,7 +646,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.warnException(e)
             return False
 
-        if not isinstance(model, models.EISegModel):
+        if not isinstance(model, EISegModel):
             print("not a instance")
             self.warn(self.tr("请选择模型结构"), self.tr("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
             return False
@@ -705,7 +718,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(file_path):
             return
         self.labelList.readLabel(file_path)
-        self.maskColormap.index = len(self.labelList)  # 颜色表跟上
         print("Loaded label list:", self.labelList.list)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
@@ -732,7 +744,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.settings.setValue("label_list_file", savePath)
 
     def addLabel(self):
-        c = self.maskColormap.get_color()
+        c = self.colorMap.get_color()
         table = self.labelListTable
         idx = table.rowCount()
         table.insertRow(table.rowCount())
@@ -849,10 +861,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.label_list = self.labelList
 
     def labelListItemChanged(self, row, col):
-        if col != 1:
-            return
-        name = self.labelListTable.item(row, col).text()
-        self.labelList[row].name = name
+        self.colorMap.usedColors = self.labelList.colors
+        if col == 1:
+            name = self.labelListTable.item(row, col).text()
+            self.labelList[row].name = name
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -936,7 +948,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.currIdx = 0
         self.turnImg(0)
 
-    def loadImage(self, path, update_list=False):
+    def loadImage(self, path):
         if len(path) == 0 or not osp.exists(path):
             return
         _, ext = os.path.splitext(path)
@@ -971,28 +983,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 return
         else:
+            # 1. 读取图片
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
-        self.currentPath = path
         if self.controller:
             self.controller.set_image(image)
         else:
             self.warn(self.tr("未加载模型"), self.tr("未加载模型参数，请先加载模型参数！"))
-            self.changeParam()
-            print("please load model params first!")
-            return
-        self.controller.set_label(self.loadLabel(path))
+            if not self.changeParam():
+                print("please load model params first!")
+                return
+        # self.controller.set_label(self.loadLabel(path))
+        # 2. 加载标签
+        self.loadLabel(path)
         self.addRecentFile(path)
-        self.imagePath = path  # 修复使用近期文件的图像保存label报错
-        if update_list:
-            self.listFiles.addItems([path.replace("\\", "/")])
-            self.filePaths.append(path)
+        self.imagePath = path
 
     def loadLabel(self, imgPath):
-        # print("load label", imgPath, self.labelPaths)
+        print("load label", imgPath, self.labelPaths)
         if imgPath == "" or len(self.labelPaths) == 0:
             return None
+
+        # 1. 读取json格式标签
 
         def getName(path):
             return osp.basename(path).split(".")[0]
@@ -1009,7 +1022,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         labelPath = osp.splitext(labelPath)[0] + ".json"
         labels = json.loads(open(labelPath, "r").read())
-        # print(labels)
 
         for label in labels:
             color = label["color"]
@@ -1050,8 +1062,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for p in self.scene.polygon_items[::-1]:
             p.remove()
         self.scene.polygon_items = []
-        self.imagePath = self.filePaths[self.currIdx]
-        self.loadImage(self.imagePath)
+        self.loadImage(self.filePaths[self.currIdx])
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
 
@@ -1090,13 +1101,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
-        if not self.controller:
+        if not self.controller or self.controller.image is None:
             return True
         if not self.controller.is_incomplete_mask:
             return True
         res = self.warn(
-            tr("完成最后一个目标？"),
-            tr("是否完成最后一个目标的标注，不完成不会进行保存。"),
+            self.tr("完成最后一个目标？"),
+            self.tr("是否完成最后一个目标的标注，不完成不会进行保存。"),
             QMessageBox.Yes | QMessageBox.Cancel,
         )
         if res == QMessageBox.Yes:
@@ -1151,6 +1162,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
 
+        if savePath not in self.labelPaths:
+            self.labelPaths.append(savePath)
+
         # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
@@ -1185,7 +1199,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in poly:
                     label["points"].append([p.x(), p.y()])
                 labels.append(label)
-            savePath = osp.splitext(savePath)[0] + ".json"
+            if self.origExt:
+                savePath = osp.splitext(savePath) + ".json"
+            else:
+                savePath = osp.splitext(savePath)[0] + ".json"
             open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
         # 4.4 保存coco
         if self.save_status["coco"]:
@@ -1205,9 +1222,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     points.append(p.y())
                 if not polygon.coco_id:
                     self.coco.addAnnotation(imgId, label.idx, points)
-
-        if savePath not in self.labelPaths:
-            self.labelPaths.append(savePath)
 
         self.setClean()
         self.statusbar.showMessage(self.tr("标签成功保存至") + " " + savePath, 5000)
@@ -1364,6 +1378,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO: 研究这个东西是不是真的不影响ui
         QtCore.QTimer.singleShot(0, function)
 
+    def toggleOrigExt(self):
+        self.origExt = not self.origExt
+
     def toggleAutoSave(self, save):
         if save and not self.outputDir:
             self.changeOutputDir(None)
@@ -1385,7 +1402,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         self.coco = COCO(osp.join(self.outputDir, "coco.json"))
         if self.clearLabelList():
-            self.labelList = labelList(self.coco.dataset["categories"])
+            self.labelList = util.LabelList(self.coco.dataset["categories"])
             self.refreshLabelList()
 
     def changeWorkerShow(self, index):
@@ -1407,8 +1424,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 self.statusbar.showMessage(self.tr("打开失败，未检出SimpleITK"))
                 return
-        self.workers_show[index] = bool(self.workers_show[index] - 1)
-        self.refreshWorker()
+        self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
+        self.toggleDockWidgets()
 
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
@@ -1426,15 +1443,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = image
         self._update_image()
 
-    def refreshWorker(self, is_init=False):
+    def toggleDockWidgets(self, is_init=False):
         if is_init == True:
-            if self.workerStatus != []:
-                self.workers_show = [strtobool(w) for w in self.workerStatus]
+            if self.dockStatus != []:
+                self.display_dockwidget = [strtobool(w) for w in self.dockStatus]
             for i in range(len(self.menus.showMenu)):
-                self.menus.showMenu[i].setChecked(bool(self.workers_show[i]))
+                self.menus.showMenu[i].setChecked(bool(self.display_dockwidget[i]))
         else:
-            self.settings.setValue("worker_status", self.workers_show)
-        for t, w in zip(self.workers_show, self.workers):
+            self.settings.setValue("dock_status", self.display_dockwidget)
+        for t, w in zip(self.display_dockwidget, self.dock_widgets):
             if t == True:
                 w.show()
             else:

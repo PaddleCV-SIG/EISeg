@@ -5,7 +5,7 @@ shortcut:
   clear: Ctrl+Shift+Z
   clear_label: ''
   clear_recent: ''
-  close: ''
+  close: Ctrl+W
   data_worker: ''
   del_active_polygon: Backspace
   edit_shortcuts: E
@@ -19,6 +19,7 @@ shortcut:
   model_worker: ''
   open_folder: Shift+A
   open_image: Ctrl+A
+  origional_extension: ''
   quick_start: ''
   quit: ''
   redo: Ctrl+Y
