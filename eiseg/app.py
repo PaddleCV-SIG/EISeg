@@ -600,6 +600,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(self.recentModels) > 10:
                     del self.recentModels[0]
                 self.settings.setValue("recent_models", self.recentModels)
+            self.status = self.ANNING
             return True
         return False
 
@@ -989,6 +990,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadLabel(path)
         self.addRecentFile(path)
         self.imagePath = path
+        self.status = self.ANNING
 
     def loadLabel(self, imgPath):
         print(
@@ -1088,7 +1090,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.turnImg(delta)
 
     def finishObject(self):
+        print("status:", self.status)
         if not self.controller or self.image is None:
+            return
+        if self.status == self.EDITING:
+            self.status = self.ANNING
+            for p in self.scene.polygon_items:
+                p.setAnning(isAnning=True)
             return
         current_mask = self.controller.finish_object()
         if current_mask is not None:
@@ -1107,6 +1115,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.scene.polygon_items.append(poly)
                 for p in points:
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+        self.status = self.EDITING
+        for p in self.scene.polygon_items:
+            p.setAnning(isAnning=False)
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
@@ -1249,7 +1260,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not self.coco.hasImage(osp.basename(self.imagePath)):
                 s = self.controller.img_size
                 imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
-
+            else:
+                imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
             polygons = self.scene.polygon_items
             for polygon in polygons:
                 label = self.labelList[polygon.labelIndex - 1]
