@@ -10,6 +10,16 @@
     </message>
     <message>
         <location filename="../../app.py" line="170"/>
+        <source>没有后一张图片</source>
+        <translation>This is the last image, can't turn to the next image.</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>没有前一张图片</source>
+        <translation>This is the first image, can't turn to the previous image.</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
         <source>编辑软件快捷键</source>
         <translation>Edit software shortcuts</translation>
     </message>
@@ -491,7 +501,17 @@
     <message>
         <location filename="../../app.py" line="1181"/>
         <source>选择标签保存路径</source>
-        <translation>Select label save path</translation>
+        <translation>Select the folder to save labels</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="1181"/>
+        <source>清空标签列表?</source>
+        <translation>Clear label list?</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="1181"/>
+        <source>请确认是否要清空标签列表</source>
+        <translation>Please confirm you want to clear the label list</translation>
     </message>
     <message>
         <location filename="../../app.py" line="1271"/>

@@ -16,6 +16,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.points = []
         self.m_items = []
         self.m_lines = []
+        self.coco_id = None
 
         self.labelIndex = index
         self.item_hovering = False

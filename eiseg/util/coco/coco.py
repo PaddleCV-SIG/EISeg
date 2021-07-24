@@ -37,9 +37,12 @@ class COCO:
         self.anns = dict()  # anns[annId]={}
         self.cats = dict()  # cats[catId] = {}
         self.imgs = dict()  # imgs[imgId] = {}
+        self.imgNames = []
         self.imgToAnns = defaultdict(list)  # imgToAnns[imgId] = [ann]
         self.catToImgs = defaultdict(list)  # catToImgs[catId] = [imgId]
+        self.nameToImgid = defaultdict(list)  # nameToImgid[name] = imgId
         self.maxAnnId = 0
+        self.maxImgId = 0
         if annotation_file is not None:
             print("loading annotations into memory...")
             tic = time.time()
@@ -50,12 +53,17 @@ class COCO:
             print("Done (t={:0.2f}s)".format(time.time() - tic))
             self.dataset = dataset
             self.createIndex()
+        print("==========================================")
+        print("dataset", self.dataset)
+        print("maxid", self.maxImgId)
+        print("names", self.imgNames)
+        print("------------------------------------------")
 
     def createIndex(self):
         # create index
         print("creating index...")
-        anns, cats, imgs = {}, {}, {}
-        imgToAnns, catToImgs = defaultdict(list), defaultdict(list)
+        anns, cats, imgs, imgNames = {}, {}, {}, []
+        imgToAnns, catToImgs, nameToImgid = [defaultdict(list) for _ in range(3)]
         if "annotations" in self.dataset:
             for ann in self.dataset["annotations"]:
                 imgToAnns[ann["image_id"]].append(ann)
@@ -65,6 +73,13 @@ class COCO:
         if "images" in self.dataset:
             for img in self.dataset["images"]:
                 imgs[img["id"]] = img
+                nameToImgid[img["file_name"]] = img["id"]
+                imgNames.append(img["file_name"])
+                try:
+                    imgId = int(img["id"])
+                    self.maxImgId = max(self.maxImgId, imgId)
+                except:
+                    pass
 
         if "categories" in self.dataset:
             for cat in self.dataset["categories"]:
@@ -81,6 +96,7 @@ class COCO:
         self.imgToAnns = imgToAnns
         self.catToImgs = catToImgs
         self.imgs = imgs
+        self.imgNames = imgNames
         self.cats = cats
 
     def setInfo(
@@ -105,12 +121,14 @@ class COCO:
         self,
         id: int,
         name: str,
+        color: list,
         supercategory: str = "",
     ):
         cat = {
-            "id": int,
-            "name": str,
-            "supercategory": str,
+            "id": id,
+            "name": name,
+            "color": color,
+            "supercategory": supercategory,
         }
         self.cats[id] = cat
         self.dataset["categories"].append(cat)
@@ -126,9 +144,12 @@ class COCO:
         coco_url: str = "",
         date_captured: datetime = "",
     ):
-        # TODO: deal with image id that are str
+        if file_name in self.imgNames:
+            print(f"{file_name}图片已存在")
+            return
         if not id:
-            id = file_name
+            self.maxImgId += 1
+            id = self.maxImgId
         image = {
             "id": id,
             "width": width,
@@ -141,6 +162,9 @@ class COCO:
         }
         self.dataset["images"].append(image)
         self.imgs[id] = image
+        self.imgNames.append(file_name)
+        return id
+        # print("add image", self.dataset["images"])
 
     def addAnnotation(
         self,
@@ -152,22 +176,24 @@ class COCO:
         id: int = None,
     ):
         if not id:
-            id = self.maxAnnId
             self.maxAnnId += 1
+            id = self.maxAnnId
         # TODO: cal bbox
         if not bbox:
-            pass
+            x, y, width, height = 0, 0, 0, 0
         # TODO: cal area
         if not area:
-            pass
+            area = 0
+
         ann = {
-            "id": int,
-            "image_id": int,
-            "category_id": int,
-            "segmentation": [polygon],
-            "area": float,
+            "id": id,
+            "image_id": image_id,
+            "category_id": category_id,
+            "segmentation": segmentation,
+            "area": area,
             "bbox": [x, y, width, height],
         }
+        print(ann)
 
         # dataset, anns, cats, imgs, imgToAnns, catToImgs
         self.dataset["annotations"].append(ann)

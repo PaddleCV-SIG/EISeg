@@ -13,8 +13,11 @@ class Label:
 
 
 class LabeleList(object):
-    def __init__(self):
+    def __init__(self, labels: dict = None):
         self.list = []
+        if labels is not None:
+            for lab in labels:
+                self.add(lab["id"], lab["name"], lab["color"])
 
     def add(self, idx, name, color):
         self.list.append(Label(idx, name, color))
