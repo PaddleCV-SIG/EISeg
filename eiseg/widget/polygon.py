@@ -47,6 +47,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         if isAnning:
             self.setAcceptHoverEvents(False)
             self.polygon_hovering = False
+            self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, False)
