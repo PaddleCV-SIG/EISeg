@@ -43,6 +43,23 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
+    def setAnning(self, isAnning=True):
+        if isAnning:
+            self.setAcceptHoverEvents(False)
+            self.polygon_hovering = False
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, False)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
+            self.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
+        else:
+            self.setAcceptHoverEvents(True)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, True)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+            self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
+            self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+
     def addPointMiddle(self, lineIdx, point):
         gripItem = GripItem(self, lineIdx + 1, self.borderColor)
         gripItem.setEnabled(False)
