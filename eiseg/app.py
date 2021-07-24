@@ -847,8 +847,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for idx, polygon in enumerate(self.scene.polygon_items):
             if polygon.hasFocus():
                 res = self.warn(
-                    tr("确认删除？"),
-                    tr("确认要删除当前选中多边形标注？"),
+                    self.tr("确认删除？"),
+                    self.tr("确认要删除当前选中多边形标注？"),
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Yes:
@@ -1093,11 +1093,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("status:", self.status)
         if not self.controller or self.image is None:
             return
-        if self.status == self.EDITING:
-            self.status = self.ANNING
-            for p in self.scene.polygon_items:
-                p.setAnning(isAnning=True)
-            return
         current_mask = self.controller.finish_object()
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
@@ -1115,9 +1110,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.scene.polygon_items.append(poly)
                 for p in points:
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-        self.status = self.EDITING
-        for p in self.scene.polygon_items:
-            p.setAnning(isAnning=False)
+        if self.status == self.EDITING:
+            self.status = self.ANNING
+            for p in self.scene.polygon_items:
+                p.setAnning(isAnning=True)
+        else:
+            self.status = self.EDITING
+            for p in self.scene.polygon_items:
+                p.setAnning(isAnning=False)
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
@@ -1385,6 +1385,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
 
         self.controller.add_click(x, y, isLeft)
+        self.status = self.ANNING
 
     def _update_image(self, reset_canvas=False):
         if not self.controller:
