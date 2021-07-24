@@ -45,9 +45,7 @@ class InteractiveController:
             Description of parameter `image`.
         """
         self.image = image
-        # self.image_nd = input_transform(image)[0]
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        # self.curr_label_number = 0
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
