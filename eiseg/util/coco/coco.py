@@ -37,10 +37,9 @@ class COCO:
         self.anns = dict()  # anns[annId]={}
         self.cats = dict()  # cats[catId] = {}
         self.imgs = dict()  # imgs[imgId] = {}
-        self.imgNames = []
         self.imgToAnns = defaultdict(list)  # imgToAnns[imgId] = [ann]
         self.catToImgs = defaultdict(list)  # catToImgs[catId] = [imgId]
-        self.nameToImgid = defaultdict(list)  # nameToImgid[name] = imgId
+        self.imgNameToId = defaultdict(list)  # imgNameToId[name] = imgId
         self.maxAnnId = 0
         self.maxImgId = 0
         if annotation_file is not None:
@@ -56,14 +55,21 @@ class COCO:
         print("==========================================")
         print("dataset", self.dataset)
         print("maxid", self.maxImgId)
-        print("names", self.imgNames)
         print("------------------------------------------")
+
+    def hasImage(self, imageName):
+        imgId = self.imgNameToId.get(imageName, None)
+        if imgId is None:
+            return False
+        return True
 
     def createIndex(self):
         # create index
         print("creating index...")
-        anns, cats, imgs, imgNames = {}, {}, {}, []
-        imgToAnns, catToImgs, nameToImgid = [defaultdict(list) for _ in range(3)]
+        anns, cats, imgs = {}, {}, {}
+        imgNameToId, imgToAnns, catToImgs, imgNameToId = [
+            defaultdict(list) for _ in range(4)
+        ]
         if "annotations" in self.dataset:
             for ann in self.dataset["annotations"]:
                 imgToAnns[ann["image_id"]].append(ann)
@@ -73,8 +79,7 @@ class COCO:
         if "images" in self.dataset:
             for img in self.dataset["images"]:
                 imgs[img["id"]] = img
-                nameToImgid[img["file_name"]] = img["id"]
-                imgNames.append(img["file_name"])
+                imgNameToId[img["file_name"]] = img["id"]
                 try:
                     imgId = int(img["id"])
                     self.maxImgId = max(self.maxImgId, imgId)
@@ -95,8 +100,8 @@ class COCO:
         self.anns = anns
         self.imgToAnns = imgToAnns
         self.catToImgs = catToImgs
+        self.imgNameToId = imgNameToId
         self.imgs = imgs
-        self.imgNames = imgNames
         self.cats = cats
 
     def setInfo(
@@ -144,7 +149,7 @@ class COCO:
         coco_url: str = "",
         date_captured: datetime = "",
     ):
-        if file_name in self.imgNames:
+        if self.hasImage(file_name):
             print(f"{file_name}图片已存在")
             return
         if not id:
@@ -162,9 +167,8 @@ class COCO:
         }
         self.dataset["images"].append(image)
         self.imgs[id] = image
-        self.imgNames.append(file_name)
+        self.imgNameToId[file_name] = id
         return id
-        # print("add image", self.dataset["images"])
 
     def addAnnotation(
         self,
@@ -175,6 +179,9 @@ class COCO:
         area: float = None,
         id: int = None,
     ):
+        if id is not None and self.anns.get(id, None) is not None:
+            print("标签已经存在")
+            return
         if not id:
             self.maxAnnId += 1
             id = self.maxAnnId
@@ -189,11 +196,10 @@ class COCO:
             "id": id,
             "image_id": image_id,
             "category_id": category_id,
-            "segmentation": segmentation,
+            "segmentation": [segmentation],
             "area": area,
             "bbox": [x, y, width, height],
         }
-        print(ann)
 
         # dataset, anns, cats, imgs, imgToAnns, catToImgs
         self.dataset["annotations"].append(ann)
