@@ -1,6 +1,8 @@
 import os
 import os.path as osp
 
+from . import colorMap
+
 
 class Label:
     def __init__(self, idx=None, name=None, color=None):
@@ -12,21 +14,22 @@ class Label:
         return f"{self.idx} {self.name} {self.color}"
 
 
-class LabeleList(object):
+class LabelList(object):
     def __init__(self, labels: dict = None):
-        self.list = []
+        self.labelList = []
         if labels is not None:
             for lab in labels:
-                self.add(lab["id"], lab["name"], lab["color"])
+                color = lab.get("color", colorMap.get_color())
+                self.add(lab["id"], lab["name"], color)
 
     def add(self, idx, name, color):
-        self.list.append(Label(idx, name, color))
+        self.labelList.append(Label(idx, name, color))
 
     def remove(self, index):
-        del self.list[index]
+        del self.labelList[index]
 
     def clear(self):
-        self.list = []
+        self.labelList = []
 
     def toint(self, seq):
         if isinstance(seq, list):
@@ -53,29 +56,33 @@ class LabeleList(object):
                 continue
             label = Label(self.toint(lab[0]), str(lab[1]), self.toint(lab[2:]))
             labelList.append(label)
-        self.list = labelList
+        self.labelList = labelList
 
     def saveLabel(self, path):
-        print("save label", self.list, path)
-        print(osp.exists(osp.dirname(path)), osp.dirname(path))
-        if not path or len(path) == 0 or not osp.exists(osp.dirname(path)):
-            print("save label error")
+        print("save label", self.labelList, path)
+        if not path or not osp.exists(osp.dirname(path)):
+            print("label path don't exist")
             return
         with open(path, "w", encoding="utf-8") as f:
-            for ml in self.list:
-                print(ml.idx, end=" ", file=f)
-                print(ml.name, end=" ", file=f)
+            for label in self.labelList:
+                print(label.idx, end=" ", file=f)
+                print(label.name, end=" ", file=f)
                 for idx in range(3):
-                    print(ml.color[idx], end=" ", file=f)
+                    print(label.color[idx], end=" ", file=f)
                 print(file=f)
 
-        # _saveLabel(self.list, path)
-
     def __repr__(self):
-        return str(self.list)
+        return str(self.labelList)
 
     def __getitem__(self, index):
-        return self.list[index]
+        return self.labelList[index]
 
     def __len__(self):
-        return len(self.list)
+        return len(self.labelList)
+
+    @property
+    def colors(self):
+        cols = []
+        for lab in self.labelList:
+            cols.append(lab.color)
+        return cols
