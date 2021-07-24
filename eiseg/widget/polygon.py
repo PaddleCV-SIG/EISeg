@@ -206,9 +206,19 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.opacity = opacity
         self.insideColor.setAlphaF(opacity)
 
-    def setColor(self, c):
-        self.insideColor = QtGui.QColor(c[0], c[1], c[2])
+    def setColor(self, insideColor, borderColor):
+        i = insideColor
+        self.insideColor = QtGui.QColor(i[0], i[1], i[2])
         self.insideColor.setAlphaF(self.opacity)
+        self.setBrush(self.insideColor)
+        b = borderColor
+        self.borderColor = QtGui.QColor(b[0], b[1], b[2])
+        self.borderColor.setAlphaF(0.8)
+        self.setPen(QtGui.QPen(self.borderColor))
+        for grip in self.m_items:
+            grip.setColor(self.borderColor)
+        for line in self.m_lines:
+            line.setColor(self.borderColor)
 
     def __len__(self):
         return len(self.points)

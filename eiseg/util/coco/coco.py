@@ -53,8 +53,11 @@ class COCO:
             self.dataset = dataset
             self.createIndex()
         print("==========================================")
-        print("dataset", self.dataset)
-        print("maxid", self.maxImgId)
+        # print("dataset", self.dataset)
+        # print("maxid", self.maxImgId)
+        print(
+            "load coco :", len(self.dataset["images"]), len(self.dataset["annotations"])
+        )
         print("------------------------------------------")
 
     def hasImage(self, imageName):

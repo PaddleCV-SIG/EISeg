@@ -682,6 +682,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     # 标签列表
     def loadLabelList(self, file_path=None):
+        print("+_+_+_+_+ loading label list")
         if file_path is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -800,7 +801,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.adjustTableSize()
 
     def labelListDoubleClick(self, row, col):
-        print("Label list double clicked", row, col)
         if col != 2:
             return
         table = self.labelListTable
@@ -813,7 +813,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.controller:
             self.controller.label_list = self.labelList
         for p in self.scene.polygon_items:
-            p.setColor(self.labelList[p.labelIndex].color)
+            color = self.labelList.getLabelById(p.labelIndex).color
+            p.setColor(color, color)
 
     @property
     def currLabelIdx(self):
@@ -930,6 +931,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if p not in self.imagePaths:
                 self.imagePaths.append(p)
                 self.listFiles.addItem(p.replace("\\", "/"))
+
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
             self.changeOutputDir(self.outputDir)
@@ -1247,8 +1249,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not self.coco.hasImage(osp.basename(self.imagePath)):
                 s = self.controller.img_size
                 imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
-            else:
-                imgId = self.coco.nameToImgid[osp.basename(self.imagePath)]
 
             polygons = self.scene.polygon_items
             for polygon in polygons:
@@ -1259,7 +1259,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     points.append(p.y())
                 if not polygon.coco_id:
                     self.coco.addAnnotation(imgId, label.idx, points)
-            cocoPath = osp.join(self.outputDir, "coco_out.json")
+            cocoPath = osp.join(self.outputDir, "coco.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 
         self.setClean()
@@ -1437,6 +1437,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.save_status[type] = not self.save_status[type]
         if type == "coco" and self.save_status["coco"]:
             self.loadCoco()
+        if type == "coco":
+            self.save_status["json"] = not self.save_status["coco"]
+            self.actions.save_json.setChecked(self.save_status["json"])
+        if type == "json":
+            self.save_status["coco"] = not self.save_status["json"]
+            self.actions.save_coco.setChecked(self.save_status["coco"])
 
     def loadCoco(self, coco_path=None):
         if not coco_path:
