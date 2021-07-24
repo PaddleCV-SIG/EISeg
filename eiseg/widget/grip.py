@@ -24,6 +24,11 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.setZValue(12)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
+    def setColor(self, color):
+        self.setBrush(color)
+        self.setPen(QtGui.QPen(color, 1))
+        self.color = color
+
     @property
     def size(self):
         if not self.scene():

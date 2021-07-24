@@ -16,6 +16,10 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
         self.setAcceptHoverEvents(True)
 
+    def setColor(self, color):
+        self.setPen(QtGui.QPen(color, self.width))
+        self.color = color
+
     @property
     def width(self):
         if not self.scene():
