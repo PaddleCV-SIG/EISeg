@@ -13,7 +13,7 @@ import imghdr
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
-from qtpy.QtCore import Qt, QFile, QByteArray, QDataStream
+from qtpy.QtCore import Qt, QFile, QByteArray, QDataStream, QVariant
 import paddle
 import cv2
 import numpy as np
@@ -86,9 +86,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.MIDock,
         ]
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
-        self.recentModels = self.settings.value("recent_models", [])
-        self.recentFiles = self.settings.value("recent_files", [])
-        self.dockStatus = self.settings.value("dock_status", [])
+        self.recentModels = self.settings.value(
+            "recent_models", QVariant([]), type=list
+        )
+        self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
+        self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
 
         # 初始化action
@@ -516,9 +518,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateRecentFile(self):
         menu = self.menus.recent_files
         menu.clear()
-        recentFiles = self.settings.value("recent_files", [])
-        if not recentFiles:
-            recentFiles = []
+        recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
         files = [f for f in recentFiles if osp.exists(f)]
         for i, f in enumerate(files):
             icon = util.newIcon("File")
@@ -534,9 +534,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def addRecentFile(self, path):
         if not osp.exists(path):
             return
-        paths = self.settings.value("recent_files")
-        if not paths:
-            paths = []
+        paths = self.settings.value("recent_files", QVariant([]), type=list)
         if path not in paths:
             paths.append(path)
         if len(paths) > 15:
@@ -566,6 +564,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 partial(self.loadModelParam, m["param_path"], m["model_name"])
             )
             menu.addAction(action)
+        if len(self.recentModels) == 0:
+            menu.addAction(self.tr("无近期模型记录"))
         self.settings.setValue("recent_params", self.recentModels)
 
     def changeModel(self, idx):
@@ -906,15 +906,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.listFiles.clear()
 
         # 3. 扫描文件夹下所有图片
-        # 3.1 设置默认输出路径为文件夹下的 label 文件夹
+        # 3.1 获取所有文件名
+        imagePaths = os.listdir(self.inputDir)
+        exts = QtGui.QImageReader.supportedImageFormats()
+        imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        if len(imagePaths) == 0:
+            return
+        # 3.2 设置默认输出路径为文件夹下的 label 文件夹
         opd = osp.join(self.inputDir, "label")
         self.outputDir = opd
         if not osp.exists(opd):
             os.makedirs(opd)
-        # 3.2 获取所有文件名
-        imagePaths = os.listdir(self.inputDir)
-        exts = QtGui.QImageReader.supportedImageFormats()
-        imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
         # 3.3 有重名标签都保留原来拓展名
         names = []
         for name in imagePaths:
@@ -931,8 +933,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
             self.changeOutputDir(self.outputDir)
-        self.currIdx = 0
-        self.turnImg(0)
+        if len(self.imagePaths) != 0:
+            self.currIdx = 0
+            self.turnImg(0)
 
     def loadImage(self, path):
         if not path or not osp.exists(path):
@@ -1142,6 +1145,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in self.scene.polygon_items[::-1]:
                     p.remove()
                 self.scene.polygon_items = []
+                self.controller.reset_last_object()
+                self.controller.image = None
         if close:
             self.annImage.setPixmap(QPixmap())
 
