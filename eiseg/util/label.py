@@ -71,6 +71,11 @@ class LabelList(object):
                     print(label.color[idx], end=" ", file=f)
                 print(file=f)
 
+    def getLabelById(self, labelIdx):
+        for lab in self.labelList:
+            if lab.idx == labelIdx:
+                return lab
+
     def __repr__(self):
         return str(self.labelList)
 

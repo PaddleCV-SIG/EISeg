@@ -10,8 +10,23 @@
     </message>
     <message>
         <location filename="../../app.py" line="170"/>
+        <source>语言</source>
+        <translation>Language</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
         <source>没有后一张图片</source>
         <translation>This is the last image, can't turn to the next image.</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>切换语言</source>
+        <translation>Changing language.</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>切换语言需要重启软件才能生效</source>
+        <translation>Changing language only takes effect after restarting the app.</translation>
     </message>
     <message>
         <location filename="../../app.py" line="170"/>

@@ -6,19 +6,20 @@ from . import GripItem, LineItem
 class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
         self,
-        index,
+        labelIndex,
         insideColor=[255, 0, 0],
         borderColor=[0, 255, 0],
         opacity=0.5,
+        cocoIndex=None,
         parent=None,
     ):
         super(PolygonAnnotation, self).__init__(parent)
         self.points = []
         self.m_items = []
         self.m_lines = []
-        self.coco_id = None
+        self.coco_id = cocoIndex
 
-        self.labelIndex = index
+        self.labelIndex = labelIndex
         self.item_hovering = False
         self.polygon_hovering = False
         self.line_hovering = False
