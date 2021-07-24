@@ -322,7 +322,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         save_coco.setChecked(self.save_status["coco"])
         close = action(
             tr("&关闭"),
-            self.closeImage,
+            partial(self.saveImage, True),
             "close",
             "End",
             tr("关闭当前图像"),
@@ -495,7 +495,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
-    def closeImage(self):
+    def saveImage(self, close=False):
         if self.controller and self.controller.image is not None:
             # 1. 完成正在交互式标注的标签
             self.completeLastMask()
@@ -512,11 +512,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     if res == QMessageBox.Yes:
                         self.saveLabel()
                 self.setClean()
-            # 3. 清空多边形标注，删掉图片
-            for p in self.scene.polygon_items[::-1]:
-                p.remove()
-            self.scene.polygon_items = []
-        self.annImage.setPixmap(QPixmap())
+            if close:
+                # 3. 清空多边形标注，删掉图片
+                for p in self.scene.polygon_items[::-1]:
+                    p.remove()
+                self.scene.polygon_items = []
+        if close:
+            self.annImage.setPixmap(QPixmap())
 
     def editShortcut(self):
         self.shortcutWindow.show()
@@ -936,7 +938,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if name not in names:
                 names.append(name)
             else:
-                self.origExt = True
+                self.toggleOrigExt(True)
         filePaths = [osp.join(self.inputDir, n) for n in filePaths]
         for p in filePaths:
             if p not in self.filePaths:
@@ -1001,26 +1003,34 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePath = path
 
     def loadLabel(self, imgPath):
-        print("load label", imgPath, self.labelPaths)
+        # print("load label", imgPath, self.labelPaths)
         if imgPath == "" or len(self.labelPaths) == 0:
             return None
 
         # 1. 读取json格式标签
 
         def getName(path):
-            return osp.basename(path).split(".")[0]
+            return osp.splitext(osp.basename(path))[0]
 
         imgName = getName(imgPath)
         labelPath = None
+        print("origext", self.origExt)
         for path in self.labelPaths:
-            if getName(path) == imgName:
-                labelPath = path
-                break
+            if not path.endswith(".json"):
+                continue
+            if self.origExt:
+                if getName(path) == osp.basename(imgPath):
+                    labelPath = path
+                    break
+            else:
+                if getName(path) == imgName:
+                    labelPath = path
+                    break
         if not labelPath:
             return
         print("load label", imgPath, labelPath)
 
-        labelPath = osp.splitext(labelPath)[0] + ".json"
+        # labelPath = osp.splitext(labelPath)[0] + ".json"
         labels = json.loads(open(labelPath, "r").read())
 
         for label in labels:
@@ -1034,20 +1044,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
-        # 1. 保存当前标签
-        self.completeLastMask()
-        if self.isDirty:
-            if self.actions.auto_save.isChecked():
-                self.saveLabel()
-            else:
-                res = self.warn(
-                    self.tr("保存标签？"),
-                    self.tr("标签尚未保存，是否保存标签"),
-                    QMessageBox.Yes | QMessageBox.Cancel,
-                )
-                if res == QMessageBox.Yes:
-                    self.saveLabel()
-
         # 2. 检查是否还有图片可翻
         self.currIdx += delta
         if self.currIdx >= len(self.filePaths) or self.currIdx < 0:
@@ -1056,12 +1052,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.statusbar.showMessage(self.tr(f"没有后一张图片"))
             else:
                 self.statusbar.showMessage(self.tr(f"没有前一张图片"))
-            return
+            self.saveImage(False)
+        else:
+            self.saveImage(True)
 
-        # 3. 清除标注，切换图片
-        for p in self.scene.polygon_items[::-1]:
-            p.remove()
-        self.scene.polygon_items = []
+        # 3. 打开图片
         self.loadImage(self.filePaths[self.currIdx])
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
@@ -1170,18 +1165,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["gray_scale"]:
             ext = osp.splitext(savePath)[1]
             cv2.imencode(ext, self.controller.result_mask)[1].tofile(savePath)
+            # self.labelPaths.append(savePath)
 
         # 4.2 保存伪彩色
         if self.save_status["pseudo_color"]:
-            mask_pil = Image.fromarray(self.controller.result_mask, "P")
-            mask_map = [0, 0, 0]
-            for lb in self.labelList:
-                mask_map += lb.color
-            mask_pil.putpalette(mask_map)
             pseudoPath, ext = osp.splitext(savePath)
             pseudoPath = pseudoPath + "_pseudo" + ext
             print("pseudoPath", pseudoPath)
-            mask_pil.save(pseudoPath)
+            s = self.controller.img_size
+            pseudo = np.zeros([s[1], s[0], 3])
+            print("size", self.controller.img_size, pseudo.shape)
+            mask = self.controller.result_mask
+            for lab in self.labelList:
+                pseudo[mask == lab.idx, :] = lab.color
+            cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
 
         # 4.3 保存json
         if self.save_status["json"]:
@@ -1200,10 +1197,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     label["points"].append([p.x(), p.y()])
                 labels.append(label)
             if self.origExt:
-                savePath = osp.splitext(savePath) + ".json"
+                jsonPath = savePath + ".json"
             else:
-                savePath = osp.splitext(savePath)[0] + ".json"
-            open(savePath, "w", encoding="utf-8").write(json.dumps(labels))
+                jsonPath = osp.splitext(savePath)[0] + ".json"
+            open(jsonPath, "w", encoding="utf-8").write(json.dumps(labels))
+            self.labelPaths.append(jsonPath)
+
         # 4.4 保存coco
         if self.save_status["coco"]:
             if osp.basename(self.imagePath) not in self.coco.imgNames:
@@ -1251,12 +1250,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2.1 如果保存coco格式，加载coco标签
         if self.save_status["coco"]:
             self.loadCoco()
-        # labelPaths = os.listdir(outputDir)
-        # exts = ["png"]
-        # labelPaths = [n for n in labelPaths if n.split(".")[-1] in exts]
-        # labelPaths = [osp.join(outputDir, n) for n in labelPaths]
-        # self.labelPaths = labelPaths
-        # print("labelpaths:", self.labelPaths)
+        labelPaths = os.listdir(outputDir)
+        exts = QtGui.QImageReader.supportedImageFormats()
+        exts.append("json")
+        labelPaths = [n for n in labelPaths if n.split(".")[-1] in exts]
+        labelPaths = [osp.join(outputDir, n) for n in labelPaths]
+        self.labelPaths = labelPaths
+        print("labelpaths:", self.labelPaths)
 
         # 2.2 如果保存json格式，加载标签列表
         # 加载对应的标签列表
@@ -1378,8 +1378,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO: 研究这个东西是不是真的不影响ui
         QtCore.QTimer.singleShot(0, function)
 
-    def toggleOrigExt(self):
-        self.origExt = not self.origExt
+    def toggleOrigExt(self, dst=None):
+        if dst:
+            self.origExt = dst
+        else:
+            self.origExt = not self.origExt
+        self.actions.origional_extension.setChecked(self.origExt)
 
     def toggleAutoSave(self, save):
         if save and not self.outputDir:
