@@ -1274,6 +1274,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     polygon.coco_id = annId
                 else:
                     self.coco.updateAnnotation(polygon.coco_id, imgId, points)
+            for lab in self.labelList:
+                if self.coco.hasCat(lab.idx):
+                    print("+_+_+_+_+", lab.name)
+                    self.coco.updateCategory(lab.idx, lab.name, lab.color)
+                else:
+                    self.coco.addCategory(lab.idx, lab.name, lab.color)
 
             cocoPath = osp.join(self.outputDir, "coco.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
@@ -1464,10 +1470,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadCoco(self, coco_path=None):
         if not coco_path:
             if not self.outputDir or not osp.exists(self.outputDir):
-                return
-            coco_path = osp.join(self.outputDir, "coco.json")
+                coco_path = None
+            else:
+                coco_path = osp.join(self.outputDir, "coco.json")
         if not osp.exists(coco_path):
-            return
+            coco_path = None
         self.coco = COCO(coco_path)
         if self.clearLabelList():
             self.labelList = util.LabelList(self.coco.dataset["categories"])
