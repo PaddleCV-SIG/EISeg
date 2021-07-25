@@ -43,6 +43,13 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
+    @property
+    def scnenePoints(self):
+        points = []
+        for p in self.points:
+            points.append(self.mapToScene(p))
+        return points
+
     def setAnning(self, isAnning=True):
         if isAnning:
             self.setAcceptHoverEvents(False)
@@ -198,11 +205,13 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
     def itemChange(self, change, value):
         if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
+            print("move", self.points[0])
             for i, point in enumerate(self.points):
                 self.move_item(i, self.mapToScene(point))
         return super(PolygonAnnotation, self).itemChange(change, value)
 
     def hoverEnterEvent(self, ev):
+        print("hover", self.points[0].x())
         self.polygon_hovering = True
         self.setBrush(self.insideColor)
         super(PolygonAnnotation, self).hoverEnterEvent(ev)

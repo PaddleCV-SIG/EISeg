@@ -218,9 +218,12 @@ class COCO:
             if rec["id"] == id:
                 rec["segmentation"] = [points]
                 # break
-        print("=====")
-        for ann in self.imgToAnns[imgId]:
-            print(ann["segmentation"][0][0])
+
+        for rec in self.dataset["annotations"]:
+            if rec["id"] == id:
+                print("record point", rec["segmentation"][0][0])
+                # break
+
         for rec in self.imgToAnns[imgId]:
             if rec["id"] == id:
                 rec["segmentation"] = [points]
