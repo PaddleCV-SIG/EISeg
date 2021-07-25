@@ -58,6 +58,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "pseudo_color": True,
             "json": False,
             "coco": True,
+            "matting": True,
         }  # 是否保存这几个格式
         self.controller = None
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
@@ -326,6 +327,23 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "close",
             "End",
             tr("关闭当前图像"),
+        )
+        save_matting = action(
+            tr("&抠图保存"),
+            partial(self.toggleSave, "matting"),
+            "save_matting",
+            "SaveMatting",
+            tr("只保留前景，背景设置为背景色"),
+            checkable=True,
+        )
+        save_matting.setChecked(self.save_status["matting"])
+        set_matting_background = action(
+            tr("&设置抠图背景色"),
+            self.setMattingBackground,
+            "set_matting_background",
+            "setMattingBackground",  # TODO: 背景色颜色的一个色块
+            tr("抠图后背景像素的颜色"),
+            checkable=True,
         )
         quit = action(
             tr("&退出"),
@@ -1234,7 +1252,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 pseudo[mask == lab.idx, :] = lab.color[::-1]
             cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
 
-        # 4.3 保存json
+        # 4.3 保存前景抠图
+        if self.save_status["matting"]:
+            mattingPath, ext = osp.splitext(savePath)
+            mattingPath = mattingPath + "_matting" + ext
+            print("mattingPath", mattingPath)
+            img = self.controller.image.copy()
+            img = img[:, :, ::-1]
+            self.mattingBackground = [0, 0, 0]
+            img[self.controller.result_mask == 0] = self.mattingBackground
+            cv2.imencode(ext, img)[1].tofile(mattingPath)
+
+        # 4.4 保存json
         if self.save_status["json"]:
             polygons = self.scene.polygon_items
             labels = []
@@ -1256,7 +1285,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             open(jsonPath, "w", encoding="utf-8").write(json.dumps(labels))
             self.labelPaths.append(jsonPath)
 
-        # 4.4 保存coco
+        # 4.5 保存coco
         if self.save_status["coco"]:
             if not self.coco.hasImage(osp.basename(self.imagePath)):
                 s = self.controller.img_size
