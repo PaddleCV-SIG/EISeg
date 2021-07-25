@@ -853,6 +853,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 if res == QMessageBox.Yes:
                     polygon.remove()
+                    if self.save_status["coco"]:
+                        self.coco.delAnnotation(
+                            polygon.coco_id,
+                            self.coco.imgNameToId[osp.basename(self.imagePath)],
+                        )
+                self.setDirty()
 
     def delActivePoint(self):
         for polygon in self.scene.polygon_items:
@@ -993,12 +999,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.status = self.ANNING
 
     def loadLabel(self, imgPath):
-        # print(
-        #     "load label",
-        #     imgPath,
-        #     self.labelPaths,
-        #     self.coco.imgNameToId.get(osp.basename(imgPath)),
-        # )
         if imgPath == "":
             return None
 
@@ -1062,6 +1062,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def turnImg(self, delta):
         # 1. 检查是否有图可翻，保存标签
         self.currIdx += delta
+        print("turn img", self.currIdx, delta)
+        print(self.imagePaths)
         if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
             self.currIdx -= delta
             if delta == 1:
@@ -1069,6 +1071,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 self.statusbar.showMessage(self.tr(f"没有前一张图片"))
             self.saveImage(False)
+            return
         else:
             self.saveImage(True)
 
@@ -1097,12 +1100,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             polygons = util.get_polygon(current_mask)
-            self.setDirty()
             color = self.labelList[self.currLabelIdx].color
             for points in polygons:
                 if len(points) < 3:
                     continue
-                poly = PolygonAnnotation(self.currLabelIdx, color, color, self.opacity)
+                print("the id is ", self.labelList[self.currLabelIdx].idx)
+                poly = PolygonAnnotation(
+                    self.labelList[self.currLabelIdx].idx, color, color, self.opacity
+                )
                 # TODO：编号问题在这里
                 # 每次完成编辑后多边形的编号都变了
                 poly.labelIndex = self.currLabelIdx
@@ -1110,6 +1115,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.scene.polygon_items.append(poly)
                 for p in points:
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+                self.setDirty()
         if self.status == self.EDITING:
             self.status = self.ANNING
             for p in self.scene.polygon_items:
@@ -1260,14 +1266,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
             for polygon in self.scene.polygon_items:
-                label = self.labelList.getLabelById(polygon.labelIndex)
                 points = []
                 for p in polygon.scnenePoints:
                     points.append(p.x())
                     points.append(p.y())
-                print("polygon", points[0])
                 if not polygon.coco_id:
-                    annId = self.coco.addAnnotation(imgId, label.idx, points)
+                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
                     polygon.coco_id = annId
                 else:
                     self.coco.updateAnnotation(polygon.coco_id, imgId, points)
