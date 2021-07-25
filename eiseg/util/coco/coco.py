@@ -31,16 +31,14 @@ class COCO:
         :param image_folder (str): location to the folder that hosts images.
         :return:
         """
-        # load dataset
-        # dataset, anns, cats, imgs, imgToAnns, catToImgs
+        # dataset, anns, cats, imgs, imgToAnns, catToImgs, imgNameToId, maxAnnId, maxImgId
         self.dataset = {
             "categories": [],
             "images": [],
             "annotations": [],
             "info": "info",
             "licenses": "licenses",
-        }
-        # complete json
+        }  # the complete json
         self.anns = dict()  # anns[annId]={}
         self.cats = dict()  # cats[catId] = {}
         self.imgs = dict()  # imgs[imgId] = {}
@@ -49,7 +47,6 @@ class COCO:
         self.imgNameToId = defaultdict(list)  # imgNameToId[name] = imgId
         self.maxAnnId = 0
         self.maxImgId = 0
-        # dataset, anns, cats, imgs, imgToAnns, catToImgs, imgNameToId, maxAnnId, maxImgId
         if annotation_file is not None:
             print("loading annotations into memory...")
             tic = time.time()
@@ -60,13 +57,9 @@ class COCO:
             print("Done (t={:0.2f}s)".format(time.time() - tic))
             self.dataset = dataset
             self.createIndex()
-        print("==========================================")
-        # print("dataset", self.dataset)
-        # print("maxid", self.maxImgId)
         print(
-            "load coco :", len(self.dataset["images"]), len(self.dataset["annotations"])
+            f"load coco with {len(self.dataset['images'])} images and {len(self.dataset['annotations'])}"
         )
-        print("------------------------------------------")
 
     def hasImage(self, imageName):
         imgId = self.imgNameToId.get(imageName, None)
@@ -109,7 +102,6 @@ class COCO:
         # TODO: read license
         print("index created!")
 
-        # create class members
         self.anns = anns
         self.imgToAnns = imgToAnns
         self.catToImgs = catToImgs
@@ -233,7 +225,6 @@ class COCO:
             "bbox": [x, y, width, height],
         }
 
-        # dataset, anns, cats, imgs, imgToAnns, catToImgs
         self.dataset["annotations"].append(ann)
         self.anns[id] = ann
         self.imgToAnns[image_id].append(ann)
@@ -241,7 +232,6 @@ class COCO:
         return id
 
     def delAnnotation(self, annId, imgId):
-        # dataset, anns, cats, imgs, imgToAnns, catToImgs, imgNameToId, maxAnnId, maxImgId
         if "annotations" in self.dataset:
             for idx, ann in enumerate(self.dataset["annotations"]):
                 if ann["id"] == annId:
@@ -259,21 +249,17 @@ class COCO:
         for rec in self.dataset["annotations"]:
             if rec["id"] == id:
                 rec["segmentation"] = [points]
-                # break
+                break
 
         for rec in self.dataset["annotations"]:
             if rec["id"] == id:
                 print("record point", rec["segmentation"][0][0])
-                # break
+                break
 
         for rec in self.imgToAnns[imgId]:
             if rec["id"] == id:
                 rec["segmentation"] = [points]
-                # break
-        for ann in self.imgToAnns[imgId]:
-            print(ann["segmentation"][0][0])
-
-        print("+++++")
+                break
 
     def info(self):
         """

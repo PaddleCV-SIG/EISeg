@@ -342,7 +342,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&设置抠图背景色"),
             self.setMattingBackground,
             "set_matting_background",
-            self.mattingBackground,  # TODO: 背景色颜色的一个色块
+            self.mattingBackground,
             tr("抠图后背景像素的颜色"),
         )
         quit = action(
@@ -1610,10 +1610,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.filterLargestCC = on
         except:
             pass
-
-    # def setLanguage(self):
-    #     tmp = bool(strtobool(self.settings.value("language_state", "False")) - 1)
-    #     self.settings.setValue("language_state", tmp)
 
     @property
     def opacity(self):

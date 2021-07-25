@@ -49,22 +49,6 @@ class InteractiveController:
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
-    def set_mask(self, mask):
-        # if self.image.shape[:2] != mask.shape[:2]:
-        #     messagebox.showwarning(
-        #         "Warning",
-        #         "A segmentation mask must have the same sizes as the current image!",
-        #     )
-        #     return
-
-        if len(self.probs_history) > 0:
-            self.reset_last_object()
-
-        self._init_mask = mask.astype(np.float32)
-        self.probs_history.append((np.zeros_like(self._init_mask), self._init_mask))
-        self._init_mask = paddle.to_tensor(self._init_mask).unsqueeze(0).unsqueeze(0)
-        self.clicker.click_indx_offset = 1
-
     def add_click(self, x, y, is_positive):
         """添加一个点
         跑推理，保存历史用于undo
@@ -120,17 +104,6 @@ class InteractiveController:
             self.probs_history.append((np.zeros_like(pred), pred))
 
         self.update_image_callback()
-        # # test
-        # res = [i.coords for i in self.states[-1]["clicker"]]
-        # print(res)
-
-    def set_label(self, label):
-        # if label is None:
-        #     return
-        # self.probs_history.append((np.zeros_like(label), label))
-        # print("len", len(self.probs_history))
-        # self.update_image_callback()
-        pass
 
     def undo_click(self):
         """undo一步点击"""

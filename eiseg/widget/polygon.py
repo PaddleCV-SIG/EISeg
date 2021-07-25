@@ -82,15 +82,10 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.setPolygon(QtGui.QPolygonF(self.points))
         for line in self.m_lines[lineIdx + 1 :]:
             line.idx += 1
-        line = QtCore.QLineF(
-            self.mapToScene(self.points[lineIdx]),
-            point
-            # self.mapToScene(self.points[lineIdx + 1]),
-        )
+        line = QtCore.QLineF(self.mapToScene(self.points[lineIdx]), point)
         self.m_lines[lineIdx].setLine(line)
         lineItem = LineItem(self, lineIdx + 1, self.borderColor)
         line = QtCore.QLineF(
-            # self.mapToScene(self.points[lineIdx + 1]),
             point,
             self.mapToScene(self.points[(lineIdx + 2) % len(self)]),
         )
@@ -138,7 +133,6 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             if item.hasFocus():
                 focusIdx = idx
                 break
-        print("del", focusIdx)
         if focusIdx is not None:
             if len(self) <= 3:
                 self.remove()
@@ -205,13 +199,11 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
 
     def itemChange(self, change, value):
         if change == QtWidgets.QGraphicsItem.ItemPositionHasChanged:
-            print("move", self.points[0])
             for i, point in enumerate(self.points):
                 self.move_item(i, self.mapToScene(point))
         return super(PolygonAnnotation, self).itemChange(change, value)
 
     def hoverEnterEvent(self, ev):
-        print("hover", self.points[0].x())
         self.polygon_hovering = True
         self.setBrush(self.insideColor)
         super(PolygonAnnotation, self).hoverEnterEvent(ev)
