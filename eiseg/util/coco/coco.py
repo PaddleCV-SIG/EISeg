@@ -42,6 +42,7 @@ class COCO:
         self.imgNameToId = defaultdict(list)  # imgNameToId[name] = imgId
         self.maxAnnId = 0
         self.maxImgId = 0
+        # dataset, anns, cats, imgs, imgToAnns, catToImgs, imgNameToId, maxAnnId, maxImgId
         if annotation_file is not None:
             print("loading annotations into memory...")
             tic = time.time()
@@ -210,6 +211,19 @@ class COCO:
         self.imgToAnns[image_id].append(ann)
         self.catToImgs[category_id].append(image_id)
         return id
+
+    def delAnnotation(self, annId, imgId):
+        # dataset, anns, cats, imgs, imgToAnns, catToImgs, imgNameToId, maxAnnId, maxImgId
+        if "annotations" in self.dataset:
+            for idx, ann in enumerate(self.dataset["annotations"]):
+                if ann["id"] == annId:
+                    del self.dataset["annotations"][idx]
+
+        del self.anns[annId]
+
+        for idx, ann in enumerate(self.imgToAnns[imgId]):
+            if ann["id"] == annId:
+                del self.imgToAnns[imgId][idx]
 
     def updateAnnotation(self, id, imgId, points):
         self.anns[id]["segmentation"] = [points]
