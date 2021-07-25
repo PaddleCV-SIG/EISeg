@@ -5,6 +5,30 @@
     <name>APP_EISeg</name>
     <message>
         <location filename="../../app.py" line="170"/>
+        <source>&抠图保存</source>
+        <translation>&amp;Save Matting</translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>只保留前景，背景设置为背景色</source>
+        <translation>Only keep foreground pixels, set all background pixels to background color. </translation>
+    </message>
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>&设置抠图背景色</source>
+        <translation>Set matting background color.</translation>
+    </message>
+
+    <message>
+        <location filename="../../app.py" line="170"/>
+        <source>抠图后背景像素的颜色</source>
+        <translation>The color to use for all background pixels. </translation>
+    </message>
+
+
+
+    <message>
+        <location filename="../../app.py" line="170"/>
         <source>&amp;编辑快捷键</source>
         <translation>&amp;Edit Shortcuts</translation>
     </message>

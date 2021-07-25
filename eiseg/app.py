@@ -72,6 +72,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
         self.coco = None
         self.colorMap = util.colorMap
+        self.mattingBackground = [0, 0, 128]
 
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
         self.midx = 0  # 医疗切片索引
@@ -467,10 +468,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 clear_label,
                 None,
                 grid_ann,
-                None,
                 largest_component,
-                del_active_polygon,
+                None,
                 origional_extension,
+                save_pseudo,
+                save_grayscale,
+                save_matting,
+                set_matting_background,
+                None,
+                save_json,
+                save_coco,
+                None,
+                del_active_polygon,
             ),
             workMenu=(save_pseudo, save_grayscale, save_json, save_coco),
             showMenu=(
@@ -492,6 +501,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 save_pseudo,
                 save_grayscale,
+                save_matting,
                 save_json,
                 save_coco,
                 origional_extension,
@@ -512,6 +522,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("显示"), self.menus.showMenu)
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
+
+    def setMattingBackground(self):
+        c = self.mattingBackground
+        color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
+        self.mattingBackground = color.getRgb()[:3]
 
     def editShortcut(self):
         self.shortcutWindow.show()
@@ -1259,8 +1274,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("mattingPath", mattingPath)
             img = self.controller.image.copy()
             img = img[:, :, ::-1]
-            self.mattingBackground = [0, 0, 0]
-            img[self.controller.result_mask == 0] = self.mattingBackground
+            print("background", self.mattingBackground)
+            img[self.controller.result_mask == 0] = self.mattingBackground[::-1]
             cv2.imencode(ext, img)[1].tofile(mattingPath)
 
         # 4.4 保存json
