@@ -33,7 +33,14 @@ class COCO:
         """
         # load dataset
         # dataset, anns, cats, imgs, imgToAnns, catToImgs
-        self.dataset = dict()  # complete json
+        self.dataset = {
+            "categories": [],
+            "images": [],
+            "annotations": [],
+            "info": "info",
+            "licenses": "licenses",
+        }
+        # complete json
         self.anns = dict()  # anns[annId]={}
         self.cats = dict()  # cats[catId] = {}
         self.imgs = dict()  # imgs[imgId] = {}
@@ -63,9 +70,11 @@ class COCO:
 
     def hasImage(self, imageName):
         imgId = self.imgNameToId.get(imageName, None)
-        if imgId is None:
-            return False
-        return True
+        return imgId is not None
+
+    def hasCat(self, catIdx):
+        res = self.cats.get(catIdx)
+        return res is not None
 
     def createIndex(self):
         # create index
@@ -141,6 +150,25 @@ class COCO:
         }
         self.cats[id] = cat
         self.dataset["categories"].append(cat)
+
+    def updateCategory(
+        self,
+        id: int,
+        name: str,
+        color: list,
+        supercategory: str = "",
+    ):
+        cat = {
+            "id": id,
+            "name": name,
+            "color": color,
+            "supercategory": supercategory,
+        }
+        self.cats[id] = cat
+        print("))))))", self.cats)
+        for idx in range(len(self.dataset["categories"])):
+            if self.dataset["categories"][idx]["id"] == id:
+                self.dataset["categories"][idx] = cat
 
     def addImage(
         self,
