@@ -1108,9 +1108,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 poly = PolygonAnnotation(
                     self.labelList[self.currLabelIdx].idx, color, color, self.opacity
                 )
-                # TODO：编号问题在这里
-                # 每次完成编辑后多边形的编号都变了
-                poly.labelIndex = self.currLabelIdx
+                poly.labelIndex = self.labelList[self.currLabelIdx].idx
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
@@ -1271,6 +1269,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     points.append(p.x())
                     points.append(p.y())
                 if not polygon.coco_id:
+                    print("adding: ", polygon.labelIndex)
                     annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
                     polygon.coco_id = annId
                 else:
