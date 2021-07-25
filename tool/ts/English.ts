@@ -4,61 +4,57 @@
 <context>
     <name>APP_EISeg</name>
     <message>
-        <location filename="../../app.py" line="170"/>
-        <source>&抠图保存</source>
+        <location filename="../../app.py" line="171"/>
+        <source>&amp;抠图保存</source>
         <translation>&amp;Save Matting</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="172"/>
         <source>只保留前景，背景设置为背景色</source>
-        <translation>Only keep foreground pixels, set all background pixels to background color. </translation>
+        <translation>Only keep foreground pixels, set all background pixels to background color</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
-        <source>&设置抠图背景色</source>
-        <translation>Set matting background color.</translation>
+        <location filename="../../app.py" line="173"/>
+        <source>&amp;设置抠图背景色</source>
+        <translation>&amp;Set matting background color</translation>
     </message>
-
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="174"/>
         <source>抠图后背景像素的颜色</source>
-        <translation>The color to use for all background pixels. </translation>
+        <translation>The color to use for all background pixels</translation>
     </message>
-
-
-
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="175"/>
         <source>&amp;编辑快捷键</source>
         <translation>&amp;Edit Shortcuts</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="176"/>
         <source>语言</source>
         <translation>Language</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="177"/>
         <source>没有后一张图片</source>
-        <translation>This is the last image, can't turn to the next image.</translation>
+        <translation>This is the last image, can&apos;t turn to the next image</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="178"/>
         <source>切换语言</source>
-        <translation>Changing language.</translation>
+        <translation>Changing language</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="179"/>
         <source>切换语言需要重启软件才能生效</source>
-        <translation>Changing language only takes effect after restarting the app.</translation>
+        <translation>Changing language only takes effect after restarting the app</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="180"/>
         <source>没有前一张图片</source>
-        <translation>This is the first image, can't turn to the previous image.</translation>
+        <translation>This is the first image, can&apos;t turn to the previous image</translation>
     </message>
     <message>
-        <location filename="../../app.py" line="170"/>
+        <location filename="../../app.py" line="181"/>
         <source>编辑软件快捷键</source>
         <translation>Edit software shortcuts</translation>
     </message>
@@ -645,7 +641,7 @@
     <message>
         <location filename="../../app.py" line="663"/>
         <source>当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！</source>
-        <translation>The model parameter selected don't match the current architecture. Please choose another parameter file!</translation>
+        <translation>The model parameter selected don&apos;t match the current architecture. Please choose another parameter file!</translation>
     </message>
     <message>
         <location filename="../../app.py" line="667"/>

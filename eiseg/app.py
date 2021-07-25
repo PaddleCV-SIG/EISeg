@@ -344,7 +344,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "set_matting_background",
             "setMattingBackground",  # TODO: 背景色颜色的一个色块
             tr("抠图后背景像素的颜色"),
-            checkable=True,
         )
         quit = action(
             tr("&退出"),
