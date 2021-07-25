@@ -1270,7 +1270,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     points.append(p.x())
                     points.append(p.y())
                 if not polygon.coco_id:
-                    self.coco.addAnnotation(imgId, label.idx, points)
+                    annId = self.coco.addAnnotation(imgId, label.idx, points)
+                    polygon.coco_id = annId
+                else:
+                    self.coco.updateAnnotation(polygon.coco_id, imgId, points)
+
             cocoPath = osp.join(self.outputDir, "coco.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 

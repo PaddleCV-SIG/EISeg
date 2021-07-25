@@ -209,9 +209,26 @@ class COCO:
         self.anns[id] = ann
         self.imgToAnns[image_id].append(ann)
         self.catToImgs[category_id].append(image_id)
+        return id
 
-    def updateAnnotations(self, **kwargs):
-        pass
+    def updateAnnotation(self, id, imgId, points):
+        self.anns[id]["segmentation"] = [points]
+
+        for rec in self.dataset["annotations"]:
+            if rec["id"] == id:
+                rec["segmentation"] = [points]
+                # break
+        print("=====")
+        for ann in self.imgToAnns[imgId]:
+            print(ann["segmentation"][0][0])
+        for rec in self.imgToAnns[imgId]:
+            if rec["id"] == id:
+                rec["segmentation"] = [points]
+                # break
+        for ann in self.imgToAnns[imgId]:
+            print(ann["segmentation"][0][0])
+
+        print("+++++")
 
     def info(self):
         """
