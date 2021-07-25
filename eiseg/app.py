@@ -315,7 +315,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&COCO保存"),
             partial(self.toggleSave, "coco"),
             "save_coco",
-            "SaveCoco",
+            "SaveCOCO",
             tr("保存为COCO格式"),
             checkable=True,
         )
@@ -993,12 +993,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.status = self.ANNING
 
     def loadLabel(self, imgPath):
-        print(
-            "load label",
-            imgPath,
-            self.labelPaths,
-            self.coco.imgNameToId.get(osp.basename(imgPath)),
-        )
+        # print(
+        #     "load label",
+        #     imgPath,
+        #     self.labelPaths,
+        #     self.coco.imgNameToId.get(osp.basename(imgPath)),
+        # )
         if imgPath == "":
             return None
 
@@ -1204,8 +1204,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     osp.splitext(osp.basename(self.imagePath))[0] + ".png",
                 )
         print("save path", savePath)
-        # if not self.outputDir:
-        #     self.outputDir = osp.dirname(savePath)
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
 
@@ -1244,8 +1242,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     "color": l.color,
                     "points": [],
                 }
-                poly = polygon.polygon()
-                for p in poly:
+                for p in polygon.scnenePoints:
                     label["points"].append([p.x(), p.y()])
                 labels.append(label)
             if self.origExt:
@@ -1262,13 +1259,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
             else:
                 imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
-            polygons = self.scene.polygon_items
-            for polygon in polygons:
-                label = self.labelList[polygon.labelIndex - 1]
+            for polygon in self.scene.polygon_items:
+                label = self.labelList.getLabelById(polygon.labelIndex)
                 points = []
-                for p in polygon.polygon():
+                for p in polygon.scnenePoints:
                     points.append(p.x())
                     points.append(p.y())
+                print("polygon", points[0])
                 if not polygon.coco_id:
                     annId = self.coco.addAnnotation(imgId, label.idx, points)
                     polygon.coco_id = annId
