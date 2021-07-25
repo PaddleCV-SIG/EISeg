@@ -342,7 +342,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&设置抠图背景色"),
             self.setMattingBackground,
             "set_matting_background",
-            "setMattingBackground",  # TODO: 背景色颜色的一个色块
+            self.mattingBackground,  # TODO: 背景色颜色的一个色块
             tr("抠图后背景像素的颜色"),
         )
         quit = action(
@@ -526,6 +526,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         c = self.mattingBackground
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
         self.mattingBackground = color.getRgb()[:3]
+        print(self.mattingBackground)
+        self.actions.set_matting_background.setIcon(
+            util.newIcon(self.mattingBackground)
+        )
 
     def editShortcut(self):
         self.shortcutWindow.show()
