@@ -280,7 +280,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&标签和图像使用相同拓展名"),
             self.toggleOrigExt,
             "origional_extension",
-            "SavePseudoColor",
+            "Same",
             tr("标签和图像使用相同拓展名，用于图像中有文件名相同，拓展名不同的情况"),
             checkable=True,
         )
@@ -525,7 +525,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             action = QtWidgets.QAction(
                 icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
-            action.triggered.connect(partial(self.loadImage, f, True))
+            action.triggered.connect(partial(self.loadImage, f))
             menu.addAction(action)
         if len(files) == 0:
             menu.addAction(self.tr("无近期文件"))
@@ -955,8 +955,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.update_bandList()
             else:
                 self.warn(
-                    tr("未打开遥感工具"),
-                    tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
+                    self.tr("未打开遥感工具"),
+                    self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
                 )
                 return
         elif ext == ".nii" or ext == ".gz":  # nii.gz
@@ -970,8 +970,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.update_slideSld()
             else:
                 self.warn(
-                    tr("未打开医疗工具"),
-                    tr("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"),
+                    self.tr("未打开医疗工具"),
+                    self.tr("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"),
                 )
                 return
         else:
@@ -1079,7 +1079,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def imageListClicked(self):
         if not self.controller:
-            self.warn(tr("模型未加载"), tr("尚未加载模型，请先加载模型！"))
+            self.warn(self.tr("模型未加载"), self.tr("尚未加载模型，请先加载模型！"))
             self.changeParam()
             if not self.controller:
                 return
@@ -1190,7 +1190,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 filters = "Label file (%s)" % " ".join(formats)
                 dlg = QtWidgets.QFileDialog(
                     self,
-                    tr("保存标签文件路径"),
+                    self.tr("保存标签文件路径"),
                     osp.dirname(self.imagePath),
                     filters,
                 )
@@ -1200,7 +1200,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
                 savePath, _ = dlg.getSaveFileName(
                     self,
-                    tr("选择标签文件保存路径"),
+                    self.tr("选择标签文件保存路径"),
                     osp.splitext(osp.basename(self.imagePath))[0] + ".png",
                 )
         print("save path", savePath)
@@ -1227,7 +1227,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("size", self.controller.img_size, pseudo.shape)
             mask = self.controller.result_mask
             for lab in self.labelList:
-                pseudo[mask == lab.idx, :] = lab.color
+                pseudo[mask == lab.idx, :] = lab.color[::-1]
             cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
 
         # 4.3 保存json
