@@ -22,13 +22,47 @@ EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智
 
 ## 安装使用
 
-### 使用版
+### 稳定版
+EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#Conda)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
 
-目前带有交互式标注的EISeg已在PaddleSeg中提供。具体安装使用等说明详见[PaddleSeg/contrib/EISeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.2/contrib/EISeg)。支持多种安装方式，可兼容Windows，Mac OS和Linux。欢迎大家体验、start和fork。
+版本要求:
+
+* PaddlePaddle >= 2.1.0
+
+PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/windows-pip.html)。
+
+#### PIP
+
+pip安装方式如下：
+
+```shell
+pip install eiseg
+```
+pip会自动安装依赖。安装完成后命令行输入：
+```shell
+eiseg
+```
+即可运行软件。
+
+#### Conda
+首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
+
+```shell
+conda create -n eiseg python=3.8
+conda activate eiseg
+conda install qtpy
+pip install eiseg
+eiseg
+```
+
+#### Windows exe
+
+EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘](https://pan.baidu.com/s/1KXJ9PYjbnBgQozZJEJE-bA)（提取码：82z9）下载最新EISeg。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
+
 
 ### 开发版
 
-此repo下的EISeg为开发版本，目前正在开发中，暂未提供最新的pip包和exe，仅支持clone到本地运行，参考下面代码运行：
+本repo下EISeg为开发版，更新频率高，不提供pip包和exe打包版本，可以通过clone代码运行：
 
 ```shell
 git clone https://github.com/PaddleCV-SIG/EISeg.git
@@ -36,9 +70,11 @@ cd EISeg
 pip install -r requirements.txt
 python -m eiseg
 ```
-即可开始执行。
-
-
+或直接通过pip安装github项目
+```shell
+pip install git+https://github.com/PaddleCV-SIG/EISeg
+eiseg
+```
 
 ## 使用
 
@@ -80,7 +116,7 @@ python -m eiseg
    | Ctrl+Backspace    | 删除多边形     |
    | 双击【边】        | 在此边上新加点 |
 
-   
+
 
 2. 基本完成小功能快捷键的设置，伪彩色保存等。
 
@@ -112,4 +148,3 @@ pip install --upgrade paddlepaddle-gpu</code>
 [Yuying Hao](https://github.com/haoyuying), [Yizhou Chen](https://github.com/geoyee), [Lin Han](https://github.com/linhandev/), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
 
 <!-- pip install 'git+https://github.com/openvinotoolkit/datumaro' -->
-
