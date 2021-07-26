@@ -94,6 +94,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
         self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
+        self.mattingColor = self.settings.value("matting_color", QVariant([]), type=list)
 
         # 初始化action
         self.initActions()
@@ -522,11 +523,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
+        if self.settings.value("matting_color"):
+            self.mattingBackground = [int(c) for c in self.settings.value("matting_color")]
+            self.actions.set_matting_background.setIcon(
+                util.newIcon(self.mattingBackground)
+            )
+
     def setMattingBackground(self):
         c = self.mattingBackground
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
         self.mattingBackground = color.getRgb()[:3]
-        print(self.mattingBackground)
+        # print("mattingBackground:", self.mattingBackground)
+        self.settings.setValue("matting_color", [int(c) for c in self.mattingBackground])
         self.actions.set_matting_background.setIcon(
             util.newIcon(self.mattingBackground)
         )
