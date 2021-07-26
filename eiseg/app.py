@@ -29,6 +29,7 @@ import util
 from util import MODELS, COCO
 from util.remotesensing import *
 from util.medical import *
+from util.grid import *
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -77,8 +78,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
         self.midx = 0  # 医疗切片索引
         self.rawimg = None
+        self.imagesGrid = []  # 图像宫格
         # worker
-        self.display_dockwidget = [True, True, True, True, False, False]
+        self.display_dockwidget = [True, True, True, True, False, False, False]
         self.dock_widgets = [
             self.ModelDock,
             self.DataDock,
@@ -86,6 +88,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.ShowSetDock,
             self.RSDock,
             self.MIDock,
+            self.GridDock,
         ]
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value(
@@ -94,6 +97,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
         self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
+        self.mattingColor = self.settings.value("matting_color", QVariant([]), type=list)
 
         # 初始化action
         self.initActions()
@@ -136,6 +140,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # self.rsShow.currentIndexChanged.connect(self.rsShowModeChange)  # 显示模型
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
+        self.gridSelect.currentIndexChanged.connect(self.gridNumSet)  # 打开宫格
 
     def initActions(self):
         tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
@@ -204,13 +209,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "about",
             "About",
             tr("关于这个软件和开发团队"),
-        )
-        grid_ann = action(
-            tr("&N2宫格标注"),
-            self.toBeImplemented,
-            "grid_ann",
-            "N2",
-            tr("使用N2宫格进行细粒度标注"),
         )
         finish_object = action(
             tr("&完成当前目标"),
@@ -428,6 +426,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("医疗设置"),
             checkable=True,
         )
+        grid_ann_worker = action(
+            tr("&N2宫格标注"),
+            partial(self.changeWorkerShow, 6),
+            "grid_ann_worker",
+            "N2",
+            tr("使用N2宫格进行细粒度标注"),
+            checkable=True,
+        )
         for name in dir():
             if name not in start:
                 self.actions.append(eval(name))
@@ -466,7 +472,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 load_label,
                 clear_label,
                 None,
-                grid_ann,
                 largest_component,
                 None,
                 origional_extension,
@@ -488,6 +493,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 set_worker,
                 rs_worker,
                 mi_worker,
+                grid_ann_worker,
             ),
             helpMenu=(languages, quick_start, about, edit_shortcuts),
             toolBar=(
@@ -522,11 +528,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
+        if self.settings.value("matting_color"):
+            self.mattingBackground = [int(c) for c in self.settings.value("matting_color")]
+            self.actions.set_matting_background.setIcon(
+                util.newIcon(self.mattingBackground)
+            )
+
     def setMattingBackground(self):
         c = self.mattingBackground
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
         self.mattingBackground = color.getRgb()[:3]
-        print(self.mattingBackground)
+        # print("mattingBackground:", self.mattingBackground)
+        self.settings.setValue("matting_color", [int(c) for c in self.mattingBackground])
         self.actions.set_matting_background.setIcon(
             util.newIcon(self.mattingBackground)
         )
@@ -1047,6 +1060,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePath = path
         self.status = self.ANNING
 
+        # 还原宫格
+        self.gridSelect.setCurrentIndex(0)
+
     def loadLabel(self, imgPath):
         if imgPath == "":
             return None
@@ -1485,6 +1501,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.annImage.setPixmap(QPixmap(image))
         # BUG: 一直有两张图片在scene里，研究是为什么
         # print(self.scene.items())
+        # TODO:宫格显示当前图片
+        # if self.gridTable.isVisible():
+        #     pass
 
     def viewZoomed(self, scale):
         self.scene.scale = scale
@@ -1591,10 +1610,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = image
         self._update_image()
 
+    def gridNumSet(self, idx):
+        grid_num = int(self.gridSelect.currentText())
+        self.gridTable.setColumnCount(grid_num)
+        self.gridTable.setRowCount(grid_num)
+        self.imagesGrid = slide_out(self.image, grid_num, grid_num)
+        # self.controller.image = self.imagesGrid[0]
+        self.controller.set_image(self.imagesGrid[0])
+        self._update_image()
+        # 连接切换信号
+        self.gridTable.cellClicked.connect(self.changeGrid)
+
     def toggleDockWidgets(self, is_init=False):
         if is_init == True:
             if self.dockStatus != []:
-                self.display_dockwidget = [strtobool(w) for w in self.dockStatus]
+                if len(self.dockStatus) != len(self.menus.showMenu):
+                    self.settings.remove("dock_status")
+                else:
+                    self.display_dockwidget = [strtobool(w) for w in self.dockStatus]
             for i in range(len(self.menus.showMenu)):
                 self.menus.showMenu[i].setChecked(bool(self.display_dockwidget[i]))
         else:
@@ -1636,6 +1669,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.filterLargestCC = on
         except:
             pass
+
+    def changeGrid(self, row, col):
+        grid_num = int(self.gridSelect.currentText())
+        idx = row * grid_num + col
+        self.controller.set_image(self.imagesGrid[idx])
+        self._update_image()
 
     @property
     def opacity(self):
