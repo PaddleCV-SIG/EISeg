@@ -221,6 +221,33 @@ class Ui_EISeg(object):
         horizontalLayout.addLayout(MIRegion)
         self.MIDock = p_create_dock("RSDock", self.tr("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
+        ## 宫格区域
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        GridRegion = QtWidgets.QVBoxLayout()
+        GridRegion.setObjectName("GridRegion")
+        gridNumSelection = create_text(CentralWidget, "gridNumSelection", self.tr("宫格划分数"))
+        GridRegion.addWidget(gridNumSelection)
+        combo = QtWidgets.QComboBox(self)
+        combo.addItems(["1", "2", "3"])
+        self.gridSelect = combo
+        GridRegion.addWidget(self.gridSelect)
+        self.gridTable = QtWidgets.QTableWidget(CentralWidget)
+        self.gridTable.horizontalHeader().hide()
+        self.gridTable.verticalHeader().hide()
+        # 铺满
+        self.gridTable.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch)
+        self.gridTable.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch)
+        self.gridTable.setObjectName("gridTable")
+        self.gridTable.clearContents()
+        self.gridTable.setColumnCount(int(self.gridSelect.currentText()))
+        self.gridTable.setRowCount(int(self.gridSelect.currentText()))
+        GridRegion.addWidget(self.gridTable)
+        horizontalLayout.addLayout(GridRegion)
+        self.GridDock = p_create_dock("GridDock", self.tr("宫格切换"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.GridDock)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
