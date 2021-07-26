@@ -71,7 +71,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.isDirty = False  # 是否需要保存
         self.labelList = util.LabelList()  # 标签列表
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        self.coco = None
+        self.coco = COCO()
         self.colorMap = util.colorMap
         self.mattingBackground = [0, 0, 128]
 
@@ -97,7 +97,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
         self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
-        self.mattingColor = self.settings.value("matting_color", QVariant([]), type=list)
+        self.mattingColor = self.settings.value(
+            "matting_color", QVariant([]), type=list
+        )
 
         # 初始化action
         self.initActions()
@@ -529,7 +531,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         util.addActions(self.toolBar, self.menus.toolBar)
 
         if self.settings.value("matting_color"):
-            self.mattingBackground = [int(c) for c in self.settings.value("matting_color")]
+            self.mattingBackground = [
+                int(c) for c in self.settings.value("matting_color")
+            ]
             self.actions.set_matting_background.setIcon(
                 util.newIcon(self.mattingBackground)
             )
@@ -539,7 +543,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
         self.mattingBackground = color.getRgb()[:3]
         # print("mattingBackground:", self.mattingBackground)
-        self.settings.setValue("matting_color", [int(c) for c in self.mattingBackground])
+        self.settings.setValue(
+            "matting_color", [int(c) for c in self.mattingBackground]
+        )
         self.actions.set_matting_background.setIcon(
             util.newIcon(self.mattingBackground)
         )
@@ -1369,8 +1375,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.coco.updateCategory(lab.idx, lab.name, lab.color)
                 else:
                     self.coco.addCategory(lab.idx, lab.name, lab.color)
-
-            cocoPath = osp.join(self.outputDir, "coco.json")
+            saveDir = (
+                self.outputDir if self.outputDir is not None else osp.dirname(savePath)
+            )
+            cocoPath = osp.join(saveDir, "coco.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 
         self.setClean()
