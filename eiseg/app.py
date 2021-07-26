@@ -909,6 +909,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             color = self.labelList.getLabelById(poly.labelIndex).color
             pts = np.int32([np.array(poly.scnenePoints)])
             cv2.fillPoly(img, pts=pts, color=poly.labelIndex)
+        # self.controller.result_mask = img
         return img
         # plt.imshow(img)
         # plt.show()
@@ -1302,7 +1303,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             mattingPath = mattingPath + "_matting" + ext
             img = self.controller.image.copy()
             img = img[:, :, ::-1]
-            print("background", self.mattingBackground)
             img[self.getMask() == 0] = self.mattingBackground[::-1]
             cv2.imencode(ext, img)[1].tofile(mattingPath)
 

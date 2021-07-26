@@ -21,6 +21,7 @@ class InteractiveController:
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
+        self.backgroundColor = [0, 0, 255]
         # 用于redo
         self.undo_states = []
         self.undo_probs_history = []
@@ -281,10 +282,11 @@ class InteractiveController:
     def palette(self):
         if self.label_list:
             colors = [ml.color for ml in self.label_list]
+            # colors.insert(0, self.backgroundColor)
             colors.insert(0, [0, 0, 0])
         else:
             colors = [[0, 0, 0]]
-        print(colors)
+        # print(colors)
         return colors
 
     @property
