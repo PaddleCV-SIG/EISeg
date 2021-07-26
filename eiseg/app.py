@@ -719,7 +719,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     # 标签列表
     def loadLabelList(self, file_path=None):
-        print("+_+_+_+_+ loading label list")
         if file_path is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -901,6 +900,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             polygon.removeFocusPoint()
 
     # 图片/标签 io
+    def getMask(self):
+        if not self.controller or self.controller.image is None:
+            return
+        s = self.controller.image.shape
+        img = np.zeros([s[0], s[1]])
+        for poly in self.scene.polygon_items:
+            color = self.labelList.getLabelById(poly.labelIndex).color
+            pts = np.int32([np.array(poly.scnenePoints)])
+            cv2.fillPoly(img, pts=pts, color=poly.labelIndex)
+        return img
+        # plt.imshow(img)
+        # plt.show()
+
     def openImage(self):
         formats = [
             "*.{}".format(fmt.data().decode())
@@ -1067,7 +1079,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 color = label["color"]
                 labelIdx = label["labelIdx"]
                 points = label["points"]
-                poly = PolygonAnnotation(labelIdx, color, color, self.opacity)
+                poly = PolygonAnnotation(
+                    labelIdx, self.controller.image.shape, color, color, self.opacity
+                )
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
@@ -1088,7 +1102,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 labelIdx = ann["category_id"]
                 color = self.labelList.getLabelById(labelIdx).color
                 poly = PolygonAnnotation(
-                    ann["category_id"], color, color, self.opacity, ann["id"]
+                    ann["category_id"],
+                    self.controller.image.shape,
+                    color,
+                    color,
+                    self.opacity,
+                    ann["id"],
                 )
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
@@ -1142,7 +1161,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     continue
                 print("the id is ", self.labelList[self.currLabelIdx].idx)
                 poly = PolygonAnnotation(
-                    self.labelList[self.currLabelIdx].idx, color, color, self.opacity
+                    self.labelList[self.currLabelIdx].idx,
+                    self.controller.image.shape,
+                    color,
+                    color,
+                    self.opacity,
                 )
                 poly.labelIndex = self.labelList[self.currLabelIdx].idx
                 self.scene.addItem(poly)
@@ -1158,6 +1181,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.status = self.EDITING
             for p in self.scene.polygon_items:
                 p.setAnning(isAnning=False)
+        self.getMask()
 
     def completeLastMask(self):
         # 返回最后一个标签是否完成，false就是还有带点的
@@ -1207,6 +1231,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
             return
+        print("img shape", self.controller.image.shape)
         # 2. 完成正在交互式标注的标签
         self.completeLastMask()
         # 3. 确定保存路径
@@ -1254,7 +1279,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
             ext = osp.splitext(savePath)[1]
-            cv2.imencode(ext, self.controller.result_mask)[1].tofile(savePath)
+            cv2.imencode(ext, self.getMask())[1].tofile(savePath)
             # self.labelPaths.append(savePath)
 
         # 4.2 保存伪彩色
@@ -1265,7 +1290,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             s = self.controller.img_size
             pseudo = np.zeros([s[1], s[0], 3])
             print("size", self.controller.img_size, pseudo.shape)
-            mask = self.controller.result_mask
+            # mask = self.controller.result_mask
+            mask = self.getMask()
             for lab in self.labelList:
                 pseudo[mask == lab.idx, :] = lab.color[::-1]
             cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
@@ -1274,11 +1300,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["matting"]:
             mattingPath, ext = osp.splitext(savePath)
             mattingPath = mattingPath + "_matting" + ext
-            print("mattingPath", mattingPath)
             img = self.controller.image.copy()
             img = img[:, :, ::-1]
             print("background", self.mattingBackground)
-            img[self.controller.result_mask == 0] = self.mattingBackground[::-1]
+            img[self.getMask() == 0] = self.mattingBackground[::-1]
             cv2.imencode(ext, img)[1].tofile(mattingPath)
 
         # 4.4 保存json
@@ -1294,7 +1319,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     "points": [],
                 }
                 for p in polygon.scnenePoints:
-                    label["points"].append([p.x(), p.y()])
+                    label["points"].append(p)
                 labels.append(label)
             if self.origExt:
                 jsonPath = savePath + ".json"
@@ -1313,8 +1338,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for polygon in self.scene.polygon_items:
                 points = []
                 for p in polygon.scnenePoints:
-                    points.append(p.x())
-                    points.append(p.y())
+                    for val in p:
+                        points.append(val)
+
                 if not polygon.coco_id:
                     print("adding: ", polygon.labelIndex)
                     annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)

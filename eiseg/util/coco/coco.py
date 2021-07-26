@@ -157,7 +157,6 @@ class COCO:
             "supercategory": supercategory,
         }
         self.cats[id] = cat
-        print("))))))", self.cats)
         for idx in range(len(self.dataset["categories"])):
             if self.dataset["categories"][idx]["id"] == id:
                 self.dataset["categories"][idx] = cat

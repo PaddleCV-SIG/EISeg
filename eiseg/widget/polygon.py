@@ -7,6 +7,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def __init__(
         self,
         labelIndex,
+        shape,
         insideColor=[255, 0, 0],
         borderColor=[0, 255, 0],
         opacity=0.5,
@@ -18,6 +19,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.m_items = []
         self.m_lines = []
         self.coco_id = cocoIndex
+        self.height, self.width = shape[:2]
 
         self.labelIndex = labelIndex
         self.item_hovering = False
@@ -47,7 +49,8 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
     def scnenePoints(self):
         points = []
         for p in self.points:
-            points.append(self.mapToScene(p))
+            p = self.mapToScene(p)
+            points.append([p.x(), p.y()])
         return points
 
     def setAnning(self, isAnning=True):
