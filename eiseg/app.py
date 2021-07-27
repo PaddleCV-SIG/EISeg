@@ -558,6 +558,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
 
     def editShortcut(self):
+        self.shortcutWindow.center()
         self.shortcutWindow.show()
 
     # 多语言
