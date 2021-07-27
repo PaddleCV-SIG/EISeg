@@ -8,6 +8,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self,
         labelIndex,
         shape,
+        delPolygon,
         insideColor=[255, 0, 0],
         borderColor=[0, 255, 0],
         opacity=0.5,
@@ -20,6 +21,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.m_lines = []
         self.coco_id = cocoIndex
         self.height, self.width = shape[:2]
+        self.delPolygon = delPolygon
 
         self.labelIndex = labelIndex
         self.item_hovering = False
@@ -138,7 +140,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
                 break
         if focusIdx is not None:
             if len(self) <= 3:
-                self.remove()
+                self.delPolygon(self)  # 调用app的删除多边形，为了同时删除coco标签
                 return
             del self.points[focusIdx]
             self.setPolygon(QtGui.QPolygonF(self.points))
