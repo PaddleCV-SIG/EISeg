@@ -96,6 +96,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
         self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
+        self.saveStatus = self.settings.value("save_status", QVariant([]), type=list)
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
         self.mattingColor = self.settings.value(
             "matting_color", QVariant([]), type=list
@@ -149,6 +150,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         action = partial(util.newAction, self)
         self.actions = util.struct()
         start = dir()
+
+        # load status
+        if self.saveStatus != []:
+            for sv in self.saveStatus:
+                self.save_status[sv[0]] = sv[1]
+
         edit_shortcuts = action(
             tr("&编辑快捷键"),
             self.editShortcut,
@@ -529,7 +536,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("显示"), self.menus.showMenu)
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
-
+        # matting backgroud
         if self.settings.value("matting_color"):
             self.mattingBackground = [
                 int(c) for c in self.settings.value("matting_color")
@@ -537,6 +544,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.actions.set_matting_background.setIcon(
                 util.newIcon(self.mattingBackground)
             )
+
 
     def setMattingBackground(self):
         c = self.mattingBackground
@@ -580,7 +588,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             action = QtWidgets.QAction(
                 icon, "&【%d】 %s" % (i + 1, QtCore.QFileInfo(f).fileName()), self
             )
-            action.triggered.connect(partial(self.loadImage, f))
+            action.triggered.connect(partial(self.openRecentImage, f))
             menu.addAction(action)
         if len(files) == 0:
             menu.addAction(self.tr("无近期文件"))
@@ -932,6 +940,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         return img
         # plt.imshow(img)
         # plt.show()
+
+    def openRecentImage(self, file_path):
+        self.queueEvent(partial(self.loadImage, file_path))
+        self.listFiles.addItems([file_path.replace("\\", "/")])
+        self.imagePaths.append(file_path)
 
     def openImage(self):
         formats = [
@@ -1573,8 +1586,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 coco_path = None
             else:
                 coco_path = osp.join(self.outputDir, "coco.json")
-        if not osp.exists(coco_path):
-            coco_path = None
+                # 这里放在外面判断可能会有coco_path为none，exists报错
+                if not osp.exists(coco_path):
+                    coco_path = None
         self.coco = COCO(coco_path)
         if self.clearLabelList():
             self.labelList = util.LabelList(self.coco.dataset["categories"])
@@ -1622,12 +1636,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         grid_num = int(self.gridSelect.currentText())
         self.gridTable.setColumnCount(grid_num)
         self.gridTable.setRowCount(grid_num)
-        self.imagesGrid = slide_out(self.image, grid_num, grid_num)
-        # self.controller.image = self.imagesGrid[0]
-        self.controller.set_image(self.imagesGrid[0])
-        self._update_image()
-        # 连接切换信号
-        self.gridTable.cellClicked.connect(self.changeGrid)
+        if self.image:
+            self.imagesGrid = slide_out(self.image, grid_num, grid_num)
+            # self.controller.image = self.imagesGrid[0]
+            self.controller.set_image(self.imagesGrid[0])
+            self._update_image()
+            # 连接切换信号
+            self.gridTable.cellClicked.connect(self.changeGrid)
+        else:
+            self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
 
     def toggleDockWidgets(self, is_init=False):
         if is_init == True:
@@ -1724,6 +1741,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def closeEvent(self, event):
         # 保存界面
         self.settings.setValue("layout_status", QByteArray(self.saveState()))
+        self.settings.setValue("save_status", [(k, self.save_status[k]) for k in self.save_status.keys()])
         # 如果设置了保存路径，把标签也保存下
         if self.outputDir is not None and len(self.labelList) != 0:
             self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))
