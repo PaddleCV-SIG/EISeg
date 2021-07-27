@@ -545,7 +545,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 util.newIcon(self.mattingBackground)
             )
 
-
     def setMattingBackground(self):
         c = self.mattingBackground
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2]), self)
@@ -1741,7 +1740,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def closeEvent(self, event):
         # 保存界面
         self.settings.setValue("layout_status", QByteArray(self.saveState()))
-        self.settings.setValue("save_status", [(k, self.save_status[k]) for k in self.save_status.keys()])
+        self.settings.setValue(
+            "save_status", [(k, self.save_status[k]) for k in self.save_status.keys()]
+        )
         # 如果设置了保存路径，把标签也保存下
         if self.outputDir is not None and len(self.labelList) != 0:
             self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))

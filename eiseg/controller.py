@@ -21,10 +21,11 @@ class InteractiveController:
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
-        self.backgroundColor = [0, 0, 255]
+
         # 用于redo
         self.undo_states = []
         self.undo_probs_history = []
+
         self.curr_label_number = 0
         self._result_mask = None
         self.label_list = None  # 存标签编号和颜色的对照
@@ -55,9 +56,9 @@ class InteractiveController:
         跑推理，保存历史用于undo
         Parameters
         ----------
-        x : type
+        x : type 高？
             Description of parameter `x`.
-        y : type
+        y : type 宽？
             Description of parameter `y`.
         is_positive : bool
             是否是正点
@@ -66,12 +67,13 @@ class InteractiveController:
             bool
                 点击是否成功添加
         """
+        # 1. 点击不能越界
         s = self.image.shape
         if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
             print("点击越界")
             return False
 
-        if len(self.states) == 0:  # 保存最初状态
+        if len(self.states) == 0:  # 保存一个空状态
             self.states.append(
                 {
                     "clicker": self.clicker.get_state(),
@@ -79,36 +81,39 @@ class InteractiveController:
                 }
             )
 
+        # 2. 添加点击，跑推理
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
         self.clicker.add_click(click)
         start = time.time()
-        print(self.predictor)
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
-        if self._init_mask is not None and len(self.clicker) == 1:
-            pred = self.predictor.get_prediction(
-                self.clicker, prev_mask=self._init_mask
-            )
+        # if self._init_mask is not None and len(self.clicker) == 1:
+        #     pred = self.predictor.get_prediction(
+        #         self.clicker, prev_mask=self._init_mask
+        #     )
         end = time.time()
         print("cost time", end - start)
 
-        # 保存最新状态
+        # 3. 保存状态
         self.states.append(
             {
                 "clicker": self.clicker.get_state(),
                 "predictor": self.predictor.get_states(),
             }
         )
-
         if self.probs_history:
-            self.probs_history.append((self.probs_history[-1][0], pred))
+            self.probs_history.append((self.probs_history[-1][1], pred))
         else:
             self.probs_history.append((np.zeros_like(pred), pred))
+
+        # 点击之后就不能接着之前的历史redo了
+        self.undo_states = []
+        self.undo_probs_history = []
 
         self.update_image_callback()
 
     def undo_click(self):
         """undo一步点击"""
-        if len(self.states) <= 1:  # 如果还没点
+        if len(self.states) <= 1:  # == 1就是空状态了，不用再退
             return
         self.undo_states.append(self.states.pop())
         self.clicker.set_state(self.states[-1]["clicker"])
@@ -120,29 +125,29 @@ class InteractiveController:
 
     def redo_click(self):
         """redo一步点击"""
-        if not self.undo_states:  # 如果还没撤销过
+        if len(self.undo_states) == 0:  # 如果还没撤销过
             return
-        if len(self.undo_probs_history) >= 1:
-            next_state = self.undo_states.pop()
-            self.states.append(next_state)
-            self.clicker.set_state(next_state["clicker"])
-            self.predictor.set_states(next_state["predictor"])
-            self.probs_history.append(self.undo_probs_history.pop())
-            self.update_image_callback()
-
-    def partially_finish_object(self):
-        """部分完成
-        保存一个mask的状态，这个状态里不存点，看起来比较
-        """
-        object_prob = self.current_object_prob
-        if object_prob is None:
-            return
-        self.probs_history.append((object_prob, np.zeros_like(object_prob)))
-        self.states.append(self.states[-1])
-        self.clicker.reset_clicks()
-        self.reset_predictor()
-        self.reset_init_mask()
+        # if len(self.undo_probs_history) >= 1:
+        next_state = self.undo_states.pop()
+        self.states.append(next_state)
+        self.clicker.set_state(next_state["clicker"])
+        self.predictor.set_states(next_state["predictor"])
+        self.probs_history.append(self.undo_probs_history.pop())
         self.update_image_callback()
+
+    # def partially_finish_object(self):
+    #     """部分完成
+    #     保存一个mask的状态，这个状态里不存点，看起来比较
+    #     """
+    #     object_prob = self.current_object_prob
+    #     if object_prob is None:
+    #         return
+    #     self.probs_history.append((object_prob, np.zeros_like(object_prob)))
+    #     self.states.append(self.states[-1])
+    #     self.clicker.reset_clicks()
+    #     self.reset_predictor()
+    #     self.reset_init_mask()
+    #     self.update_image_callback()
 
     def finish_object(self):
         """结束当前物体标注，准备标下一个"""
@@ -218,13 +223,12 @@ class InteractiveController:
     def current_object_prob(self):
         if len(self.probs_history) > 0:
             current_prob_total, current_prob_additive = self.probs_history[-1]
-            return np.maximum(current_prob_total, current_prob_additive)
+            return np.maximum(
+                current_prob_total, current_prob_additive
+            )  # TODO: 这块为什么要求max
+            # return current_prob_additive
         else:
             return None
-
-    @property
-    def is_incomplete_mask(self):
-        return len(self.probs_history) > 0
 
     @property
     def result_mask(self):
