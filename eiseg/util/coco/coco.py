@@ -235,8 +235,8 @@ class COCO:
             for idx, ann in enumerate(self.dataset["annotations"]):
                 if ann["id"] == annId:
                     del self.dataset["annotations"][idx]
-
-        del self.anns[annId]
+        if annId in self.anns.keys():
+            del self.anns[annId]
 
         for idx, ann in enumerate(self.imgToAnns[imgId]):
             if ann["id"] == annId:
