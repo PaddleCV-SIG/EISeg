@@ -913,13 +913,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Yes:
-                    polygon.remove()
-                    if self.save_status["coco"]:
-                        self.coco.delAnnotation(
-                            polygon.coco_id,
-                            self.coco.imgNameToId[osp.basename(self.imagePath)],
-                        )
-                self.setDirty()
+                    self.delPolygon(polygon)
+
+    def delPolygon(self, polygon):
+        polygon.remove()
+        if self.save_status["coco"]:
+            if polygon.coco_id:
+                self.coco.delAnnotation(
+                    polygon.coco_id,
+                    self.coco.imgNameToId[osp.basename(self.imagePath)],
+                )
+        self.setDirty()
 
     def delActivePoint(self):
         for polygon in self.scene.polygon_items:
@@ -1115,8 +1119,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 labelIdx = label["labelIdx"]
                 points = label["points"]
                 poly = PolygonAnnotation(
-                    labelIdx, self.controller.image.shape, color, color, self.opacity
+                    labelIdx,
+                    self.controller.image.shape,
+                    self.delPolygon,
+                    color,
+                    color,
+                    self.opacity,
                 )
+                poly.delPolygon.connect(self.delPolygonc)
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
@@ -1139,6 +1149,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 poly = PolygonAnnotation(
                     ann["category_id"],
                     self.controller.image.shape,
+                    self.delPolygon,
                     color,
                     color,
                     self.opacity,
@@ -1198,6 +1209,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 poly = PolygonAnnotation(
                     self.labelList[self.currLabelIdx].idx,
                     self.controller.image.shape,
+                    self.delPolygon,
                     color,
                     color,
                     self.opacity,
