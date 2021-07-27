@@ -3,6 +3,7 @@ import math
 from functools import partial
 
 from PyQt5.QtCore import QPoint
+from PyQt5.QtWidgets import QDesktopWidget
 
 from qtpy import QtCore, QtWidgets
 from qtpy.QtWidgets import (
@@ -117,6 +118,12 @@ class ShortcutWindow(QWidget):
         self.currentAction.setShortcut(key)
         self.refreshUi()
         save_configs(None, None, self.actions)
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
 
     # 快捷键设置跟随移动
     def moveEvent(self, event):
