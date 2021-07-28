@@ -4,6 +4,11 @@
 <context>
     <name>APP_EISeg</name>
     <message>
+        <location filename="../../app.py" line="170"/>
+        <source>Paddle模型权重文件(*.pdparams)</source>
+        <translation>Paddle Model Parameter File(*.pdparams)</translation>
+    </message>
+    <message>
         <location filename="../../app.py" line="171"/>
         <source>&amp;抠图保存</source>
         <translation>&amp;Save Matting</translation>

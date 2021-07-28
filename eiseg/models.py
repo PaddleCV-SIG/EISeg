@@ -34,8 +34,8 @@ class EISegModel:
             return None
 
     def get_param(self, param_path):
-        if not osp.exists(param_path):
-            raise Exception("权重路径不存在。请指定正确的模型路径")
+        if param_path is None or not osp.exists(param_path):
+            raise Exception(f"权重路径{param_path}不存在。请指定正确的模型路径")
         params = paddle.load(param_path)
         pkeys = params.keys()
         mkeys = self.model.named_parameters()

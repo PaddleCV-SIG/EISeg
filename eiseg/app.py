@@ -61,9 +61,26 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "coco": True,
             "matting": True,
         }  # 是否保存这几个格式
-        self.controller = None
+
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
-        self.modelClass = MODELS[0]  # 模型class
+        self.controller = InteractiveController(
+            self._update_image,
+            predictor_params={
+                # 'brs_mode': 'f-BRS-B',
+                "brs_mode": "NoBRS",
+                "prob_thresh": 0.5,
+                "zoom_in_params": {
+                    "skip_clicks": -1,
+                    "target_size": (400, 400),
+                    "expansion_ratio": 1.4,
+                },
+                "predictor_params": {"net_clicks_limit": None, "max_size": 800},
+                "brs_opt_func_params": {"min_iou_diff": 0.001},
+                "lbfgs_params": {"maxfun": 20},
+            },
+            prob_thresh=self.segThresh,
+        )
+        self.controller.setModel(MODELS[0].__name__)
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
@@ -613,9 +630,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def updateModelsMenu(self):
         menu = self.menus.recent_params
         menu.clear()
+
+        def setModelParam(self, modelName, paramPath):
+            print("+_+_+", modelName)
+            self.changeModel(modelName)
+            self.changeParam(paramPath)
+
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
         ]
+
         for idx, m in enumerate(self.recentModels):
             icon = util.newIcon("Model")
             action = QtWidgets.QAction(
@@ -624,39 +648,40 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self,
             )
             action.triggered.connect(
-                partial(self.loadModelParam, m["param_path"], m["model_name"])
+                partial(setModelParam, m["model_name"], m["param_path"])
             )
             menu.addAction(action)
         if len(self.recentModels) == 0:
             menu.addAction(self.tr("无近期模型记录"))
         self.settings.setValue("recent_params", self.recentModels)
 
-    def changeModel(self, idx):
-        self.modelClass = MODELS[idx]
+    def changeModel(self, idx: int or str):
+        self.controller.setModel(MODELS[idx].__name__)
 
-    def changeParam(self):
-        if not self.modelClass:
+    def changeParam(self, param_path: str = None):
+        if not self.controller.modelSet:
             self.warn(self.tr("选择模型结构"), self.tr("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
-        formats = ["*.pdparams"]
-        filters = "paddle model param files (%s)" % " ".join(formats)
-        start_path = (
-            "."
-            if len(self.recentModels) == 0
-            else osp.dirname(self.recentModels[-1]["param_path"])
-        )
-        param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self,
-            self.tr("选择模型参数") + " - " + __APPNAME__,
-            start_path,
-            filters,
-        )
-        if not osp.exists(param_path):
+        if not param_path:
+            filters = self.tr("Paddle模型权重文件(*.pdparams)")
+            start_path = (
+                "."
+                if len(self.recentModels) == 0
+                else osp.dirname(self.recentModels[-1]["param_path"])
+            )
+            param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                self.tr("选择模型参数") + " - " + __APPNAME__,
+                start_path,
+                filters,
+            )
+        if not param_path:
             return False
-        res = self.loadModelParam(param_path)
-        if res:
+
+        success, res = self.controller.setParam(param_path)
+        if success:
             model_dict = {
                 "param_path": param_path,
-                "model_name": self.modelClass.__name__,
+                "model_name": self.controller.modelName,
             }
             if model_dict not in self.recentModels:
                 self.recentModels.append(model_dict)
@@ -665,84 +690,83 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.settings.setValue("recent_models", self.recentModels)
             self.status = self.ANNING
             return True
-        return False
-
-    def loadModelParam(self, param_path, model=None):
-        print("Call load model param: ", param_path, model, type(model))
-        if model is None:
-            modelClass = self.modelClass
-        if isinstance(model, str):
-            try:
-                modelClass = MODELS[model]
-            except KeyError:
-                print("Model don't exist")
-                return False
-        if inspect.isclass(model):
-            modelClass = model
-        try:
-            model = modelClass()
-        except Exception as e:
-            self.warnException(e)
+        else:
+            self.warnException(res)
             return False
 
-        if not isinstance(model, EISegModel):
-            print("not a instance")
-            self.warn(self.tr("请选择模型结构"), self.tr("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
-            return False
-        modelIdx = MODELS.idx(model.__name__)
-        self.statusbar.showMessage(self.tr("正在加载") + " " + model.__name__)  # 这里没显示
-        try:
-            model = model.load_param(param_path)
-        except Exception as e:
-            self.warnException(e)
-            return False
+        # res = self.loadModelParam(param_path)
+        # if res:
+        #     model_dict = {
+        #         "param_path": param_path,
+        #         "model_name": self.modelClass.__name__,
+        #     }
+        #     if model_dict not in self.recentModels:
+        #         self.recentModels.append(model_dict)
+        #         if len(self.recentModels) > 10:
+        #             del self.recentModels[0]
+        #         self.settings.setValue("recent_models", self.recentModels)
+        #     self.status = self.ANNING
+        #     return True
+        # return False
 
-        if model is not None:
-            if self.controller is None:
-                self.controller = InteractiveController(
-                    model,
-                    predictor_params={
-                        # 'brs_mode': 'f-BRS-B',
-                        "brs_mode": "NoBRS",
-                        "prob_thresh": 0.5,
-                        "zoom_in_params": {
-                            "skip_clicks": -1,
-                            "target_size": (400, 400),
-                            "expansion_ratio": 1.4,
-                        },
-                        "predictor_params": {"net_clicks_limit": None, "max_size": 800},
-                        "brs_opt_func_params": {"min_iou_diff": 0.001},
-                        "lbfgs_params": {"maxfun": 20},
-                    },
-                    update_image_callback=self._update_image,
-                )
-                self.controller.prob_thresh = self.segThresh
-                if self.image is not None:
-                    self.controller.set_image(self.image)
-            else:
-                self.controller.reset_predictor(model)
-            self.statusbar.showMessage(
-                osp.basename(param_path) + " " + self.tr("模型加载完成"), 20000
-            )
-            self.comboModelSelect.setCurrentIndex(modelIdx)
-            return True
-        else:  # 模型和参数不匹配
-            self.warn(
-                self.tr("模型和参数不匹配"),
-                self.tr("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"),
-            )
-            self.statusbar.showMessage(self.tr("模型和参数不匹配，请重新加载"), 20000)
-            self.controller = None  # 清空controller
-            return False
+    # def loadModelParam(self, param_path: str, modelName: str = None):
+    #     print("Call load model param: ", param_path, modelName)
+    #     if modelName is not None:
+    #         self.statusbar.showMessage(self.tr("正在加载") + " " + modelName)
+    #         self.controller.setModel(modelName)
+    #     success, res = self.controller.setParam(param_path)
+    #     if not success:
+    #         self.warnException(res)
+    #
+    #     if model is not None:
+    #         if self.controller is None:
+    #             self.controller = InteractiveController(
+    #                 model,
+    #                 predictor_params={
+    #                     # 'brs_mode': 'f-BRS-B',
+    #                     "brs_mode": "NoBRS",
+    #                     "prob_thresh": 0.5,
+    #                     "zoom_in_params": {
+    #                         "skip_clicks": -1,
+    #                         "target_size": (400, 400),
+    #                         "expansion_ratio": 1.4,
+    #                     },
+    #                     "predictor_params": {"net_clicks_limit": None, "max_size": 800},
+    #                     "brs_opt_func_params": {"min_iou_diff": 0.001},
+    #                     "lbfgs_params": {"maxfun": 20},
+    #                 },
+    #                 update_image_callback=self._update_image,
+    #             )
+    #             self.controller.prob_thresh = self.segThresh
+    #             if self.image is not None:
+    #                 self.controller.set_image(self.image)
+    #         else:
+    #             self.controller.reset_predictor(model)
+    #         self.statusbar.showMessage(
+    #             osp.basename(param_path) + " " + self.tr("模型加载完成"), 20000
+    #         )
+    #         self.comboModelSelect.setCurrentIndex(modelIdx)
+    #         return True
+    #     else:  # 模型和参数不匹配
+    #         self.warn(
+    #             self.tr("模型和参数不匹配"),
+    #             self.tr("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"),
+    #         )
+    #         self.statusbar.showMessage(self.tr("模型和参数不匹配，请重新加载"), 20000)
+    #         self.controller = None  # 清空controller
+    #         return False
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
             self.statusbar.showMessage(self.tr("没有最近使用模型信息，请加载模型"), 10000)
             return
         m = self.recentModels[-1]
-        model = MODELS[m["model_name"]]
+        model = m["model_name"]
         param_path = m["param_path"]
-        self.loadModelParam(param_path, model)
+        # print("----", model, type(model))
+        self.changeModel(model)
+        self.changeParam(param_path)
+        # self.loadModelParam(param_path, model)
 
     # 标签列表
     def loadLabelList(self, file_path=None):

@@ -8,6 +8,8 @@ from skimage.measure import label
 from inference import clicker
 from inference.predictor import get_predictor
 from util.vis import draw_with_blend_and_clicks
+from util import MODELS
+
 
 # DEBUG:
 import matplotlib.pyplot as plt
@@ -15,9 +17,13 @@ import matplotlib.pyplot as plt
 
 # TODO: 研究标签从0开始的时候怎么处理
 class InteractiveController:
-    def __init__(self, net, predictor_params, update_image_callback, prob_thresh=0.5):
-        self.net = net
+    def __init__(self, update_image_callback, predictor_params=None, prob_thresh=0.5):
+        self.update_image_callback = update_image_callback  # TODO: 改成返回image，不调用函数
+        self.predictor_params = predictor_params
         self.prob_thresh = prob_thresh
+        self.model = None
+        self.image = None
+        self.predictor = None
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
@@ -28,15 +34,39 @@ class InteractiveController:
 
         self.curr_label_number = 0
         self._result_mask = None
-        self.label_list = None  # 存标签编号和颜色的对照
-        self._init_mask = None
-
-        self.image = None
-        self.predictor = None
-        self.update_image_callback = update_image_callback
-        self.predictor_params = predictor_params
+        self.label_list = None
+        self._init_mask = None  # TODO: 这个是干什么的，有用吗
         self.filterLargestCC = False
-        self.reset_predictor()
+
+        # self.reset_predictor()
+
+    @property
+    def modelName(self):
+        return self.model.__name__
+
+    @property
+    def modelSet(self):
+        return self.model is not None
+
+    def setModel(self, modelName: str):
+        if not isinstance(modelName, str):
+            return False, "模型名应为str类型"
+        try:
+            self.model = MODELS[modelName]()
+        except KeyError as e:
+            return False, str(e)
+        except Exception as e:
+            return False, str(e)
+        return True, "模型设置成功"
+
+    def setParam(self, paramPath):
+        if not self.modelSet:
+            return False, "模型未设置，请先设置模型"
+        try:
+            self.model.load_param(paramPath)
+        except Exception as e:
+            return False, str(e)
+        return True, "权重设置成功"
 
     def set_image(self, image):
         """设置当前标注的图片
@@ -135,20 +165,6 @@ class InteractiveController:
         self.probs_history.append(self.undo_probs_history.pop())
         self.update_image_callback()
 
-    # def partially_finish_object(self):
-    #     """部分完成
-    #     保存一个mask的状态，这个状态里不存点，看起来比较
-    #     """
-    #     object_prob = self.current_object_prob
-    #     if object_prob is None:
-    #         return
-    #     self.probs_history.append((object_prob, np.zeros_like(object_prob)))
-    #     self.states.append(self.states[-1])
-    #     self.clicker.reset_clicks()
-    #     self.reset_predictor()
-    #     self.reset_init_mask()
-    #     self.update_image_callback()
-
     def finish_object(self):
         """结束当前物体标注，准备标下一个"""
         object_prob = self.current_object_prob
@@ -200,18 +216,19 @@ class InteractiveController:
         if update_image:
             self.update_image_callback()
 
-    def reset_predictor(self, net=None, predictor_params=None):
-        """重置推理器，可以换权重
+    def reset_predictor(self, model=None, predictor_params=None):
+        """重置推理器，可以换推理配置
         Parameters
         ----------
-        predictor_params : 网络权重
-            新的网络权重
+        predictor_params : dict
+            推理配置
+
         """
-        if net is not None:
-            self.net = net
+        if model is not None:
+            self.model = model
         if predictor_params is not None:
             self.predictor_params = predictor_params
-        self.predictor = get_predictor(self.net, **self.predictor_params)
+        self.predictor = get_predictor(self.model.model, **self.predictor_params)
         if self.image is not None:
             self.predictor.set_input_image(self.image)
 
@@ -320,3 +337,17 @@ class InteractiveController:
     def img_size(self):
         print(self.image.shape)
         return self.image.shape[1::-1]
+
+    # def partially_finish_object(self):
+    #     """部分完成
+    #     保存一个mask的状态，这个状态里不存点，看起来比较
+    #     """
+    #     object_prob = self.current_object_prob
+    #     if object_prob is None:
+    #         return
+    #     self.probs_history.append((object_prob, np.zeros_like(object_prob)))
+    #     self.states.append(self.states[-1])
+    #     self.clicker.reset_clicks()
+    #     self.reset_predictor()
+    #     self.reset_init_mask()
+    #     self.update_image_callback()

@@ -65,10 +65,10 @@ class ComponentManager:
         self._components_dict = dict()
         self._name = name
 
-    def __enter__(self):
-        print("enter")
-        self.start = locals()
-        print(locals())
+    # def __enter__(self):
+    #     print("enter")
+    #     self.start = locals()
+    #     print(locals())
 
     def __len__(self):
         return len(self._components_dict)
@@ -80,10 +80,10 @@ class ComponentManager:
     def __getitem__(self, item):
         if isinstance(item, int):
             if item >= len(self):
-                raise KeyError(f"{item} overflows {self} with length {len(self)}")
+                raise KeyError(f"指定的下标 {item} 在长度为 {len(self)} 的 {self} 中越界")
             return list(self._components_dict.values())[item]
         if item not in self._components_dict.keys():
-            raise KeyError("{} does not exist in availabel {}".format(item, self))
+            raise KeyError(f"{self} 中不存在 {item}")
         return self._components_dict[item]
 
     # def __iter__(self):
