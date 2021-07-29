@@ -12,6 +12,7 @@ here = osp.dirname(osp.abspath(__file__))
 class EISegModel:
     @abstractmethod
     def __init__(self):
+        self.paramSet = False
         try:
             self.create_model()
         except AssertionError:
@@ -29,21 +30,23 @@ class EISegModel:
                 self.model.eval()
             except:
                 raise Exception("权重设置失败。请参考官网教程检查Paddle安装是否正确，GPU版本请注意是否正确安装显卡驱动。")
-            return self.model
+            self.paramSet = True
+            return True
         else:
             return None
 
     def get_param(self, param_path):
+        print("param_path", self.__name__, param_path)
         if param_path is None or not osp.exists(param_path):
             raise Exception(f"权重路径{param_path}不存在。请指定正确的模型路径")
         params = paddle.load(param_path)
         pkeys = params.keys()
         mkeys = self.model.named_parameters()
         if len(pkeys) != len(list(mkeys)):
-            return None
+            raise Exception("权重和模型不匹配。请确保指定的权重和模型对应")
         for p, m in zip(pkeys, mkeys):
             if p != m[0]:
-                raise Exception("权重和模型不匹配。权重和模型结构不匹配，请确保指定的权重和模型对应")
+                raise Exception("权重和模型不匹配。请确保指定的权重和模型对应")
         return params
 
 
