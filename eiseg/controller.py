@@ -8,7 +8,7 @@ from skimage.measure import label
 from inference import clicker
 from inference.predictor import get_predictor
 from util.vis import draw_with_blend_and_clicks
-from util import MODELS
+from util import MODELS, LabelList
 
 
 # DEBUG:
@@ -17,7 +17,12 @@ import matplotlib.pyplot as plt
 
 # TODO: 研究标签从0开始的时候怎么处理
 class InteractiveController:
-    def __init__(self, update_image_callback, predictor_params=None, prob_thresh=0.5):
+    def __init__(
+        self,
+        update_image_callback,
+        predictor_params: dict = None,
+        prob_thresh: float = 0.5,
+    ):
         self.update_image_callback = update_image_callback  # TODO: 改成返回image，不调用函数
         self.predictor_params = predictor_params
         self.prob_thresh = prob_thresh
@@ -34,32 +39,24 @@ class InteractiveController:
 
         self.curr_label_number = 0
         self._result_mask = None
-        self.label_list = None
+        self.labelList = LabelList()
         self._init_mask = None  # TODO: 这个是干什么的，有用吗
         self.filterLargestCC = False
 
-        # self.reset_predictor()
-
-    @property
-    def modelName(self):
-        return self.model.__name__
-
-    @property
-    def modelSet(self):
-        return self.model is not None
+        self.addLabel = self.labelList.add
 
     def setModel(self, modelName: str):
         if not isinstance(modelName, str):
             return False, "模型名应为str类型"
         try:
             self.model = MODELS[modelName]()
-        except KeyError as e:
+        except KeyError as e:  # TODO: 这里不用单独写吧，Exception是不是都可以catch
             return False, str(e)
         except Exception as e:
             return False, str(e)
         return True, "模型设置成功"
 
-    def setParam(self, paramPath):
+    def setParam(self, paramPath: str):
         if not self.modelSet:
             return False, "模型未设置，请先设置模型"
         try:
@@ -68,7 +65,7 @@ class InteractiveController:
             return False, str(e)
         return True, "权重设置成功"
 
-    def set_image(self, image):
+    def setImage(self, image):
         """设置当前标注的图片
 
         Parameters
@@ -81,7 +78,20 @@ class InteractiveController:
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
-    def add_click(self, x, y, is_positive):
+    def setLabelList(self, labelList: json):
+        """
+        {
+            "idx" : int,
+            "name" : str,
+            "color" : list
+        }
+        """
+        self.labelList.clear()
+        labels = json.loads(json)
+        for lan in labels:
+            self.labelList.add(lab["id"], lab["name"], lab["color"])
+
+    def addClick(self, x: int, y: int, is_positive: bool):
         """添加一个点
         跑推理，保存历史用于undo
         Parameters
@@ -97,11 +107,15 @@ class InteractiveController:
             bool
                 点击是否成功添加
         """
-        # 1. 点击不能越界
-        s = self.image.shape
-        if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
-            print("点击越界")
-            return False
+        # 1. 确定可以点
+        if not self.inImage(x, y):
+            return False, "点击越界"
+        if not self.modelSet:
+            return False, "模型未设置"
+        if not self.paramSet:
+            return False, "参数未设置"
+        if not self.imageSet:
+            return False, "图像未设置"
 
         if len(self.states) == 0:  # 保存一个空状态
             self.states.append(
@@ -127,7 +141,7 @@ class InteractiveController:
         self.states.append(
             {
                 "clicker": self.clicker.get_state(),
-                "predictor": self.predictor.get_states(),
+                "predictor": self.predictor.get_states(),  # TODO: 这俩名字统一一下
             }
         )
         if self.probs_history:
@@ -143,7 +157,7 @@ class InteractiveController:
 
     def undo_click(self):
         """undo一步点击"""
-        if len(self.states) <= 1:  # == 1就是空状态了，不用再退
+        if len(self.states) <= 1:  # == 1就只剩下一个空状态了，不用再退
             return
         self.undo_states.append(self.states.pop())
         self.clicker.set_state(self.states[-1]["clicker"])
@@ -165,7 +179,7 @@ class InteractiveController:
         self.probs_history.append(self.undo_probs_history.pop())
         self.update_image_callback()
 
-    def finish_object(self):
+    def finishObject(self):
         """结束当前物体标注，准备标下一个"""
         object_prob = self.current_object_prob
         if object_prob is None:
@@ -216,7 +230,7 @@ class InteractiveController:
         if update_image:
             self.update_image_callback()
 
-    def reset_predictor(self, model=None, predictor_params=None):
+    def reset_predictor(self, predictor_params=None):
         """重置推理器，可以换推理配置
         Parameters
         ----------
@@ -224,8 +238,6 @@ class InteractiveController:
             推理配置
 
         """
-        if model is not None:
-            self.model = model
         if predictor_params is not None:
             self.predictor_params = predictor_params
         self.predictor = get_predictor(self.model.model, **self.predictor_params)
@@ -264,7 +276,7 @@ class InteractiveController:
         mask = mask == np.argmax(np.bincount(mask.flat)[1:]) + 1
         return mask
 
-    def get_visualization(self, alpha_blend, click_radius):
+    def get_visualization(self, alpha_blend: float, click_radius: int):
         if self.image is None:
             return None
         # 1. 正在标注的mask
@@ -299,10 +311,17 @@ class InteractiveController:
 
         return vis
 
+    def inImage(self, x: int, y: int):
+        s = self.image.shape
+        if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
+            print("点击越界")
+            return False
+        return True
+
     @property
     def palette(self):
-        if self.label_list:
-            colors = [ml.color for ml in self.label_list]
+        if self.labelList:
+            colors = [ml.color for ml in self.labelList]
             # colors.insert(0, self.backgroundColor)
             colors.insert(0, [0, 0, 0])
         else:
@@ -337,6 +356,22 @@ class InteractiveController:
     def img_size(self):
         print(self.image.shape)
         return self.image.shape[1::-1]
+
+    @property
+    def paramSet(self):
+        return self.model.paramSet
+
+    @property
+    def modelSet(self):
+        return self.model is not None
+
+    @property
+    def modelName(self):
+        return self.model.__name__
+
+    @property
+    def imageSet(self):
+        return self.image is not None
 
     # def partially_finish_object(self):
     #     """部分完成

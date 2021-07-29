@@ -38,9 +38,9 @@ warnings.filterwarnings("ignore")
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
     IDILE, ANNING, EDITING = 0, 1, 2
-    # IDILE：打开软件到模型和权重加载之前
-    # ANNING：有未完成的交互式标注
-    # EDITING：交互式标注完成，修改多边形
+    # IDILE：网络，权重，图像三者任一没有加载
+    # EDITING：多边形编辑，可以交互式，但是多边形内部不能点
+    # ANNING：交互式标注，只能交互式，不能编辑多边形，多边形不接hover
 
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
@@ -53,7 +53,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setupUi(self)
 
         # app变量
-        self.status = self.IDILE
+        self.anning = False
         self.save_status = {
             "gray_scale": True,
             "pseudo_color": True,
@@ -81,12 +81,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             prob_thresh=self.segThresh,
         )
         self.controller.setModel(MODELS[0].__name__)
+        # self.controller.labelList = util.LabelList()  # 标签列表
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.isDirty = False  # 是否需要保存
-        self.labelList = util.LabelList()  # 标签列表
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
         self.coco = COCO()
         self.colorMap = util.colorMap
@@ -631,15 +631,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu = self.menus.recent_params
         menu.clear()
 
-        def setModelParam(self, modelName, paramPath):
-            print("+_+_+", modelName)
-            self.changeModel(modelName)
-            self.changeParam(paramPath)
-
         self.recentModels = [
             m for m in self.recentModels if osp.exists(m["param_path"])
         ]
-
         for idx, m in enumerate(self.recentModels):
             icon = util.newIcon("Model")
             action = QtWidgets.QAction(
@@ -648,19 +642,31 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self,
             )
             action.triggered.connect(
-                partial(setModelParam, m["model_name"], m["param_path"])
+                partial(self.setModelParam, m["model_name"], m["param_path"])
             )
             menu.addAction(action)
         if len(self.recentModels) == 0:
             menu.addAction(self.tr("无近期模型记录"))
         self.settings.setValue("recent_params", self.recentModels)
 
+    def setModelParam(self, modelName, paramPath):
+        if self.changeModel(modelName):
+            res = self.changeParam(paramPath)
+            if res:
+                return True
+        return False
+
     def changeModel(self, idx: int or str):
-        self.controller.setModel(MODELS[idx].__name__)
+        success, res = self.controller.setModel(MODELS[idx].__name__)
+        if not success:
+            self.warnException(res)
+            return False
+        return True
 
     def changeParam(self, param_path: str = None):
         if not self.controller.modelSet:
             self.warn(self.tr("选择模型结构"), self.tr("尚未选择模型结构，请在右侧下拉菜单进行选择！"))
+            return
         if not param_path:
             filters = self.tr("Paddle模型权重文件(*.pdparams)")
             start_path = (
@@ -688,73 +694,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(self.recentModels) > 10:
                     del self.recentModels[0]
                 self.settings.setValue("recent_models", self.recentModels)
-            self.status = self.ANNING
+            # self.status = self.ANNING
             return True
         else:
             self.warnException(res)
             return False
-
-        # res = self.loadModelParam(param_path)
-        # if res:
-        #     model_dict = {
-        #         "param_path": param_path,
-        #         "model_name": self.modelClass.__name__,
-        #     }
-        #     if model_dict not in self.recentModels:
-        #         self.recentModels.append(model_dict)
-        #         if len(self.recentModels) > 10:
-        #             del self.recentModels[0]
-        #         self.settings.setValue("recent_models", self.recentModels)
-        #     self.status = self.ANNING
-        #     return True
-        # return False
-
-    # def loadModelParam(self, param_path: str, modelName: str = None):
-    #     print("Call load model param: ", param_path, modelName)
-    #     if modelName is not None:
-    #         self.statusbar.showMessage(self.tr("正在加载") + " " + modelName)
-    #         self.controller.setModel(modelName)
-    #     success, res = self.controller.setParam(param_path)
-    #     if not success:
-    #         self.warnException(res)
-    #
-    #     if model is not None:
-    #         if self.controller is None:
-    #             self.controller = InteractiveController(
-    #                 model,
-    #                 predictor_params={
-    #                     # 'brs_mode': 'f-BRS-B',
-    #                     "brs_mode": "NoBRS",
-    #                     "prob_thresh": 0.5,
-    #                     "zoom_in_params": {
-    #                         "skip_clicks": -1,
-    #                         "target_size": (400, 400),
-    #                         "expansion_ratio": 1.4,
-    #                     },
-    #                     "predictor_params": {"net_clicks_limit": None, "max_size": 800},
-    #                     "brs_opt_func_params": {"min_iou_diff": 0.001},
-    #                     "lbfgs_params": {"maxfun": 20},
-    #                 },
-    #                 update_image_callback=self._update_image,
-    #             )
-    #             self.controller.prob_thresh = self.segThresh
-    #             if self.image is not None:
-    #                 self.controller.set_image(self.image)
-    #         else:
-    #             self.controller.reset_predictor(model)
-    #         self.statusbar.showMessage(
-    #             osp.basename(param_path) + " " + self.tr("模型加载完成"), 20000
-    #         )
-    #         self.comboModelSelect.setCurrentIndex(modelIdx)
-    #         return True
-    #     else:  # 模型和参数不匹配
-    #         self.warn(
-    #             self.tr("模型和参数不匹配"),
-    #             self.tr("当前网络结构中的参数与模型参数不匹配，请更换网络结构或使用其他参数！"),
-    #         )
-    #         self.statusbar.showMessage(self.tr("模型和参数不匹配，请重新加载"), 20000)
-    #         self.controller = None  # 清空controller
-    #         return False
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
@@ -763,10 +707,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         m = self.recentModels[-1]
         model = m["model_name"]
         param_path = m["param_path"]
-        # print("----", model, type(model))
-        self.changeModel(model)
-        self.changeParam(param_path)
-        # self.loadModelParam(param_path, model)
+        self.setModelParam(model, param_path)
 
     # 标签列表
     def loadLabelList(self, file_path=None):
@@ -780,13 +721,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
         if not osp.exists(file_path):
             return
-        self.labelList.readLabel(file_path)
-        print("Loaded label list:", self.labelList.list)
+        self.controller.labelList.readLabel(file_path)
+        print("Loaded label list:", self.controller.labelList.list)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
 
     def saveLabelList(self, auto_save_path=None):
-        if len(self.labelList) == 0:
+        if len(self.controller.labelList) == 0:
             self.warn(self.tr("没有需要保存的标签"), self.tr("请先添加标签之后再进行保存！"))
             return
         if auto_save_path is None:
@@ -801,8 +742,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
         else:
             savePath = auto_save_path
-        self.labelList.saveLabel(savePath)
-        print("Save label list:", self.labelList.labelList, savePath)
+        self.controller.labelList.saveLabel(savePath)
+        print("Save label list:", self.controller.labelList.labelList, savePath)
         if auto_save_path is None:
             self.settings.setValue("label_list_file", savePath)
 
@@ -811,8 +752,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table = self.labelListTable
         idx = table.rowCount()
         table.insertRow(table.rowCount())
-        self.labelList.add(idx + 1, "", c)
-        print("append", self.labelList)
+        self.controller.labelList.add(idx + 1, "", c)
+        print("append", self.controller.labelList)
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
         table.setItem(idx, 0, numberItem)
@@ -843,7 +784,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("end")
 
     def clearLabelList(self):
-        if len(self.labelList) == 0:
+        if len(self.controller.labelList) == 0:
             return True
         res = self.warn(
             self.tr("清空标签列表?"),
@@ -852,7 +793,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if res == QMessageBox.Cancel:
             return False
-        self.labelList.clear()
+        self.controller.labelList.clear()
         if self.controller:
             self.controller.label_list = []
             self.controller.curr_label_number = 0
@@ -863,9 +804,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def refreshLabelList(self):
         table = self.labelListTable
         table.clearContents()
-        table.setRowCount(len(self.labelList))
+        table.setRowCount(len(self.controller.labelList))
         table.setColumnCount(4)
-        for idx, lab in enumerate(self.labelList):
+        for idx, lab in enumerate(self.controller.labelList):
             numberItem = QTableWidgetItem(str(lab.idx))
             numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
             table.setItem(idx, 0, numberItem)
@@ -896,11 +837,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         print("Change to new color:", color.getRgb())
         table.item(row, col).setBackground(color)
-        self.labelList[row].color = color.getRgb()[:3]
+        self.controller.labelList[row].color = color.getRgb()[:3]
         if self.controller:
-            self.controller.label_list = self.labelList
+            self.controller.label_list = self.controller.labelList
         for p in self.scene.polygon_items:
-            color = self.labelList.getLabelById(p.labelIndex).color
+            color = self.controller.labelList.getLabelById(p.labelIndex).color
             p.setColor(color, color)
 
     @property
@@ -912,22 +853,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table = self.labelListTable
         if col == 3:
             table.removeRow(row)
-            self.labelList.remove(row)
+            self.controller.labelList.remove(row)
         if col == 0 or col == 1:
-            for idx in range(len(self.labelList)):
+            for idx in range(len(self.controller.labelList)):
                 table.item(idx, 0).setBackground(QtGui.QColor(255, 255, 255))
             table.item(row, 0).setBackground(QtGui.QColor(48, 140, 198))
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
                 self.controller.change_label_num(int(table.item(row, 0).text()))
-                self.controller.label_list = self.labelList
+                self.controller.label_list = self.controller.labelList
 
     def labelListItemChanged(self, row, col):
-        self.colorMap.usedColors = self.labelList.colors
+        self.colorMap.usedColors = self.controller.labelList.colors
         if col == 1:
             name = self.labelListTable.item(row, col).text()
-            self.labelList[row].name = name
+            self.controller.labelList[row].name = name
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -961,7 +902,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         s = self.controller.image.shape
         img = np.zeros([s[0], s[1]])
         for poly in self.scene.polygon_items:
-            color = self.labelList.getLabelById(poly.labelIndex).color
+            color = self.controller.labelList.getLabelById(poly.labelIndex).color
             pts = np.int32([np.array(poly.scnenePoints)])
             cv2.fillPoly(img, pts=pts, color=poly.labelIndex)
         # self.controller.result_mask = img
@@ -1094,18 +1035,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
-        if self.controller:
-            self.controller.set_image(image)
-        else:
-            self.warn(self.tr("未加载模型"), self.tr("未加载模型参数，请先加载模型参数！"))
-            if not self.changeParam():
-                return
+        self.controller.setImage(image)
 
         # 2. 加载标签
         self.loadLabel(path)
         self.addRecentFile(path)
         self.imagePath = path
-        self.status = self.ANNING
+        # self.status = self.ANNING
 
         # 还原宫格
         self.gridSelect.setCurrentIndex(0)
@@ -1170,7 +1106,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for idx in range(0, len(xys), 2):
                     points.append([xys[idx], xys[idx + 1]])
                 labelIdx = ann["category_id"]
-                color = self.labelList.getLabelById(labelIdx).color
+                color = self.controller.labelList.getLabelById(labelIdx).color
                 poly = PolygonAnnotation(
                     ann["category_id"],
                     self.controller.image.shape,
@@ -1222,35 +1158,35 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("status:", self.status)
         if not self.controller or self.image is None:
             return
-        current_mask = self.controller.finish_object()
+        current_mask = self.controller.finishObject()
         if current_mask is not None:
             current_mask = current_mask.astype(np.uint8) * 255
             polygons = util.get_polygon(current_mask)
-            color = self.labelList[self.currLabelIdx].color
+            color = self.controller.labelList[self.currLabelIdx].color
             for points in polygons:
                 if len(points) < 3:
                     continue
-                print("the id is ", self.labelList[self.currLabelIdx].idx)
+                print("the id is ", self.controller.labelList[self.currLabelIdx].idx)
                 poly = PolygonAnnotation(
-                    self.labelList[self.currLabelIdx].idx,
+                    self.controller.labelList[self.currLabelIdx].idx,
                     self.controller.image.shape,
                     self.delPolygon,
                     color,
                     color,
                     self.opacity,
                 )
-                poly.labelIndex = self.labelList[self.currLabelIdx].idx
+                poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
                 self.setDirty()
         if self.status == self.EDITING:
-            self.status = self.ANNING
+            self.anning = True
             for p in self.scene.polygon_items:
                 p.setAnning(isAnning=True)
         else:
-            self.status = self.EDITING
+            self.anning = False
             for p in self.scene.polygon_items:
                 p.setAnning(isAnning=False)
         self.getMask()
@@ -1364,7 +1300,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("size", self.controller.img_size, pseudo.shape)
             # mask = self.controller.result_mask
             mask = self.getMask()
-            for lab in self.labelList:
+            for lab in self.controller.labelList:
                 pseudo[mask == lab.idx, :] = lab.color[::-1]
             cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
 
@@ -1382,7 +1318,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             polygons = self.scene.polygon_items
             labels = []
             for polygon in polygons:
-                l = self.labelList[polygon.labelIndex - 1]
+                l = self.controller.labelList[polygon.labelIndex - 1]
                 label = {
                     "name": l.name,
                     "labelIdx": l.idx,
@@ -1418,7 +1354,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     polygon.coco_id = annId
                 else:
                     self.coco.updateAnnotation(polygon.coco_id, imgId, points)
-            for lab in self.labelList:
+            for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
                     print("+_+_+_+_+", lab.name)
                     self.coco.updateCategory(lab.idx, lab.name, lab.color)
@@ -1531,17 +1467,27 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.redo_click()
 
     def canvasClick(self, x, y, isLeft):
-        if self.controller is None:
+        c = self.controller
+        if c.image is None:
             return
-        if self.controller.image is None:
+        if not c.inImage(x, y):
+            return
+        if not c.modelSet:
+            self.warn(self.tr("未选择模型", self.tr("尚未选择模型，请先在右上角选择模型")))
+            return
+        if not c.paramSet:
+            self.warn(self.tr("未设置参数"), self.tr("尚未设置参数，请先在右上角设置参数"))
+            return
+
+        if self.status == self.IDILE:
             return
         currLabel = self.controller.curr_label_number
         if not currLabel or currLabel == 0:
             self.warn(self.tr("未选择当前标签"), self.tr("请先在标签列表中单击点选标签"))
             return
 
-        self.controller.add_click(x, y, isLeft)
-        self.status = self.ANNING
+        self.controller.addClick(x, y, isLeft)
+        self.anning = True
 
     def _update_image(self, reset_canvas=False):
         if not self.controller:
@@ -1627,7 +1573,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     coco_path = None
         self.coco = COCO(coco_path)
         if self.clearLabelList():
-            self.labelList = util.LabelList(self.coco.dataset["categories"])
+            self.controller.labelList = util.LabelList(self.coco.dataset["categories"])
             self.refreshLabelList()
 
     def changeWorkerShow(self, index):
@@ -1675,7 +1621,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.image:
             self.imagesGrid = slide_out(self.image, grid_num, grid_num)
             # self.controller.image = self.imagesGrid[0]
-            self.controller.set_image(self.imagesGrid[0])
+            self.controller.setImage(self.imagesGrid[0])
             self._update_image()
             # 连接切换信号
             self.gridTable.cellClicked.connect(self.changeGrid)
@@ -1734,7 +1680,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeGrid(self, row, col):
         grid_num = int(self.gridSelect.currentText())
         idx = row * grid_num + col
-        self.controller.set_image(self.imagesGrid[idx])
+        self.controller.setImage(self.imagesGrid[idx])
         self._update_image()
 
     @property
@@ -1769,6 +1715,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toBeImplemented(self):
         self.statusbar.showMessage(self.tr("功能尚在开发"))
 
+    @property
+    def status(self):
+        if not self.controller:
+            return self.IDILE
+        c = self.controller
+        if not c.paramSet or not c.modelSet or c.image is None:
+            print("status idile")
+            return self.IDILE
+        if self.anning:
+            return self.ANNING
+        return self.EDITING
+
     # 加载界面
     def loadLayout(self):
         self.restoreState(self.layoutStatus)
@@ -1781,7 +1739,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "save_status", [(k, self.save_status[k]) for k in self.save_status.keys()]
         )
         # 如果设置了保存路径，把标签也保存下
-        if self.outputDir is not None and len(self.labelList) != 0:
+        if self.outputDir is not None and len(self.controller.labelList) != 0:
             self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))
             print("autosave label finished!")
         # 关闭主窗体退出程序，子窗体也关闭
