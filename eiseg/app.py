@@ -849,8 +849,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("cell clicked", row, col)
         table = self.labelListTable
         if col == 3:
+            labelIdx = int(table.item(row, 0).text())
+            self.controller.labelList.remove(labelIdx)
             table.removeRow(row)
-            self.controller.labelList.remove(row)
+
         if col == 0 or col == 1:
             for idx in range(len(self.controller.labelList)):
                 table.item(idx, 0).setBackground(QtGui.QColor(255, 255, 255))
@@ -1136,9 +1138,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def turnImg(self, delta):
         # 1. 检查是否有图可翻，保存标签
         self.currIdx += delta
-        print("turn img", self.currIdx, delta)
-        print(self.imagePaths)
+        print("Turn img", self.currIdx, delta, len(self.imagePaths))
         if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
+            print("------", self.currIdx, len(self.imagePaths))
             self.currIdx -= delta
             if delta == 1:
                 self.statusbar.showMessage(self.tr(f"没有后一张图片"))
@@ -1242,9 +1244,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in self.scene.polygon_items[::-1]:
                     p.remove()
                 self.scene.polygon_items = []
-                # 清除列表
-                self.imagePaths = []
-                self.listFiles.clear()
                 self.controller.reset_last_object()
                 self.controller.image = None
         if close:
@@ -1464,7 +1463,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         if not self.controller:
             return
-        self.controller.undo_click()
+        self.controller.undoClick()
         if not self.controller.is_incomplete_mask:
             self.setClean()
 
