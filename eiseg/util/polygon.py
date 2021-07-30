@@ -9,6 +9,7 @@ class Instructions(Enum):
     Polygon_Instruction = 1
 
 
+# BUG: 多孔洞报错
 def get_polygon(label, sample=2):
     results = cv2.findContours(
         image=label, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_TC89_KCOS
@@ -23,14 +24,24 @@ def get_polygon(label, sample=2):
     print("num_contours:", len(contours))
     for contour, hierarchy in zip(contours, hierarchys[0]):
         out = cv2.approxPolyDP(contour, sample, True)
-        rela = (None if (hierarchy[0] == -1 and hierarchy[1] == -1 and hierarchy[2] == -1) else \
-                (hierarchy[1] + 1),  # own
+        # 判断自己，如果是子对象就不管自己是谁
+        if hierarchy[2] == -1:
+            own = None
+        else:
+            if hierarchy[0] == -1 and hierarchy[1] == -1:
+                own = 0
+            elif hierarchy[0] != -1 and hierarchy[1] == -1:
+                own = hierarchy[0] - 1
+            else:
+                own = hierarchy[1] + 1
+        rela = (own,  # own
                 hierarchy[-1] if hierarchy[-1] != -1 else None)  # parent
         polygon = []
         for p in out:
             polygon.append(p[0])
         polygons.append(polygon)  # 边界
         relas.append(rela)  # 关系
+    print(relas)
     for i in range(len(relas)):
         if relas[i][1] != None:  # 有父母
             for j in range(len(relas)):
