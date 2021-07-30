@@ -861,7 +861,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for idx in range(3):
                 table.item(row, idx).setSelected(True)
             if self.controller:
-                self.controller.change_label_num(int(table.item(row, 0).text()))
+                self.controller.setCurrLabelIdx(int(table.item(row, 0).text()))
                 self.controller.label_list = self.controller.labelList
 
     def labelListItemChanged(self, row, col):
