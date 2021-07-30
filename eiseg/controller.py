@@ -257,7 +257,8 @@ class InteractiveController:
                 self.current_object_prob > self.prob_thresh
             ] = self.curr_label_number
         if self.filterLargestCC:
-            results_mask_for_vis = self.getLargestCC(results_mask_for_vis)
+            results_mask_for_vis = self.getLargestCC(results_mask_for_vis) * \
+                                   self.curr_label_number
         vis = draw_with_blend_and_clicks(
             self.image,
             mask=results_mask_for_vis,
