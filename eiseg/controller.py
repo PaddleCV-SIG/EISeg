@@ -84,7 +84,7 @@ class InteractiveController:
         for lab in labels:
             self.labelList.add(lab["id"], lab["name"], lab["color"])
 
-    # BUG: 不知道是点击还是显示的问题，目前版本第一个负点无法起到作用，点击第二个负点时第一个负点的作用才体现
+
     def addClick(self, x: int, y: int, is_positive: bool):
         """
             添加一个点跑推理，保存历史用于undo
@@ -154,19 +154,21 @@ class InteractiveController:
             self.reset_init_mask()
         self.update_image_callback()
 
+
     def redo_click(self):
         """
             redo一步点击
         """
         if len(self.undo_states) == 0:  # 如果还没撤销过
             return
-        # if len(self.undo_probs_history) >= 1:
-        next_state = self.undo_states.pop()
-        self.states.append(next_state)
-        self.clicker.set_state(next_state["clicker"])
-        self.predictor.set_state(next_state["predictor"])
-        self.probs_history.append(self.undo_probs_history.pop())
-        self.update_image_callback()
+        if len(self.undo_probs_history) >= 1:
+            next_state = self.undo_states.pop()
+            self.states.append(next_state)
+            self.clicker.set_state(next_state["clicker"])
+            self.predictor.set_state(next_state["predictor"])
+            self.probs_history.append(self.undo_probs_history.pop())
+            self.update_image_callback()
+
 
     def finishObject(self):
         """
@@ -198,6 +200,7 @@ class InteractiveController:
             pass
             # TODO: 改当前mask的编号
 
+
     def reset_last_object(self, update_image=True):
         """
             重置控制器状态
@@ -214,6 +217,7 @@ class InteractiveController:
         self.reset_init_mask()
         if update_image:
             self.update_image_callback()
+
 
     def reset_predictor(self, predictor_params=None):
         """
@@ -245,7 +249,7 @@ class InteractiveController:
         if self.image is None:
             return None
         # 1. 正在标注的mask
-        # results_mask_for_vis = self.result_mask # 加入之前标完的mask
+        # results_mask_for_vis = self.result_mask  # 加入之前标完的mask
         results_mask_for_vis = np.zeros_like(self.result_mask)
         results_mask_for_vis *= self.curr_label_number
         if self.probs_history:
@@ -276,11 +280,6 @@ class InteractiveController:
     @property
     def result_mask(self):
         result_mask = self._result_mask.copy()
-        # if self.probs_history:
-        #     result_mask[self.current_object_prob > self.prob_thresh] = (
-        #         # BUG: 这个object_count是什么，没有，但是删除这部分好像不影像
-        #         self.object_count + 1
-        #     )
         return result_mask
 
 
@@ -302,8 +301,8 @@ class InteractiveController:
             获取当前推理标签
         """
         if self.probs_history:
-            current_prob_total, current_prob_additive = self.probs_history[-1]
-            return np.maximum(current_prob_total, current_prob_additive)
+            _, current_prob_additive = self.probs_history[-1]
+            return current_prob_additive
         else:
             return None
 
