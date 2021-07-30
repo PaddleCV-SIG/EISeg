@@ -863,9 +863,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def labelListItemChanged(self, row, col):
         self.colorMap.usedColors = self.controller.labelList.colors
-        if col == 1:
-            name = self.labelListTable.item(row, col).text()
-            self.controller.labelList[row].name = name
+        # TODO: 目前与移动table有冲突，看看这样会不会造成什么问题
+        try:
+            if col == 1:
+                name = self.labelListTable.item(row, col).text()
+                self.controller.labelList[row].name = name
+        except:
+            pass
+        # TODO: 在完成后如果调换顺序也应该将图层顺序同步调换，但没找到这个在哪儿
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -1229,6 +1234,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in self.scene.polygon_items[::-1]:
                     p.remove()
                 self.scene.polygon_items = []
+                # 清除列表
+                self.imagePaths = []
+                self.listFiles.clear()
                 self.controller.reset_last_object()
                 self.controller.image = None
         if close:
