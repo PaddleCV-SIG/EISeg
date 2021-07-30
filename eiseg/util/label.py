@@ -26,7 +26,11 @@ class LabelList(object):
         self.labelList.append(Label(idx, name, color))
 
     def remove(self, index):
-        del self.labelList[index]
+        for idx, lab in enumerate(self.labelList):
+            if lab.idx == index:
+                del self.labelList[idx]
+                break
+        # del self.labelList[index]
 
     def clear(self):
         self.labelList = []
