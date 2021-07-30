@@ -1,12 +1,9 @@
-# from genericpath import exists
 import os
 import os.path as osp
 from functools import partial
 import sys
-import inspect
 import warnings
 import json
-import collections
 from distutils.util import strtobool
 
 import imghdr
