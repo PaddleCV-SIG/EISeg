@@ -870,7 +870,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.labelList[row].name = name
         except:
             pass
-        # TODO: 在完成后如果调换顺序也应该将图层顺序同步调换，但没找到这个在哪儿
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -903,10 +902,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         s = self.controller.image.shape
         img = np.zeros([s[0], s[1]])
-        for poly in self.scene.polygon_items:
-            color = self.controller.labelList.getLabelById(poly.labelIndex).color
-            pts = np.int32([np.array(poly.scnenePoints)])
-            cv2.fillPoly(img, pts=pts, color=poly.labelIndex)
+        # for poly in self.scene.polygon_items:
+        #     color = self.controller.labelList.getLabelById(poly.labelIndex).color
+        #     pts = np.int32([np.array(poly.scnenePoints)])
+        #     cv2.fillPoly(img, pts=pts, color=poly.labelIndex)
+        # 覆盖顺序，从上往下
+        len_lab = self.labelListTable.rowCount()
+        for i in range(len_lab):
+            idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
+            color = self.controller.labelList.getLabelById(idx).color
+            for poly in self.scene.polygon_items:
+                if poly.labelIndex == idx:
+                    pts = np.int32([np.array(poly.scnenePoints)])
+                    cv2.fillPoly(img, pts=pts, color=idx)
         # self.controller.result_mask = img
         return img
         # plt.imshow(img)
