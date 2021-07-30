@@ -7,6 +7,7 @@ from skimage.measure import label
 
 from inference import clicker
 from inference.predictor import get_predictor
+import util
 from util.vis import draw_with_blend_and_clicks
 from util import MODELS, LabelList
 
@@ -18,11 +19,9 @@ import matplotlib.pyplot as plt
 class InteractiveController:
     def __init__(
         self,
-        update_image_callback,
         predictor_params: dict = None,
         prob_thresh: float = 0.5,
     ):
-        self.update_image_callback = update_image_callback  # TODO: 改成返回image，不调用函数
         self.predictor_params = predictor_params
         self.prob_thresh = prob_thresh
         self.model = None
@@ -31,6 +30,7 @@ class InteractiveController:
         self.clicker = clicker.Clicker()
         self.states = []
         self.probs_history = []
+        self.polygons = []
 
         # 用于redo
         self.undo_states = []
@@ -39,7 +39,12 @@ class InteractiveController:
         self.curr_label_number = 0
         self._result_mask = None
         self.labelList = LabelList()
-        self.filterLargestCC = False
+        self.lccFilter = False
+
+    def filterLargestCC(self, do_filter: bool):
+        if not isinstance(do_filter, bool):
+            return
+        self.lccFilter = do_filter
 
     def setModel(self, modelName: str):
         if not isinstance(modelName, str):
@@ -62,8 +67,7 @@ class InteractiveController:
     def setImage(self, image: np.array):
         self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        self.reset_last_object(update_image=False)
-        self.update_image_callback(reset_canvas=True)
+        self.resetLastObject()
 
     # 标签操作
     def setLabelList(self, labelList: json):
@@ -87,6 +91,12 @@ class InteractiveController:
 
     def clearLabel(self):
         self.labelList.clear()
+
+    def readLabel(self, path):
+        self.labelList.readLabel(path)
+
+    def saveLabel(self, path):
+        self.labelList.saveLabel(path)
 
     # 点击操作
     def addClick(self, x: int, y: int, is_positive: bool):
@@ -141,9 +151,9 @@ class InteractiveController:
         # 点击之后就不能接着之前的历史redo了
         self.undo_states = []
         self.undo_probs_history = []
-        self.update_image_callback()
+        # self.update_image_callback()
 
-    def undo_click(self):
+    def undoClick(self):
         """
         undo一步点击
         """
@@ -155,9 +165,9 @@ class InteractiveController:
         self.undo_probs_history.append(self.probs_history.pop())
         if not self.probs_history:
             self.reset_init_mask()
-        self.update_image_callback()
+        # self.update_image_callback()
 
-    def redo_click(self):
+    def redoClick(self):
         """
         redo一步点击
         """
@@ -169,7 +179,7 @@ class InteractiveController:
             self.clicker.set_state(next_state["clicker"])
             self.predictor.set_state(next_state["predictor"])
             self.probs_history.append(self.undo_probs_history.pop())
-            self.update_image_callback()
+            # self.update_image_callback()
 
     def finishObject(self):
         """
@@ -177,14 +187,33 @@ class InteractiveController:
         """
         object_prob = self.current_object_prob
         if object_prob is None:
-            return None
+            return None, None
         object_mask = object_prob > self.prob_thresh
-        if self.filterLargestCC:
+        if self.lccFilter:
             object_mask = self.getLargestCC(object_mask)
         print("curr_label_number:", self.curr_label_number)
         self._result_mask[object_mask] = self.curr_label_number
-        self.reset_last_object()
-        return object_mask
+        self.resetLastObject()
+
+        polygon = util.get_polygon(object_mask.astype(np.uint8) * 255)
+        self.polygons.append([self.curr_label_number, polygon])
+        return object_mask, polygon
+
+    # 多边形
+    def getPolygon(self):
+        return self.polygon
+
+    def setPolygon(self, polygon):
+        self.polygon = polygon
+
+    # mask
+    def getMask(self):
+        s = self.imgShape
+        img = np.zeros([s[0], s[1]])
+        for poly in self.polygons:
+            pts = np.int32([np.array(poly[1])])
+            cv2.fillPoly(img, pts=pts, color=poly[0])
+        return img
 
     def change_label_num(self, number):
         """
@@ -200,7 +229,7 @@ class InteractiveController:
             pass
         # TODO: 改当前mask的编号
 
-    def reset_last_object(self, update_image=True):
+    def resetLastObject(self, update_image=True):
         """
         重置控制器状态
         Parameters
@@ -214,8 +243,8 @@ class InteractiveController:
         self.clicker.reset_clicks()
         self.reset_predictor()
         self.reset_init_mask()
-        if update_image:
-            self.update_image_callback()
+        # if update_image:
+        #     self.update_image_callback()
 
     def reset_predictor(self, predictor_params=None):
         """
@@ -251,7 +280,7 @@ class InteractiveController:
             results_mask_for_vis[
                 self.current_object_prob > self.prob_thresh
             ] = self.curr_label_number
-        if self.filterLargestCC:
+        if self.lccFilter:
             results_mask_for_vis = (
                 self.getLargestCC(results_mask_for_vis) * self.curr_label_number
             )
@@ -308,7 +337,7 @@ class InteractiveController:
         return len(self.probs_history) > 0
 
     @property
-    def img_size(self):
+    def imgShape(self):
         print(self.image.shape)
         return self.image.shape[1::-1]
 

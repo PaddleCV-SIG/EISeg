@@ -61,7 +61,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.controller = InteractiveController(
-            self._update_image,
+            # self.updateImage,
             predictor_params={
                 # 'brs_mode': 'f-BRS-B',
                 "brs_mode": "NoBRS",
@@ -718,7 +718,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
         if not osp.exists(file_path):
             return
-        self.controller.labelList.readLabel(file_path)
+        labelJson = open(file_path, "r").read()
+        self.controller.readLabel(file_path)
         print("Loaded label list:", self.controller.labelList.list)
         self.refreshLabelList()
         self.settings.setValue("label_list_file", file_path)
@@ -739,7 +740,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
         else:
             savePath = auto_save_path
-        self.controller.labelList.saveLabel(savePath)
+        self.controller.saveLabel(savePath)
         print("Save label list:", self.controller.labelList.labelList, savePath)
         if auto_save_path is None:
             self.settings.setValue("label_list_file", savePath)
@@ -749,7 +750,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         table = self.labelListTable
         idx = table.rowCount()
         table.insertRow(table.rowCount())
-        self.controller.labelList.add(idx + 1, "", c)
+        self.controller.addLabel(idx + 1, "", c)
         print("append", self.controller.labelList)
         numberItem = QTableWidgetItem(str(idx + 1))
         numberItem.setFlags(QtCore.Qt.ItemIsEnabled)
@@ -1048,6 +1049,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             image = image[:, :, ::-1]  # BGR转RGB
         self.image = image
         self.controller.setImage(image)
+        self.updateImage(True)
 
         # 2. 加载标签
         self.loadLabel(path)
@@ -1172,12 +1174,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         print("status:", self.status)
         if not self.controller or self.image is None:
             return
-        current_mask = self.controller.finishObject()
+        current_mask, curr_polygon = self.controller.finishObject()
+        self.updateImage()
         if current_mask is not None:
-            current_mask = current_mask.astype(np.uint8) * 255
-            polygons = util.get_polygon(current_mask)
+            # current_mask = current_mask.astype(np.uint8) * 255
+            # polygon = util.get_polygon(current_mask)
             color = self.controller.labelList[self.currLabelIdx].color
-            for points in polygons:
+            for points in curr_polygon:
                 if len(points) < 3:
                     continue
                 print("the id is ", self.controller.labelList[self.currLabelIdx].idx)
@@ -1244,7 +1247,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for p in self.scene.polygon_items[::-1]:
                     p.remove()
                 self.scene.polygon_items = []
-                self.controller.reset_last_object()
+                self.controller.resetLastObject()
+                self.updateImage()
                 self.controller.image = None
         if close:
             self.annImage.setPixmap(QPixmap())
@@ -1309,9 +1313,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             pseudoPath, ext = osp.splitext(savePath)
             pseudoPath = pseudoPath + "_pseudo" + ext
             print("pseudoPath", pseudoPath)
-            s = self.controller.img_size
+            s = self.controller.imgShape
             pseudo = np.zeros([s[1], s[0], 3])
-            print("size", self.controller.img_size, pseudo.shape)
+            print("size", self.controller.imgShape, pseudo.shape)
             # mask = self.controller.result_mask
             mask = self.getMask()
             for lab in self.controller.labelList:
@@ -1352,7 +1356,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 4.5 保存coco
         if self.save_status["coco"]:
             if not self.coco.hasImage(osp.basename(self.imagePath)):
-                s = self.controller.img_size
+                s = self.controller.imgShape
                 imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
             else:
                 imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
@@ -1435,20 +1439,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         for polygon in self.scene.polygon_items:
             polygon.setOpacity(self.opacity)
-        self._update_image()
+        self.updateImage()
 
     def clickRadiusChanged(self):
         self.sldClickRadius.textLab.setText(str(self.clickRadius))
         if not self.controller or self.controller.image is None:
             return
-        self._update_image()
+        self.updateImage()
 
     def threshChanged(self):
         self.sldThresh.textLab.setText(str(self.segThresh))
         if not self.controller or self.controller.image is None:
             return
         self.controller.prob_thresh = self.segThresh
-        self._update_image()
+        self.updateImage()
 
     def slideChanged(self):
         self.sldMISlide.textLab.setText(str(self.slideMi))
@@ -1456,7 +1460,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         self.midx = int(self.slideMi) - 1
         self.miSlideSet()
-        self._update_image()
+        self.updateImage()
 
     def undoClick(self):
         if self.image is None:
@@ -1464,13 +1468,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller:
             return
         self.controller.undoClick()
+        self.updateImage()
         if not self.controller.is_incomplete_mask:
             self.setClean()
 
     def undoAll(self):
         if not self.controller or self.controller.image is None:
             return
-        self.controller.reset_last_object()
+        self.controller.resetLastObject()
+        self.updateImage()
         self.setClean()
 
     def redoClick(self):
@@ -1478,7 +1484,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         if not self.controller:
             return
-        self.controller.redo_click()
+        self.controller.redoClick()
+        self.updateImage()
 
     def canvasClick(self, x, y, isLeft):
         c = self.controller
@@ -1501,9 +1508,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
 
         self.controller.addClick(x, y, isLeft)
+        self.updateImage()
         self.anning = True
 
-    def _update_image(self, reset_canvas=False):
+    def updateImage(self, reset_canvas=False):
         if not self.controller:
             return
         image = self.controller.get_visualization(
@@ -1620,13 +1628,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.image
         )  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
         self.controller.image = image
-        self._update_image()
+        self.updateImage()
 
     def miSlideSet(self):
         self.image = slice_img(self.rawimg, self.midx)
         image = self.image
         self.controller.image = image
-        self._update_image()
+        self.updateImage()
 
     def gridNumSet(self, idx):
         grid_num = int(self.gridSelect.currentText())
@@ -1636,7 +1644,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.imagesGrid = slide_out(self.image, grid_num, grid_num)
             # self.controller.image = self.imagesGrid[0]
             self.controller.setImage(self.imagesGrid[0])
-            self._update_image()
+            self.updateImage()
             # 连接切换信号
             self.gridTable.cellClicked.connect(self.changeGrid)
         else:
@@ -1666,7 +1674,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     #     #     self.controller.image = twoPercentLinear(self.image)
     #     # else:
     #     self.controller.image = self.image
-    #     self._update_image()
+    #     self.updateImage()
 
     def update_bandList(self):
         bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
@@ -1695,7 +1703,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         grid_num = int(self.gridSelect.currentText())
         idx = row * grid_num + col
         self.controller.setImage(self.imagesGrid[idx])
-        self._update_image()
+        self.updateImage()
 
     @property
     def opacity(self):
