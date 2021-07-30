@@ -13,6 +13,7 @@ import models
 from util import MODELS, Instructions
 from widget import LineItem, GripItem, AnnotationScene, AnnotationView
 from widget.create import *
+from widget.table import TableWidget
 
 
 class Ui_EISeg(object):
@@ -128,7 +129,7 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         LabelRegion = QtWidgets.QVBoxLayout()
         LabelRegion.setObjectName("LabelRegion")
-        self.labelListTable = QtWidgets.QTableWidget(CentralWidget)
+        self.labelListTable = TableWidget(CentralWidget)  # QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 铺满
         self.labelListTable.horizontalHeader().setSectionResizeMode(

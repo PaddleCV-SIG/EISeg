@@ -5,3 +5,4 @@ from .polygon import PolygonAnnotation
 from .scene import AnnotationScene
 from .view import AnnotationView
 from .create import *
+from .table import TableWidget
