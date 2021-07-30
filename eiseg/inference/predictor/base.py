@@ -84,10 +84,10 @@ class BasePredictor(object):
         points_nd = self.get_points_nd(clicks_lists)
         return self.net(image_nd, points_nd)['instances']
 
-    def _get_transform_states(self):
+    def _get_transform_state(self):
         return [x.get_state() for x in self.transforms]
 
-    def _set_transform_states(self, states):
+    def _set_transform_state(self, states):
         assert len(states) == len(self.transforms)
         for state, transform in zip(states, self.transforms):
             transform.set_state(state)
@@ -121,10 +121,10 @@ class BasePredictor(object):
 
         return paddle.to_tensor(total_clicks)
 
-    def get_states(self):
-        return {'transform_states': self._get_transform_states(),
+    def get_state(self):
+        return {'transform_states': self._get_transform_state(),
                 'prev_prediction': self.prev_prediction}
 
-    def set_states(self, states):
-        self._set_transform_states(states['transform_states'])
+    def set_state(self, states):
+        self._set_transform_state(states['transform_states'])
         self.prev_prediction = states['prev_prediction']

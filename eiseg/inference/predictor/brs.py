@@ -41,11 +41,11 @@ class BRSBasePredictor(BasePredictor):
             neg_clicks_map = paddle.to_tensor(neg_clicks_map)
         return pos_clicks_map, neg_clicks_map
 
-    def get_states(self):
-        return {'transform_states': self._get_transform_states(), 'opt_data': self.opt_data}
+    def get_state(self):
+        return {'transform_states': self._get_transform_state(), 'opt_data': self.opt_data}
 
-    def set_states(self, states):
-        self._set_transform_states(states['transform_states'])
+    def set_state(self, states):
+        self._set_transform_state(states['transform_states'])
         self.opt_data = states['opt_data']
 
 
