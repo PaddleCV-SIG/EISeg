@@ -1,5 +1,5 @@
 import time
-
+import json
 import paddle
 import numpy as np
 import paddleseg.transforms as T
@@ -9,7 +9,6 @@ from inference import clicker
 from inference.predictor import get_predictor
 from util.vis import draw_with_blend_and_clicks
 from util import MODELS, LabelList
-
 
 # DEBUG:
 import matplotlib.pyplot as plt
@@ -40,21 +39,20 @@ class InteractiveController:
         self.curr_label_number = 0
         self._result_mask = None
         self.labelList = LabelList()
-        self._init_mask = None  # TODO: 这个是干什么的，有用吗
         self.filterLargestCC = False
 
         self.addLabel = self.labelList.add
+
 
     def setModel(self, modelName: str):
         if not isinstance(modelName, str):
             return False, "模型名应为str类型"
         try:
             self.model = MODELS[modelName]()
-        except KeyError as e:  # TODO: 这里不用单独写吧，Exception是不是都可以catch
-            return False, str(e)
-        except Exception as e:
+        except KeyError as e:
             return False, str(e)
         return True, "模型设置成功"
+
 
     def setParam(self, paramPath: str):
         if not self.modelSet:
@@ -65,47 +63,38 @@ class InteractiveController:
             return False, str(e)
         return True, "权重设置成功"
 
-    def setImage(self, image):
-        """设置当前标注的图片
 
-        Parameters
-        ----------
-        image :
-            Description of parameter `image`.
-        """
+    def setImage(self, image: np.array):
         self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
+
     def setLabelList(self, labelList: json):
         """
-        {
-            "idx" : int,
-            "name" : str,
-            "color" : list
-        }
+            {
+                "idx" : int         (like 0, 1, 2···)
+                "name" : str        (like "car", "airplan"···)
+                "color" : list      (like [255, 0, 0]···)
+            }
         """
         self.labelList.clear()
-        labels = json.loads(json)
-        for lan in labels:
+        labels = json.loads(labelList)
+        for lab in labels:
             self.labelList.add(lab["id"], lab["name"], lab["color"])
 
+    # BUG: 不知道是点击还是显示的问题，目前版本第一个负点无法起到作用，点击第二个负点时第一个负点的作用才体现
     def addClick(self, x: int, y: int, is_positive: bool):
-        """添加一个点
-        跑推理，保存历史用于undo
-        Parameters
-        ----------
-        x : type 高？
-            Description of parameter `x`.
-        y : type 宽？
-            Description of parameter `y`.
-        is_positive : bool
-            是否是正点
-        Returns
-            -------
-            bool
-                点击是否成功添加
+        """
+            添加一个点跑推理，保存历史用于undo
+            Parameters
+                x(int): 点击点的x坐标.
+                y(int): 点击点的y坐标.
+            is_positive : bool
+                是否是正点
+            Returns
+                bool: 点击是否成功添加
         """
         # 1. 确定可以点
         if not self.inImage(x, y):
@@ -121,7 +110,7 @@ class InteractiveController:
             self.states.append(
                 {
                     "clicker": self.clicker.get_state(),
-                    "predictor": self.predictor.get_states(),
+                    "predictor": self.predictor.get_state(),
                 }
             )
 
@@ -129,11 +118,7 @@ class InteractiveController:
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
         self.clicker.add_click(click)
         start = time.time()
-        pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
-        # if self._init_mask is not None and len(self.clicker) == 1:
-        #     pred = self.predictor.get_prediction(
-        #         self.clicker, prev_mask=self._init_mask
-        #     )
+        pred = self.predictor.get_prediction(self.clicker)
         end = time.time()
         print("cost time", end - start)
 
@@ -141,7 +126,7 @@ class InteractiveController:
         self.states.append(
             {
                 "clicker": self.clicker.get_state(),
-                "predictor": self.predictor.get_states(),  # TODO: 这俩名字统一一下
+                "predictor": self.predictor.get_state(),
             }
         )
         if self.probs_history:
@@ -152,35 +137,41 @@ class InteractiveController:
         # 点击之后就不能接着之前的历史redo了
         self.undo_states = []
         self.undo_probs_history = []
-
         self.update_image_callback()
 
+
     def undo_click(self):
-        """undo一步点击"""
+        """
+            undo一步点击
+        """
         if len(self.states) <= 1:  # == 1就只剩下一个空状态了，不用再退
             return
         self.undo_states.append(self.states.pop())
         self.clicker.set_state(self.states[-1]["clicker"])
-        self.predictor.set_states(self.states[-1]["predictor"])
+        self.predictor.set_state(self.states[-1]["predictor"])
         self.undo_probs_history.append(self.probs_history.pop())
         if not self.probs_history:
             self.reset_init_mask()
         self.update_image_callback()
 
     def redo_click(self):
-        """redo一步点击"""
+        """
+            redo一步点击
+        """
         if len(self.undo_states) == 0:  # 如果还没撤销过
             return
         # if len(self.undo_probs_history) >= 1:
         next_state = self.undo_states.pop()
         self.states.append(next_state)
         self.clicker.set_state(next_state["clicker"])
-        self.predictor.set_states(next_state["predictor"])
+        self.predictor.set_state(next_state["predictor"])
         self.probs_history.append(self.undo_probs_history.pop())
         self.update_image_callback()
 
     def finishObject(self):
-        """结束当前物体标注，准备标下一个"""
+        """
+            结束当前物体标注，准备标下一个
+        """
         object_prob = self.current_object_prob
         if object_prob is None:
             return None
@@ -192,14 +183,14 @@ class InteractiveController:
         self.reset_last_object()
         return object_mask
 
+
     def change_label_num(self, number):
-        """修改当前标签的编号
-        如果当前有标注到一半的目标，改mask。
-        如果没有，下一个目标是这个数
-        Parameters
-        ----------
-        number : int
-            换成目标的编号
+        """
+            修改当前标签的编号
+                1. 如果当前有标注到一半的目标，改mask
+                2. 如果没有，下一个目标是这个数
+            Parameters
+                number(int): 换成目标的编号
         """
         assert isinstance(number, int), "标签编号应为整数"
         self.curr_label_number = number
@@ -208,16 +199,10 @@ class InteractiveController:
             # TODO: 改当前mask的编号
 
     def reset_last_object(self, update_image=True):
-        """重置控制器状态
-        Parameters
-        ----------
-        update_image : bool
-            Description of parameter `update_image`.
-        Returns
-        -------
-        type
-            Description of returned object.
-
+        """
+            重置控制器状态
+            Parameters
+                update_image(bool): 是否更新图像
         """
         self.states = []
         self.probs_history = []
@@ -231,12 +216,10 @@ class InteractiveController:
             self.update_image_callback()
 
     def reset_predictor(self, predictor_params=None):
-        """重置推理器，可以换推理配置
-        Parameters
-        ----------
-        predictor_params : dict
-            推理配置
-
+        """
+            重置推理器，可以换推理配置
+            Parameters
+                predictor_params(dict): 推理配置
         """
         if predictor_params is not None:
             self.predictor_params = predictor_params
@@ -244,29 +227,10 @@ class InteractiveController:
         if self.image is not None:
             self.predictor.set_input_image(self.image)
 
+
     def reset_init_mask(self):
-        self._init_mask = None
         self.clicker.click_indx_offset = 0
 
-    @property
-    def current_object_prob(self):
-        if len(self.probs_history) > 0:
-            current_prob_total, current_prob_additive = self.probs_history[-1]
-            return np.maximum(
-                current_prob_total, current_prob_additive
-            )  # TODO: 这块为什么要求max
-            # return current_prob_additive
-        else:
-            return None
-
-    @property
-    def result_mask(self):
-        result_mask = self._result_mask.copy()
-        if self.probs_history:
-            result_mask[self.current_object_prob > self.prob_thresh] = (
-                self.object_count + 1
-            )
-        return result_mask
 
     def getLargestCC(self, mask):
         # TODO: 从所有正点开始找，漫水到所有包括正点的联通块
@@ -275,6 +239,7 @@ class InteractiveController:
             return mask
         mask = mask == np.argmax(np.bincount(mask.flat)[1:]) + 1
         return mask
+
 
     def get_visualization(self, alpha_blend: float, click_radius: int):
         if self.image is None:
@@ -297,19 +262,8 @@ class InteractiveController:
             radius=click_radius,
             palette=self.palette,
         )
-
-        # # 2. 正在标注的mask
-        # if self.probs_history:
-        #     total_mask = self.probs_history[-1][0] > self.prob_thresh
-        #     results_mask_for_vis[np.logical_not(total_mask)] = 0
-        #     vis = draw_with_blend_and_clicks(
-        #         vis,
-        #         mask=results_mask_for_vis,
-        #         alpha=alpha_blend,
-        #         palette=self.palette,
-        #     )
-
         return vis
+
 
     def inImage(self, x: int, y: int):
         s = self.image.shape
@@ -317,6 +271,18 @@ class InteractiveController:
             print("点击越界")
             return False
         return True
+
+
+    @property
+    def result_mask(self):
+        result_mask = self._result_mask.copy()
+        # if self.probs_history:
+        #     result_mask[self.current_object_prob > self.prob_thresh] = (
+        #         # BUG: 这个object_count是什么，没有，但是删除这部分好像不影像
+        #         self.object_count + 1
+        #     )
+        return result_mask
+
 
     @property
     def palette(self):
@@ -329,60 +295,49 @@ class InteractiveController:
         # print(colors)
         return colors
 
+
     @property
     def current_object_prob(self):
-        """获取当前推理标签"""
+        """
+            获取当前推理标签
+        """
         if self.probs_history:
             current_prob_total, current_prob_additive = self.probs_history[-1]
             return np.maximum(current_prob_total, current_prob_additive)
         else:
             return None
 
+
     @property
     def is_incomplete_mask(self):
         """
-        Returns
-        -------
-        bool
-            当前的物体是不是还没标完
+            Returns
+                bool: 当前的物体是不是还没标完
         """
         return len(self.probs_history) > 0
 
-    @property
-    def result_mask(self):
-        return self._result_mask.copy()
 
     @property
     def img_size(self):
         print(self.image.shape)
         return self.image.shape[1::-1]
 
+
     @property
     def paramSet(self):
         return self.model.paramSet
+
 
     @property
     def modelSet(self):
         return self.model is not None
 
+
     @property
     def modelName(self):
         return self.model.__name__
 
+
     @property
     def imageSet(self):
         return self.image is not None
-
-    # def partially_finish_object(self):
-    #     """部分完成
-    #     保存一个mask的状态，这个状态里不存点，看起来比较
-    #     """
-    #     object_prob = self.current_object_prob
-    #     if object_prob is None:
-    #         return
-    #     self.probs_history.append((object_prob, np.zeros_like(object_prob)))
-    #     self.states.append(self.states[-1])
-    #     self.clicker.reset_clicks()
-    #     self.reset_predictor()
-    #     self.reset_init_mask()
-    #     self.update_image_callback()

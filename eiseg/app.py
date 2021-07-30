@@ -1087,7 +1087,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     color,
                     self.opacity,
                 )
-                poly.delPolygon.connect(self.delPolygonc)
+                # BUG: AttributeError: 'function' object has no attribute 'connect'
+                # 去掉后可以正常删除和加载多边形
+                # poly.delPolygon.connect(self.delPolygonc)
                 self.scene.addItem(poly)
                 self.scene.polygon_items.append(poly)
                 for p in points:
@@ -1496,7 +1498,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             alpha_blend=self.opacity,
             click_radius=self.clickRadius,
         )
-        height, width, channel = image.shape
+        height, width, _ = image.shape
         bytesPerLine = 3 * width
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
