@@ -11,10 +11,6 @@ import util
 from util.vis import draw_with_blend_and_clicks
 from util import MODELS, LabelList
 
-# DEBUG:
-import matplotlib.pyplot as plt
-
-
 # TODO: 研究标签从0开始的时候怎么处理
 class InteractiveController:
     def __init__(
@@ -22,6 +18,16 @@ class InteractiveController:
         predictor_params: dict = None,
         prob_thresh: float = 0.5,
     ):
+        """初始化控制器.
+
+        Parameters
+        ----------
+        predictor_params : dict
+            推理器配置
+        prob_thresh : float
+            区分前景和背景结果的阈值
+
+        """
         self.predictor_params = predictor_params
         self.prob_thresh = prob_thresh
         self.model = None
@@ -42,11 +48,31 @@ class InteractiveController:
         self.lccFilter = False
 
     def filterLargestCC(self, do_filter: bool):
+        """设置是否只保留推理结果中的最大联通块
+
+        Parameters
+        ----------
+        do_filter : bool
+            是否只保存推理结果中的最大联通块
+        """
         if not isinstance(do_filter, bool):
             return
         self.lccFilter = do_filter
 
     def setModel(self, modelName: str):
+        """设置推理其模型.
+
+        Parameters
+        ----------
+        modelName : str
+            模型名称，模型类中的__name__属性
+
+        Returns
+        -------
+        bool, str
+            是否成功设置模型, 失败原因
+
+        """
         if not isinstance(modelName, str):
             return False, "模型名应为str类型"
         try:
@@ -56,6 +82,19 @@ class InteractiveController:
         return True, "模型设置成功"
 
     def setParam(self, paramPath: str):
+        """设置模型使用的推理参数
+
+        Parameters
+        ----------
+        paramPath : str
+            推理参数路径
+
+        Returns
+        -------
+        bool, str
+            是否设置成功, 失败原因
+
+        """
         if not self.modelSet:
             return False, "模型未设置，请先设置模型"
         try:
@@ -65,18 +104,40 @@ class InteractiveController:
         return True, "权重设置成功"
 
     def setImage(self, image: np.array):
+        """设置当前标注的图片
+
+        Parameters
+        ----------
+        image : np.array
+            当前标注的图片
+
+        """
         self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
         self.resetLastObject()
 
     # 标签操作
     def setLabelList(self, labelList: json):
-        """
-        {
-            "idx" : int         (like 0 or 1 or 2)
-            "name" : str        (like "car"　or "airplan")
-            "color" : list      (like [255, 0, 0])
-        }
+        """设置标签列表，会覆盖已有的标签列表
+
+        Parameters
+        ----------
+        labelList : json
+            标签列表格式为
+            {
+                {
+                    "idx" : int         (like 0 or 1 or 2)
+                    "name" : str        (like "car"　or "airplan")
+                    "color" : list      (like [255, 0, 0])
+                },
+                ...
+            }
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
         """
         self.labelList.clear()
         labels = json.loads(labelList)
@@ -100,16 +161,25 @@ class InteractiveController:
 
     # 点击操作
     def addClick(self, x: int, y: int, is_positive: bool):
-        """
-        添加一个点跑推理，保存历史用于undo
+        print("click", x, y)
+        """添加一个点并运行推理，保存历史用于undo
+
         Parameters
-            x(int): 点击点的x坐标.
-            y(int): 点击点的y坐标.
+        ----------
+        x : int
+            点击的横坐标
+        y : int
+            点击的纵坐标
         is_positive : bool
-            是否是正点
+            是否点的是正点
+
         Returns
-            bool: 点击是否成功添加
+        -------
+        bool, str
+            点击是否添加成功, 失败原因
+
         """
+
         # 1. 确定可以点
         if not self.inImage(x, y):
             return False, "点击越界"
@@ -151,7 +221,7 @@ class InteractiveController:
         # 点击之后就不能接着之前的历史redo了
         self.undo_states = []
         self.undo_probs_history = []
-        # self.update_image_callback()
+        return True, "点击添加成功"
 
     def undoClick(self):
         """
@@ -165,7 +235,6 @@ class InteractiveController:
         self.undo_probs_history.append(self.probs_history.pop())
         if not self.probs_history:
             self.reset_init_mask()
-        # self.update_image_callback()
 
     def redoClick(self):
         """
@@ -179,7 +248,6 @@ class InteractiveController:
             self.clicker.set_state(next_state["clicker"])
             self.predictor.set_state(next_state["predictor"])
             self.probs_history.append(self.undo_probs_history.pop())
-            # self.update_image_callback()
 
     def finishObject(self):
         """
@@ -215,19 +283,11 @@ class InteractiveController:
             cv2.fillPoly(img, pts=pts, color=poly[0])
         return img
 
-    def change_label_num(self, number):
-        """
-        修改当前标签的编号
-            1. 如果当前有标注到一半的目标，改mask
-            2. 如果没有，下一个目标是这个数
-        Parameters
-            number(int): 换成目标的编号
-        """
-        assert isinstance(number, int), "标签编号应为整数"
+    def setCurrLabelIdx(self, number):
+        if not isinstance(number, int):
+            return False
         self.curr_label_number = number
-        if self.is_incomplete_mask:
-            pass
-        # TODO: 改当前mask的编号
+        # TODO: 检查是不是需要改当前mask的编号
 
     def resetLastObject(self, update_image=True):
         """
@@ -243,8 +303,6 @@ class InteractiveController:
         self.clicker.reset_clicks()
         self.reset_predictor()
         self.reset_init_mask()
-        # if update_image:
-        #     self.update_image_callback()
 
     def reset_predictor(self, predictor_params=None):
         """
@@ -310,11 +368,9 @@ class InteractiveController:
     def palette(self):
         if self.labelList:
             colors = [ml.color for ml in self.labelList]
-            # colors.insert(0, self.backgroundColor)
             colors.insert(0, [0, 0, 0])
         else:
             colors = [[0, 0, 0]]
-        # print(colors)
         return colors
 
     @property
