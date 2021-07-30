@@ -164,7 +164,7 @@ class Ui_EISeg(object):
         ShowSetRegion.addWidget(self.sldThresh)
         # 透明度
         self.sldOpacity, MaskShowRegion = p_create_slider(
-            "sldOpacity", "labOpacity", self.tr("标签透明度：")
+            "sldOpacity", "labOpacity", self.tr("标签透明度："), 75
         )
         ShowSetRegion.addLayout(MaskShowRegion)
         ShowSetRegion.addWidget(self.sldOpacity)
