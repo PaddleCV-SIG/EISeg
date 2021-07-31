@@ -652,6 +652,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setModelParam(self, modelName, paramPath):
         if self.changeModel(modelName):
             res = self.changeParam(paramPath)
+            self.comboModelSelect.setCurrentText(modelName)  # 更改显示
             if res:
                 return True
         return False
