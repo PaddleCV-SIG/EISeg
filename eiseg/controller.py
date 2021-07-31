@@ -1,6 +1,7 @@
 import time
 import json
 import paddle
+import cv2
 import numpy as np
 import paddleseg.transforms as T
 from skimage.measure import label
@@ -10,6 +11,7 @@ from inference.predictor import get_predictor
 import util
 from util.vis import draw_with_blend_and_clicks
 from util import MODELS, LabelList
+
 
 # TODO: 研究标签从0开始的时候怎么处理
 class InteractiveController:
@@ -145,7 +147,7 @@ class InteractiveController:
             self.labelList.add(lab["id"], lab["name"], lab["color"])
 
     def addLabel(self, id: int, name: str, color: list):
-        self.labelList.add(id, name, cololr)
+        self.labelList.add(id, name, color)
 
     def delLabel(self, id: int):
         self.labelList.remove(id)

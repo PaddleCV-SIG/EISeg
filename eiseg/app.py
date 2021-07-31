@@ -343,6 +343,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         save_coco.setChecked(self.save_status["coco"])
+        # TODO：这个关闭的作用是什么呢？只是把显示的图像和多边形清空，不用把数据列表的数据清空吗？
         close = action(
             tr("&关闭"),
             partial(self.saveImage, True),
