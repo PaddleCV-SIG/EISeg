@@ -462,10 +462,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if name not in start:
                 self.actions.append(eval(name))
         recent_files = QtWidgets.QMenu(tr("近期文件"))
+        recent_files.setIcon(util.newIcon("Data"))
         recent_files.aboutToShow.connect(self.updateRecentFile)
         recent_params = QtWidgets.QMenu(tr("近期模型及参数"))
+        recent_params.setIcon(util.newIcon("Net"))
         recent_params.aboutToShow.connect(self.updateModelsMenu)
         languages = QtWidgets.QMenu(tr("语言"))
+        languages.setIcon(util.newIcon("Language"))
         languages.aboutToShow.connect(self.updateLanguage)
 
         self.menus = util.struct(
@@ -495,8 +498,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_label,
                 load_label,
                 clear_label,
-                None,
+            ),
+            workMenu=(
                 largest_component,
+                del_active_polygon,
                 None,
                 origional_extension,
                 save_pseudo,
@@ -506,10 +511,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 save_json,
                 save_coco,
-                None,
-                del_active_polygon,
             ),
-            workMenu=(save_pseudo, save_grayscale, save_json, save_coco),
             showMenu=(
                 model_worker,
                 data_worker,
