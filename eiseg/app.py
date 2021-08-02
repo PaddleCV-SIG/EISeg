@@ -1644,7 +1644,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         grid_num = int(self.gridSelect.currentText())
         self.gridTable.setColumnCount(grid_num)
         self.gridTable.setRowCount(grid_num)
-        if self.image:
+        if self.image is not None:
             self.imagesGrid = slide_out(self.image, grid_num, grid_num)
             # self.controller.image = self.imagesGrid[0]
             self.controller.setImage(self.imagesGrid[0])
