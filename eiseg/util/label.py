@@ -56,7 +56,7 @@ class LabelList(object):
         for lab in labels:
             lab = lab.replace("\n", "").strip(" ").split(" ")
             if len(lab) != 2 and len(lab) != 5:
-                print(f"{lan} 标签不合法")
+                print(f"{lab} 标签不合法")
                 continue
             label = Label(self.toint(lab[0]), str(lab[1]), self.toint(lab[2:]))
             labelList.append(label)
