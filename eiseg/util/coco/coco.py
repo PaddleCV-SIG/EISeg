@@ -210,6 +210,8 @@ class COCO:
             id = self.maxAnnId
         if not bbox:
             x, y, width, height = 0, 0, 0, 0
+        else:
+            x, y, width, height = bbox[:]
         # TODO: cal area
         if not area:
             area = 0
