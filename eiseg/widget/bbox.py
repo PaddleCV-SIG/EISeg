@@ -89,8 +89,8 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
             self.upper_right,
             bbox_rect_geo.bottomRight()
         ])
-        self.w = self.upper_right.x() - self.bottom_left.x()
-        self.h = self.upper_right.y() - self.bottom_left.y()
+        self.w = self.corner_points[3].x() - self.corner_points[1].x()
+        self.h = self.corner_points[3].y() - self.corner_points[1].y()
         return self.corner_points
 
     def create_lines(self):
