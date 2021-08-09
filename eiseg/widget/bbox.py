@@ -33,13 +33,12 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
         self.borderColor.setAlphaF(0.8)
         self.setPen(QtGui.QPen(self.borderColor, 1.2))
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
         self.setAcceptHoverEvents(True)
         self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        pass
 
     @property
     def scnenePoints(self):
@@ -70,7 +69,7 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
     def focusInEvent(self, ev):
         if self.parent is not None and self.parent.hasFocus():
             return
-        self.setBrush(self.borderColor)
+        # self.setBrush(self.borderColor)
 
     def focusOutEvent(self, ev):
         if not self.bbox_hovering:
