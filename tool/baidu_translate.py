@@ -50,8 +50,8 @@ class BaiduTranslate:
             return False, e
 
 
-ts_path = "./ts/Russian.ts"
-xml = open(ts_path, "r").read()
+ts_path = "tool/ts/Russian.ts"
+xml = open(ts_path, "r", encoding="utf-8").read()
 xml = bs(xml, "xml")
 messages = xml.find_all("message")
 bd_trans = BaiduTranslate("zh", "ru")

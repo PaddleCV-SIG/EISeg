@@ -3,7 +3,7 @@ qtpy
 opencv-python
 scipy
 paddleseg
-albumentations
+albumentations==0.5.2
 cython
 pyyaml
 wget
