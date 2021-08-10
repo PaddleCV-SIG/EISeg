@@ -1,11 +1,11 @@
+# EISeg
+
 [![Python 3.6](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
 <!-- [![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/PaddleCV-SIG/iseg/releases) -->
 
-# EISeg
-
 EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智能的交互式分割标注软件。它使用了RITM(Reviving Iterative Training with Mask Guidance for Interactive Segmentation)算法，涵盖了高精度和轻量级等不同方向的高质量交互式分割模型，方便开发者快速实现语义及实例标签的标注，降低标注成本。 另外，将EISeg获取到的标注应用到PaddleSeg提供的其他分割模型进行训练，便可得到定制化场景的高精度模型，打通分割任务从数据标注到模型训练及预测的全流程。
 
-
+![eiseg_demo](docs/gif/eiseg_demo.gif)
 
 ## 模型准备
 
@@ -18,11 +18,10 @@ EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智
 | 高精度模型  | 适用于人像标注场景。 |HRNet18_OCR64 | [hrnet18_ocr64_human](https://bj.bcebos.com/paddleseg/dygraph/interactive_segmentation/ritm/hrnet18_ocr64_human.pdparams) |
 | 轻量化模型  | 适用于人像标注场景。 |HRNet18s_OCR48 | [hrnet18s_ocr48_human](https://bj.bcebos.com/paddleseg/dygraph/interactive_segmentation/ritm/hrnet18s_ocr48_human.pdparams) |
 
-
-
 ## 安装使用
 
 ### 稳定版
+
 EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#Conda)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
 
 版本要求:
@@ -45,6 +44,7 @@ eiseg
 即可运行软件。
 
 #### Conda
+
 首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
 
 ```shell
@@ -57,8 +57,7 @@ eiseg
 
 #### Windows exe
 
-EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘](https://pan.baidu.com/s/1KXJ9PYjbnBgQozZJEJE-bA)（提取码：82z9）下载最新EISeg。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
-
+EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[百度云盘]()（提取码：xxxx）下载最新EISeg。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
 
 ### 开发版
 
@@ -80,10 +79,21 @@ eiseg
 
 打开软件后，在对项目进行标注前，需要进行如下设置：
 
-1. 选择合适的网络，并加载对应的模型参数。在EISeg中，目前网络分为`HRNet18s_OCR48`和`HRNet18_OCR64`，并分别提供了人像和通用两种模型参数。在正确加载模型参数后，右下角状态栏会给予说明。若网络参数与模型参数不符，将会弹出警告，此时加载失败需重新加载。正确加载的模型参数会记录在`近期模型参数`中，可以方便切换，并且下次打开软件时自动加载退出时的模型参数。
-2. 打开图像/图像文件夹。当看到主界面图像正确加载，`数据列表`正确出现图像路径即可。
-3. 添加/加载标签。可以通过`添加标签`新建标签，标签分为4列，分别对应像素值、说明、颜色和删除。新建好的标签可以通过`保存标签列表`保存为txt文件，其他合作者可以通过`加载标签列表`将标签导入。通过加载方式导入的标签，重启软件后会自动加载。
-4. 在使用中可以将`自动保存`设置上，设定好文件夹（目前只支持英文路径）即可，这样在使用时切换图像会自动将完成标注的图像进行保存。
+1. **模型参数加载**
+
+   选择合适的网络，并加载对应的模型参数。在EISeg中，目前网络分为`HRNet18s_OCR48`和`HRNet18_OCR64`，并分别提供了人像和通用两种模型参数。在正确加载模型参数后，右下角状态栏会给予说明。若网络参数与模型参数不符，将会弹出警告，此时加载失败需重新加载。正确加载的模型参数会记录在`近期模型参数`中，可以方便切换，并且下次打开软件时自动加载退出时的模型参数。
+
+2. **图像加载**
+
+   打开图像/图像文件夹。当看到主界面图像正确加载，`数据列表`正确出现图像路径即可。
+
+3. **标签添加/加载**
+
+   添加/加载标签。可以通过`添加标签`新建标签，标签分为4列，分别对应像素值、说明、颜色和删除。新建好的标签可以通过`保存标签列表`保存为txt文件，其他合作者可以通过`加载标签列表`将标签导入。通过加载方式导入的标签，重启软件后会自动加载。
+
+4. **自动保存设置**
+
+   在使用中可以将`自动保存`设置上，设定好文件夹（目前只支持英文路径）即可，这样在使用时切换图像会自动将完成标注的图像进行保存。
 
 当设置完成后即可开始进行标注，默认情况下常用的按键/快捷键有：
 
@@ -102,33 +112,14 @@ eiseg
 | Ctrl+A                | 打开图像          |
 | Shift+A               | 打开文件夹        |
 | E                     | 打开快捷键表      |
+| Backspace（退格）     | 删除多边形        |
+| 鼠标双击（点）        | 删除点            |
+| 鼠标双击（边）        | 添加点            |
 
+## 说明
 
-
-## 更新
-
-1. 目前基本完成角点编辑功能，`空格`完成后会生成基本边界，可以通过添加、删除和移动角点对边界进行微调。新增操作方法如下：
-
-   | 按键/快捷键       | 功能           |
-   | ----------------- | -------------- |
-   | 鼠标左键/移动     | 角点选择/移动  |
-   | Backspace（退格） | 删除多边形     |
-   | 双击【点】        | 删除点         |
-   | 双击【边】        | 在此边上新加点 |
-
-
-
-2. 完成快捷键自定义，新增英语和俄语界面（更新中），支持mask、伪彩色图像、抠图图像、coco等各种格式保存。
-3. 界面采用多个可分离的dockwidget，可以对需要使用的功能打开关闭和拖动。
-4. 医疗&遥感专业领域已完成基本的图像加载，更多细节和专业功能正在开发中。需要加载*.tif*或*.nii*图像请自行在环境中配置GDAL或SimpleITK。
 5. 多边形出现后可以通过空格切换状态，以便于在内部进行交互。
 6. 标签按住name可以进行拖动，最后生成mask时会根据标签列表从上往下进行覆盖。
-
-## 效果
-
-ps：由于更新频繁，此动态效果非当前最新效果。
-
-![CornerPoint](https://user-images.githubusercontent.com/71769312/126030819-0ee2777c-47ec-46f2-a06a-b365d0dd07bf.gif)
 
 ## 常见问题
 
@@ -149,6 +140,7 @@ pip install --upgrade paddlepaddle-gpu</code>
 
 # 开发者
 
-[Yuying Hao](https://github.com/haoyuying), [Yizhou Chen](https://github.com/geoyee), [Lin Han](https://github.com/linhandev/), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
+[Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev/), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
 
 <!-- pip install 'git+https://github.com/openvinotoolkit/datumaro' -->
+
