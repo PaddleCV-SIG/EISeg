@@ -1158,7 +1158,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveImage(True)
 
         # 2. 打开新图
-        self.loadImage(self.imagePaths[self.currIdx])
+        self.loadImage(self.imagePaths[self.currIdx]) #!
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
 
@@ -1372,10 +1372,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
                 if not polygon.coco_id:
                     print("adding: ", polygon.labelIndex)
-                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
+                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points, polygon.bbox.to_array())
                     polygon.coco_id = annId
                 else:
-                    self.coco.updateAnnotation(polygon.coco_id, imgId, points)
+                    self.coco.updateAnnotation(polygon.coco_id, imgId, points, polygon.bbox.to_array())
             for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
                     print("+_+_+_+_+", lab.name)
