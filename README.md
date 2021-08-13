@@ -131,7 +131,7 @@ eiseg
 
 下面列举了一些常见问题及可能的解决方案：
 
-<details><summary> 选择模型权重后崩溃</summary><pre><code>
+<details><summary> 选择模型权重后崩溃</summary><pre>
 提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。相关安装方法参见[官方安装教程](https://www.paddlepaddle.org.cn/)。
 1. Paddle版本低：EISeg中需要Paddle版本为2.1.x，如果版本过低请升级Paddle版本。查看Paddle版本：
 <code>python -c "import paddle; print(paddle.__version__)"</code>
