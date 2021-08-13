@@ -22,7 +22,7 @@ EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智
 
 ### 稳定版
 
-EISeg提供多种安装方式，其中使用[pip](#PIP)，[conda](#Conda)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
+EISeg提供多种安装方式，其中使用[pip](#PIP)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
 
 版本要求:
 
@@ -42,18 +42,6 @@ pip会自动安装依赖。安装完成后命令行输入：
 eiseg
 ```
 即可运行软件。
-
-#### Conda
-
-首先安装Anaconda或Miniconda，过程参考[清华镜像教程](https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/)。
-
-```shell
-conda create -n eiseg python=3.8
-conda activate eiseg
-conda install qtpy
-pip install eiseg
-eiseg
-```
 
 #### Windows exe
 
@@ -116,16 +104,34 @@ eiseg
 | 鼠标双击（点）        | 删除点            |
 | 鼠标双击（边）        | 添加点            |
 
-## 说明
+5. ## 使用说明
 
-5. 多边形出现后可以通过空格切换状态，以便于在内部进行交互。
-6. 标签按住name可以进行拖动，最后生成mask时会根据标签列表从上往下进行覆盖。
+   ### 多边形
+
+   1. 交互完成后使用Space（空格）完成交互标注，此时出现多边形边界；当需要在多边形内部继续进行交互，则使用空格切换为交互模式，此时多边形无法选中和更改。
+   2. 多边形可以拖动和删除，使用鼠标左边可以对锚点进行拖动，鼠标左键双击锚点可以删除锚点，双击两点之间的边则可在此边添加一个锚点。
+   3. 打开`保留最大连通块`后，所有的点击只会在图像中保留面积最大的区域，其余小区域将不会显示和保存。
+
+   ### 格式保存
+
+   1. 打开保存`JSON保存`或`COCO保存`后，多边形会被记录，加载时会自动加载。
+   2. 若不设置保存路径，默认保存至当前图像文件夹下的label文件夹中。
+   3. 如果有图像之间名称相同但后缀名不同，可以打开`标签和图像使用相同扩展名`。
+   4. 还可设置灰度保存、伪彩色保存和抠图保存，见工具栏中7-9号工具。
+
+   ### 生成mask
+
+   1. 标签按住第二列可以进行拖动，最后生成mask时会根据标签列表从上往下进行覆盖。
+
+   ### 界面模块
+
+   1. 可在`显示`中选择需要显示的界面模块，正常退出时将会记录界面模块的状态和位置，下次打开自动加载。
 
 ## 常见问题
 
 下面列举了一些常见问题及可能的解决方案：
 
-<details> <summary> 选择模型权重后崩溃</summary><pre><code>
+<details><summary> 选择模型权重后崩溃</summary><pre><code>
 提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。相关安装方法参见[官方安装教程](https://www.paddlepaddle.org.cn/)。
 1. Paddle版本低：EISeg中需要Paddle版本为2.1.x，如果版本过低请升级Paddle版本。查看Paddle版本：
 <code>python -c "import paddle; print(paddle.__version__)"</code>
@@ -137,10 +143,7 @@ pip install --upgrade paddlepaddle-gpu</code>
 2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行。
 <code>python -c "import paddle; paddle.utils.run_check()"</code></pre></details>
 
-
 # 开发者
 
 [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev/), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
-
-<!-- pip install 'git+https://github.com/openvinotoolkit/datumaro' -->
 

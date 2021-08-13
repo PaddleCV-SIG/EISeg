@@ -44,7 +44,7 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
         self.setAcceptHoverEvents(False)
         # TODO: 我认为为box添加鼠标和键盘事件作用不大，反而在交互上使得矩形区域内都无法点击
-        self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        # self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     @property
     def scnenePoints(self):
@@ -105,11 +105,11 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     def update(self):
         l = len(self.polyline.points)
-        if l < 4:
+        if l < 3:
             if self.is_added:
                 self.remove_from_scene()
 
-        if l >= 4:
+        if l >= 3:  # 大于三个点就可以更新，小于三个点删除多边形
             if not self.is_added:
                 self.add_to_scene()
             else:
