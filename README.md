@@ -143,7 +143,7 @@ pip install --upgrade paddlepaddle-gpu</code>
 2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行。
 <code>python -c "import paddle; paddle.utils.run_check()"</code></pre></details>
 
-# 开发者
+## 开发者
 
 [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev/), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
 
