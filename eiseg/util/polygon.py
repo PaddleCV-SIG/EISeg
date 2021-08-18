@@ -1,6 +1,7 @@
 from enum import Enum
 
 import cv2
+from math import sqrt
 import matplotlib.pyplot as plt
 
 
@@ -42,6 +43,15 @@ def get_polygon(label, sample=2):
             if relas[i][1] != None:  # 有父母
                 for j in range(len(relas)):
                     if relas[j][0] == relas[i][1]:  # i的父母就是j（i是j的内圈）
+                        min_i, min_o = _find_min_point(polygons[i], polygons[j])
+                        # 改变顺序
+                        s_pj = polygons[j][: min_o]
+                        polygons[j] = polygons[j][min_o:]
+                        polygons[j].extend(s_pj)
+                        s_pi = polygons[i][: min_i]
+                        polygons[i] = polygons[i][min_i:]
+                        polygons[i].extend(s_pi)
+                        # 连接
                         polygons[j].append(polygons[j][0])  # 闭合
                         polygons[j].extend(polygons[i])
                         polygons[j].append(polygons[i][0])  # 闭合
@@ -53,28 +63,16 @@ def get_polygon(label, sample=2):
         return None
 
 
-# def get_polygon(label, sample=1):
-#     contours = cv2.findContours(
-#         image=label, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_TC89_KCOS
-#     )
-#     points = []
-#     count = 0
-
-#     # plt.imshow(label)
-#     # plt.savefig("./temp.png")
-#     # print("contours", contours[1])
-
-#     cv2_v = cv2.__version__.split(".")[0]
-#     print(f"Totally {len(contours[1])} contours")
-#     contours = contours[1] if cv2_v == "3" else contours[0]
-#     polygons = []
-#     for contour in contours:
-#         polygon = []
-#         for p in contour:
-#             if count == sample:
-#                 polygon.append(p[0])
-#                 count = 0
-#             else:
-#                 count += 1
-#         polygons.append(polygon)
-#     return polygons
+def _find_min_point(i_list, o_list):
+    min_dis = 1e7
+    idx_i = -1
+    idx_o = -1
+    for i in range(len(i_list)):
+        for o in range(len(o_list)):
+            dis = sqrt((i_list[i][0] - o_list[o][0]) ** 2 + \
+                       (i_list[i][1] - o_list[o][1]) ** 2)
+            if dis < min_dis:
+                min_dis = dis
+                idx_i = i
+                idx_o = o
+    return idx_i, idx_o
