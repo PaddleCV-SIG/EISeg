@@ -104,7 +104,7 @@ eiseg
 | 鼠标双击（点）        | 删除点            |
 | 鼠标双击（边）        | 添加点            |
 
-5. ## 使用说明
+## 使用说明
 
    ### 多边形
 
@@ -131,7 +131,7 @@ eiseg
 
 下面列举了一些常见问题及可能的解决方案：
 
-<details><summary> 选择模型权重后崩溃</summary><pre><code>
+<details><summary> 选择模型权重后崩溃</summary><pre>
 提示：EISeg推理过程中使用CPU和GPU版本的Paddle体验差异不是很大，如果GPU版本安装遇到问题可以先使用CPU版本快速尝试。相关安装方法参见[官方安装教程](https://www.paddlepaddle.org.cn/)。
 1. Paddle版本低：EISeg中需要Paddle版本为2.1.x，如果版本过低请升级Paddle版本。查看Paddle版本：
 <code>python -c "import paddle; print(paddle.__version__)"</code>
@@ -143,7 +143,7 @@ pip install --upgrade paddlepaddle-gpu</code>
 2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行。
 <code>python -c "import paddle; paddle.utils.run_check()"</code></pre></details>
 
-# 开发者
+## 开发者
 
 [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev/), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
 
