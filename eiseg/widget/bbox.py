@@ -43,7 +43,6 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
         self.setAcceptHoverEvents(False)
-        # TODO: 我认为为box添加鼠标和键盘事件作用不大，反而在交互上使得矩形区域内都无法点击
         # self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     @property
@@ -142,7 +141,7 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     # @return : [x, y, w, h]
     def to_array(self):
-        np_array = [self.corner_points[1].x(), self.corner_points[1].y(), #topLeft
+        np_array = [self.corner_points[1].x(), self.corner_points[1].y(),  # topLeft
                     self.w, self.h]
         return np_array
 
