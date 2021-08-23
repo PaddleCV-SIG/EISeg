@@ -221,7 +221,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         quick_start = action(
             tr("&快速上手"),
-            self.toBeImplemented,
+            self.quickHelp,
             "quick_start",
             "Use",
             tr("快速上手介绍"),
@@ -1160,7 +1160,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveImage(True)
 
         # 2. 打开新图
-        self.loadImage(self.imagePaths[self.currIdx]) #!
+        self.loadImage(self.imagePaths[self.currIdx])
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
 
@@ -1531,9 +1531,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
         if reset_canvas:
             self.resetZoom(width, height)
+            # 加载设置为白色
+            self.canvas.setStyleSheet("background-color: White")
         self.annImage.setPixmap(QPixmap(image))
-        # BUG: 一直有两张图片在scene里，研究是为什么
-        # print(self.scene.items())
         # TODO:宫格显示当前图片
         # if self.gridTable.isVisible():
         #     pass
@@ -1712,6 +1712,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         idx = row * grid_num + col
         self.controller.setImage(self.imagesGrid[idx])
         self.updateImage()
+
+    def quickHelp(self):
+        self.saveImage(True)
+        self.canvas.setStyleSheet(self.note_style)
 
     @property
     def opacity(self):
