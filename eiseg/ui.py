@@ -65,16 +65,19 @@ class Ui_EISeg(object):
         ImageRegion.addWidget(self.scrollArea)
         # 图形显示
         self.scene = AnnotationScene()
-        self.scene.addPixmap(QtGui.QPixmap())
         self.canvas = AnnotationView(self.scene, self)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
         )
+        self.canvas.setObjectName("canvas")
         self.canvas.setSizePolicy(sizePolicy)
         self.canvas.setAlignment(QtCore.Qt.AlignCenter)
         self.canvas.setAutoFillBackground(False)
-        self.canvas.setStyleSheet("background-color: White")
-        self.canvas.setObjectName("canvas")
+        # self.canvas.setStyleSheet("background-color: White")
+        # 背景说明
+        note_path = osp.join(pjpath, "resource/Note.png").replace("\\", "/")
+        self.note_style = "#canvas{border-image:url(" + note_path + ")}"
+        self.canvas.setStyleSheet(self.note_style)
         self.scrollArea.setWidget(self.canvas)
         ## -----
         ## -- 工作区 --
