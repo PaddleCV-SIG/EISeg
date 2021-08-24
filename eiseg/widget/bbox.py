@@ -141,9 +141,14 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     # @return : [x, y, w, h]
     def to_array(self):
-        np_array = [self.corner_points[1].x(), self.corner_points[1].y(),  # topLeft
-                    self.w, self.h]
+        np_array = [self._round(self.corner_points[1].x()), 
+                    self._round(self.corner_points[1].y()),  # topLeft
+                    self._round(self.w), self._round(self.h)]
         return np_array
+
+    def _round(self, number, ind=0):
+        nint, ndec = str(number).split(".")
+        return float(nint + "." + ndec[:ind])
 
     def __del__(self):
         self.corner_points.clear()
