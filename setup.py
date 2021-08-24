@@ -5,9 +5,6 @@ import numpy as np
 
 from eiseg import __APPNAME__, __VERSION__
 
-
-# from Cython.Build import cythonize
-
 HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text(encoding="utf-8")
@@ -30,12 +27,12 @@ ext_modules = [
 setup(
     name=__APPNAME__,
     version=__VERSION__,
-    description="交互式标注软件",
+    description="EISeg高效交互式标注软件",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/PaddleCV-SIG/EISeg",
     author="PaddleCV-SIG",
-    author_email="linhandev@qq.com",
+    author_email="me@linhan.email",
     license="Apache Software License",  # 这里和readme的license不一样，统一了下，不知道是不是apache
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
