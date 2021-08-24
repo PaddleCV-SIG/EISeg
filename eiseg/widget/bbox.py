@@ -155,8 +155,3 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     def __del__(self):
         self.corner_points.clear()
-
-
-
-
-
