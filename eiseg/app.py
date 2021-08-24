@@ -986,7 +986,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 3.1 获取所有文件名
         imagePaths = os.listdir(self.inputDir)
         exts = QtGui.QImageReader.supportedImageFormats()
-        imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        exts.extend(["nii", "nii.gz"])  # 医疗图像
+        # imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        for i in range(len(imagePaths)):
+            ext = imagePaths[i].split(".")[-1]
+            if ext == "gz":
+                ext = imagePaths[i].split(".")[-2] + "." + ext
+            print(ext)
+            if ext not in exts:
+                del imagePaths[i]
         if len(imagePaths) == 0:
             return
         # 3.2 设置默认输出路径为文件夹下的 label 文件夹
@@ -1018,7 +1026,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path):
         if not path or not osp.exists(path):
             return
-        _, ext = os.path.splitext(path)
+        file_head, ext = os.path.splitext(path)
+        if ext == ".gz":
+            ext = os.path.splitext(file_head)[-1] + ext
         if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
                 self.rawimg, geoinfo = open_tif(path)
@@ -1034,8 +1044,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
                 )
                 return
-        elif ext == ".nii" or ext == ".gz":  # nii.gz
-            if self.RSDock.isVisible():
+        elif ext == ".nii" or ext == ".nii.gz":
+            if self.MIDock.isVisible():
                 self.rawimg = open_nii(path)
                 try:
                     image = slice_img(self.rawimg, self.midx)
