@@ -109,19 +109,19 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     def update(self):
         l = len(self.polyline.points)
+        # print("up L:", l, " is_added:", self.is_added)
         if l < 3:
             if self.is_added:
                 self.remove_from_scene()
-
-        if l >= 3:  # 大于三个点就可以更新，小于三个点删除多边形
-            if not self.is_added:
+        else:  # 大于三个点就可以更新，小于三个点删除多边形
+            if self.is_added:
                 self.add_to_scene()
             else:
                 path_geo = QtGui.QPainterPath()
                 self.create_corners()
                 path_geo.moveTo(self.corner_points[0])
                 for i in range(4):
-                    path_geo.lineTo(self.corner_points[(i+1) % 4])
+                    path_geo.lineTo(self.corner_points[(i + 1) % 4])
                 self.setPath(QtGui.QPainterPath(path_geo))
                 pass
             pass
