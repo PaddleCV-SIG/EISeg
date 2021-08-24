@@ -76,7 +76,7 @@ class Ui_EISeg(object):
         # self.canvas.setStyleSheet("background-color: White")
         # 背景说明
         note_path = osp.join(pjpath, "resource/Note.png").replace("\\", "/")
-        self.note_style = "#canvas{border-image:url(" + note_path + ")}"
+        self.note_style = "#canvas{border-image:url(" + note_path + ") 0 repeat}"
         self.canvas.setStyleSheet(self.note_style)
         self.scrollArea.setWidget(self.canvas)
         ## -----
