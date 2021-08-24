@@ -43,7 +43,6 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
         self.setAcceptHoverEvents(False)
-        # TODO: 我认为为box添加鼠标和键盘事件作用不大，反而在交互上使得矩形区域内都无法点击
         # self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
     @property
@@ -96,6 +95,11 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
         ])
         self.w = self.corner_points[3].x() - self.corner_points[1].x()
         self.h = self.corner_points[3].y() - self.corner_points[1].y()
+
+        if self.corner_points[1].x() > 512 or self.corner_points[1].x() + self.w > 512:
+            pass
+        if self.corner_points[1].y() > 512 or self.corner_points[1].y() + self.h > 512:
+            pass
         return self.corner_points
 
     def create_lines(self):
@@ -137,7 +141,7 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     # @return : [x, y, w, h]
     def to_array(self):
-        np_array = [self.bottom_left.x(), self.bottom_left.y(),
+        np_array = [self.corner_points[1].x(), self.corner_points[1].y(),  # topLeft
                     self.w, self.h]
         return np_array
 
