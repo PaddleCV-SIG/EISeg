@@ -91,7 +91,7 @@ class Ui_EISeg(object):
         # labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
         # ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
-        combo.addItems([ModelsNick[m.__name__][0] for m in MODELS])
+        combo.addItems([self.tr(ModelsNick[m.__name__][0]) for m in MODELS])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)
         # 网络参数
