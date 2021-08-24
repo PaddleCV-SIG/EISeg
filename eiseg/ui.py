@@ -9,7 +9,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import QGraphicsView
 
 from eiseg import pjpath, __APPNAME__
-import models
+from models import ModelsNick
 from util import MODELS, Instructions
 from widget import LineItem, GripItem, AnnotationScene, AnnotationView
 from widget.create import *
@@ -76,7 +76,7 @@ class Ui_EISeg(object):
         # self.canvas.setStyleSheet("background-color: White")
         # 背景说明
         note_path = osp.join(pjpath, "resource/Note.png").replace("\\", "/")
-        self.note_style = "#canvas{border-image:url(" + note_path + ") 0 repeat}"
+        self.note_style = "#canvas{border-image:url(" + note_path + ") repeat}"
         self.canvas.setStyleSheet(self.note_style)
         self.scrollArea.setWidget(self.canvas)
         ## -----
@@ -91,7 +91,7 @@ class Ui_EISeg(object):
         # labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
         # ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
-        combo.addItems([m.__name__ for m in MODELS])
+        combo.addItems([ModelsNick[m.__name__][0] for m in MODELS])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)
         # 网络参数
