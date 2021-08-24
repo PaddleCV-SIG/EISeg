@@ -61,7 +61,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.controller = InteractiveController(
-            # self.updateImage,
             predictor_params={
                 # 'brs_mode': 'f-BRS-B',
                 "brs_mode": "NoBRS",
@@ -78,10 +77,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             prob_thresh=self.segThresh,
         )
         self.controller.setModel(MODELS[0].__name__)
-        # self.controller.labelList = util.LabelList()  # 标签列表
         self.outputDir = None  # 标签保存路径
-        self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
+        self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.isDirty = False  # 是否需要保存
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
@@ -93,6 +91,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.midx = 0  # 医疗切片索引
         self.rawimg = None
         self.imagesGrid = []  # 图像宫格
+
         # worker
         self.display_dockwidget = [True, True, True, True, False, False, False]
         self.dock_widgets = [
@@ -1200,7 +1199,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for points in curr_polygon:
                     if len(points) < 3:
                         continue
-                    print("the id is ", self.controller.labelList[self.currLabelIdx].idx)
+                    print(
+                        "the id is ", self.controller.labelList[self.currLabelIdx].idx
+                    )
                     poly = PolygonAnnotation(
                         self.controller.labelList[self.currLabelIdx].idx,
                         self.controller.image.shape,
@@ -1386,10 +1387,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
                 if not polygon.coco_id:
                     print("adding: ", polygon.labelIndex)
-                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points, polygon.bbox.to_array())
+                    annId = self.coco.addAnnotation(
+                        imgId, polygon.labelIndex, points, polygon.bbox.to_array()
+                    )
                     polygon.coco_id = annId
                 else:
-                    self.coco.updateAnnotation(polygon.coco_id, imgId, points, polygon.bbox.to_array())
+                    self.coco.updateAnnotation(
+                        polygon.coco_id, imgId, points, polygon.bbox.to_array()
+                    )
             for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
                     print("+_+_+_+_+", lab.name)
