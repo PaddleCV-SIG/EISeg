@@ -12,4 +12,3 @@ requests
 
 # GDAL
 # SimpleITK
-# pycocotools

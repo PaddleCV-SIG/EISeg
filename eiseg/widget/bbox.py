@@ -148,7 +148,10 @@ class BBoxAnnotation(QtWidgets.QGraphicsPathItem):
 
     def _round(self, number, ind=0):
         nint, ndec = str(number).split(".")
-        return float(nint + "." + ndec[:ind])
+        res = float(nint + "." + ndec[:ind])
+        if res <= 0:
+            res = .0
+        return res
 
     def __del__(self):
         self.corner_points.clear()
