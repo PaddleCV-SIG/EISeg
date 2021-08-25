@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from eiseg import pjpath, __APPNAME__
 from widget import ShortcutWindow, PolygonAnnotation
-from models import EISegModel
+from models import EISegModel, ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
@@ -56,7 +56,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "pseudo_color": True,
             "json": False,
             "coco": True,
-            "matting": True,
+            "foreground": True,
         }  # 是否保存这几个格式
 
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
@@ -352,13 +352,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         save_matting = action(
             tr("&抠图保存"),
-            partial(self.toggleSave, "matting"),
+            partial(self.toggleSave, "foreground"),
             "save_matting",
             "SaveMatting",
             tr("只保留前景，背景设置为背景色"),
             checkable=True,
         )
-        save_matting.setChecked(self.save_status["matting"])
+        save_matting.setChecked(self.save_status["foreground"])
         set_matting_background = action(
             tr("&设置抠图背景色"),
             self.setMattingBackground,
@@ -552,7 +552,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("显示"), self.menus.showMenu)
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
-        # matting backgroud
+        # foreground backgroud
         if self.settings.value("matting_color"):
             self.mattingBackground = [
                 int(c) for c in self.settings.value("matting_color")
@@ -649,8 +649,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.setValue("recent_params", self.recentModels)
 
     def setModelParam(self, modelName, paramPath):
-        if self.changeModel(modelName):
-            self.comboModelSelect.setCurrentText(modelName)  # 更改显示
+        if self.changeModel(ModelsNick[modelName][1]):
+            self.comboModelSelect.setCurrentText(self.tr(ModelsNick[modelName][0]))  # 更改显示
             res = self.changeParam(paramPath)
             if res:
                 return True
@@ -955,6 +955,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if len(file_path) == 0:
             return
+        self.saveImage(True)  # 清除
         self.queueEvent(partial(self.loadImage, file_path))
         self.listFiles.addItems([file_path.replace("\\", "/")])
         self.imagePaths.append(file_path)
@@ -985,7 +986,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 3.1 获取所有文件名
         imagePaths = os.listdir(self.inputDir)
         exts = QtGui.QImageReader.supportedImageFormats()
-        imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        exts.extend(["nii", "nii.gz"])  # 医疗图像
+        # imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        for i in range(len(imagePaths)):
+            ext = imagePaths[i].split(".")[-1]
+            if ext == "gz":
+                ext = imagePaths[i].split(".")[-2] + "." + ext
+            print(ext)
+            if ext not in exts:
+                del imagePaths[i]
         if len(imagePaths) == 0:
             return
         # 3.2 设置默认输出路径为文件夹下的 label 文件夹
@@ -1017,7 +1026,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path):
         if not path or not osp.exists(path):
             return
-        _, ext = os.path.splitext(path)
+        file_head, ext = os.path.splitext(path)
+        if ext == ".gz":
+            ext = os.path.splitext(file_head)[-1] + ext
         if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
                 self.rawimg, geoinfo = open_tif(path)
@@ -1033,8 +1044,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
                 )
                 return
-        elif ext == ".nii" or ext == ".gz":  # nii.gz
-            if self.RSDock.isVisible():
+        elif ext == ".nii" or ext == ".nii.gz":
+            if self.MIDock.isVisible():
                 self.rawimg = open_nii(path)
                 try:
                     image = slice_img(self.rawimg, self.midx)
@@ -1332,9 +1343,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
 
         # 4.3 保存前景抠图
-        if self.save_status["matting"]:
+        if self.save_status["foreground"]:
             mattingPath, ext = osp.splitext(savePath)
-            mattingPath = mattingPath + "_matting" + ext
+            mattingPath = mattingPath + "_foreground" + ext
             img = self.controller.image.copy()
             img = img[:, :, ::-1]
             img[self.getMask() == 0] = self.mattingBackground[::-1]
