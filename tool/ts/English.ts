@@ -226,7 +226,7 @@
     <message>
         <location filename="../../eiseg/app.py" line="319"/>
         <source>&amp;抠图保存</source>
-        <translation>&amp;Save Matting</translation>
+        <translation>&amp;Save Forground</translation>
     </message>
     <message>
         <location filename="../../eiseg/app.py" line="319"/>
