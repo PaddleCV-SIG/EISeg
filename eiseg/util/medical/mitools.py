@@ -32,4 +32,21 @@ def _nii2arr(sitk_image):
 
 
 def slice_img(img, index):
-    return sample_norm(cv2.merge([np.uint16(img[:, :, index])] * 3))
+    if index == 0:
+        return sample_norm(cv2.merge([
+            np.uint16(img[:, :, index]),
+            np.uint16(img[:, :, index]),
+            np.uint16(img[:, :, index + 1])
+        ]))
+    elif index == img.shape[2] - 1:
+        return sample_norm(cv2.merge([
+            np.uint16(img[:, :, index - 1]),
+            np.uint16(img[:, :, index]),
+            np.uint16(img[:, :, index])
+        ]))
+    else:
+        return sample_norm(cv2.merge([
+            np.uint16(img[:, :, index - 1]),
+            np.uint16(img[:, :, index]),
+            np.uint16(img[:, :, index + 1])
+        ]))

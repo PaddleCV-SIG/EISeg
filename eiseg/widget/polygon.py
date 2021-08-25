@@ -38,6 +38,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.insideColor.setAlphaF(opacity)
         self.halfInsideColor = QtGui.QColor(i[0], i[1], i[2])
         self.halfInsideColor.setAlphaF(opacity / 2)
+        self.setBrush(self.halfInsideColor)
         b = borderColor
         self.borderColor = QtGui.QColor(b[0], b[1], b[2])
         self.borderColor.setAlphaF(0.8)
@@ -71,7 +72,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.anning = True
             self.setBrush(QtGui.QBrush(QtCore.Qt.NoBrush))
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, False)
-            self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
+            # self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable, False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
             self.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
