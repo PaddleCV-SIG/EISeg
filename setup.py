@@ -13,15 +13,15 @@ with open("requirements.txt") as fin:
     REQUIRED_PACKAGES = fin.read()
 
 ext_modules = [
-    Extension(
-        "pycocotools._mask",
-        sources=[
-            "./eiseg/util/coco/common/maskApi.c",
-            "./eiseg/util/coco/pycocotools/_mask.pyx",
-        ],
-        include_dirs=[np.get_include(), "./eiseg/util/coco/common"],
-        extra_compile_args=["-Wno-cpp", "-Wno-unused-function", "-std=c99"],
-    )
+    # Extension(
+    #     "pycocotools._mask",
+    #     sources=[
+    #         "./eiseg/util/coco/common/maskApi.c",
+    #         "./eiseg/util/coco/pycocotools/_mask.pyx",
+    #     ],
+    #     include_dirs=[np.get_include(), "./eiseg/util/coco/common"],
+    #     extra_compile_args=["-Wno-cpp", "-Wno-unused-function", "-std=c99"],
+    # )
 ]
 
 setup(
