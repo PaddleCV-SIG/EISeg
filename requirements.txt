@@ -9,6 +9,7 @@ pyyaml
 wget
 qpt
 requests
+paddlepaddle
 
 # GDAL
 # SimpleITK
