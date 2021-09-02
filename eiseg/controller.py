@@ -395,8 +395,8 @@ class InteractiveController:
 
     @property
     def imgShape(self):
-        print(self.image.shape)
-        return self.image.shape[1::-1]
+        # print(self.image.shape)
+        return self.image.shape[1::-1]  # 这是什么操作？
 
     @property
     def paramSet(self):
