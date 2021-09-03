@@ -566,7 +566,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         color = QtWidgets.QColorDialog.getColor(QtGui.QColor(c[0], c[1], c[2], c[3]), self, 
                                                 options=QtWidgets.QColorDialog.ShowAlphaChannel)
         self.mattingBackground = color.getRgb()
-        print("mattingBackground:", self.mattingBackground)
+        # print("mattingBackground:", self.mattingBackground)
         self.settings.setValue(
             "matting_color", [int(c) for c in self.mattingBackground]
         )
@@ -1349,10 +1349,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             mattingPath = mattingPath + "_foreground" + ext
             h, w = self.controller.image.shape[:2]
             img = np.ones([h, w, 4], dtype="uint8") * 255
-            img[:, :, :3] = self.controller.image.copy()[:, :, ::-1]
-            mbg = list(self.mattingBackground).copy()
-            mbg = (mbg[2], mbg[1], mbg[0], mbg[3])  # BGRA2RGBA
-            img[self.getMask() == 0] = mbg
+            img[:, :, :3] = self.controller.image.copy()
+            # 适用以前的RGB版本不报错，后面可以取消
+            if len(self.mattingBackground) == 3:
+                self.mattingBackground += tuple([255])
+            img[self.getMask() == 0] = self.mattingBackground
+            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
             cv2.imencode(ext, img)[1].tofile(mattingPath)
 
         # 4.4 保存json
