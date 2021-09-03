@@ -88,6 +88,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.mattingBackground = [0, 0, 128]
 
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
+        self.geoinfo = None
         self.midx = 0  # 医疗切片索引
         self.rawimg = None
         self.imagesGrid = []  # 图像宫格
@@ -1032,7 +1033,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ext = os.path.splitext(file_head)[-1] + ext
         if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
-                self.rawimg, geoinfo = open_tif(path)
+                self.rawimg, self.geoinfo = open_tif(path)
                 try:
                     image = selec_band(self.rawimg, self.rsRGB)
                 except IndexError:
@@ -1325,8 +1326,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
-            ext = osp.splitext(savePath)[1]
-            cv2.imencode(ext, self.getMask())[1].tofile(savePath)
+            if self.rsSave.isChecked() and self.geoinfo is not None:
+                pathHead, _ = osp.splitext(savePath)
+                tifPath = pathHead + ".tif"
+                save_tif(self.getMask(), self.geoinfo, tifPath)
+                self.geoinfo = None
+            else:
+                ext = osp.splitext(savePath)[1]
+                cv2.imencode(ext, self.getMask())[1].tofile(savePath)
             # self.labelPaths.append(savePath)
 
         # 4.2 保存伪彩色
