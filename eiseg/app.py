@@ -90,8 +90,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
         self.geoinfo = None
         self.midx = 0  # 医疗切片索引
-        self.rawimg = None
+        # TODO：保存图像较多有没有办法优化
+        self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
+        self.detimg = None  # 保存原始的遥感图像或者医疗图像经过选择后的图像（三通道）
         self.imagesGrid = []  # 图像宫格
+        self.masksGrid = []
+        self.gridIndex = None
 
         # worker
         self.display_dockwidget = [True, True, True, True, False, False, False]
@@ -1275,6 +1279,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if close:
             self.annImage.setPixmap(QPixmap())
 
+    # BUG：待看
+    def saveGrid(self, row, col, index, is_init=False):
+        if is_init is False:
+            self.gridTable.setItem(row, col, QtWidgets.QTableWidgetItem())
+            self.gridTable.item(row, col).setBackground(QtGui.QColor(0, 125, 0))
+            if not self.controller or self.controller.image is None:
+                return
+            self.completeLastMask()
+            self.masksGrid[index] = self.getMask()
+        self.setClean()
+        for p in self.scene.polygon_items[::-1]:
+            p.remove()
+        self.scene.polygon_items = []
+        self.controller.resetLastObject()
+        self.updateImage(True)
+
     def saveLabel(self, saveAs=False, savePath=None):
         # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
@@ -1660,32 +1680,38 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
-        self.image = selec_band(self.rawimg, self.rsRGB)
-        image = (
-            self.image
-        )  # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
+        self.detimg = selec_band(self.rawimg, self.rsRGB)
+        image = self.detimg
+        self.image = image
+        # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
         self.controller.image = image
         self.updateImage()
 
     def miSlideSet(self):
-        self.image = slice_img(self.rawimg, self.midx)
-        image = self.image
+        self.detimg = slice_img(self.rawimg, self.midx)
+        image = self.detimg
+        self.image = image
         self.controller.image = image
         self.updateImage()
 
     def gridNumSet(self, idx):
         grid_num = int(self.gridSelect.currentText())
+        self.gridIndex = None
         self.gridTable.setColumnCount(grid_num)
         self.gridTable.setRowCount(grid_num)
-        if self.image is not None:
-            self.imagesGrid = slide_out(self.image, grid_num, grid_num)
-            # self.controller.image = self.imagesGrid[0]
-            self.controller.setImage(self.imagesGrid[0])
-            self.updateImage()
-            # 连接切换信号
-            self.gridTable.cellClicked.connect(self.changeGrid)
+        if len(self.masksGrid) != 0 and grid_num == 1:
+            h, w = self.detimg.shape[:2]
+            mask = splicing_list(self.masksGrid, (h, w))
+            plt.imshow(mask)
+            plt.show()
         else:
-            self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
+            if self.detimg is not None:
+                self.imagesGrid = slide_out(self.detimg, grid_num, grid_num)
+                self.masksGrid = [None] * len(self.imagesGrid)
+                # 连接切换信号
+                self.gridTable.cellClicked.connect(self.changeGrid)
+            else:
+                self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
 
     def toggleDockWidgets(self, is_init=False):
         if is_init == True:
@@ -1737,10 +1763,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             pass
 
     def changeGrid(self, row, col):
+        # 保存上一个
+        if self.gridIndex is not None:
+            r, c, i = self.gridIndex
+            if (r * c - 1) == i:
+                return
+            self.saveGrid(r, c, i)
         grid_num = int(self.gridSelect.currentText())
         idx = row * grid_num + col
-        self.controller.setImage(self.imagesGrid[idx])
-        self.updateImage()
+        self.gridIndex = (row, col, idx)
+        image = self.imagesGrid[idx]
+        self.image = image
+        self.controller.setImage(image)
+        self.saveGrid(row, col, idx, True)
 
     def quickHelp(self):
         self.saveImage(True)
