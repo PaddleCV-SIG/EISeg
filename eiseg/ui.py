@@ -186,11 +186,6 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         bandRegion = QtWidgets.QVBoxLayout()
         bandRegion.setObjectName("bandRegion")
-        # showWay = create_text(CentralWidget, "showWay", "显示方法")
-        # bandRegion.addWidget(showWay)
-        # self.rsShow = QtWidgets.QComboBox()
-        # self.rsShow.addItems(["原图", "2%线性拉伸"])
-        # bandRegion.addWidget(self.rsShow)
         bandSelection = create_text(CentralWidget, "bandSelection", self.tr("波段设置"))
         bandRegion.addWidget(bandSelection)
         text_list = ["R", "G", "B"]
@@ -233,12 +228,23 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         GridRegion = QtWidgets.QVBoxLayout()
         GridRegion.setObjectName("GridRegion")
-        gridNumSelection = create_text(CentralWidget, "gridNumSelection", self.tr("宫格划分数"))
-        GridRegion.addWidget(gridNumSelection)
-        combo = QtWidgets.QComboBox(self)
-        combo.addItems(["1", "2", "3"])
-        self.gridSelect = combo
-        GridRegion.addWidget(self.gridSelect)
+        self.btnInitGrid = p_create_button(
+            "btnInitGrid",
+            self.tr("创建宫格"),
+            osp.join(pjpath, "resource/N2.png"),
+            "",
+        )
+        self.btnFinishedGrid = p_create_button(
+            "btnFinishedGrid",
+            self.tr("完成当前宫格"),
+            osp.join(pjpath, "resource/Save.png"),
+            "",
+        )
+        hbandLayout = QtWidgets.QHBoxLayout()
+        hbandLayout.setObjectName("hbandLayout")
+        hbandLayout.addWidget(self.btnInitGrid)
+        hbandLayout.addWidget(self.btnFinishedGrid)
+        GridRegion.addLayout(hbandLayout)  # 创建宫格
         self.gridTable = QtWidgets.QTableWidget(CentralWidget)
         self.gridTable.horizontalHeader().hide()
         self.gridTable.verticalHeader().hide()
@@ -249,8 +255,8 @@ class Ui_EISeg(object):
             QtWidgets.QHeaderView.Stretch)
         self.gridTable.setObjectName("gridTable")
         self.gridTable.clearContents()
-        self.gridTable.setColumnCount(int(self.gridSelect.currentText()))
-        self.gridTable.setRowCount(int(self.gridSelect.currentText()))
+        self.gridTable.setColumnCount(1)
+        self.gridTable.setRowCount(1)
         GridRegion.addWidget(self.gridTable)
         horizontalLayout.addLayout(GridRegion)
         self.GridDock = p_create_dock("GridDock", self.tr("宫格切换"), widget)
