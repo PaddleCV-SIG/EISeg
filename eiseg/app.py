@@ -619,9 +619,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.setValue("recent_files", files)
 
     def addRecentFile(self, path):
+        path = osp.normcase(path)
         if not osp.exists(path):
             return
         paths = self.settings.value("recent_files", QVariant([]), type=list)
+
         if path not in paths:
             paths.append(path)
         if len(paths) > 15:
@@ -694,14 +696,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         success, res = self.controller.setParam(param_path)
         if success:
             model_dict = {
-                "param_path": param_path,
+                "param_path": osp.normcase(param_path),
                 "model_name": self.controller.modelName,
             }
             if model_dict not in self.recentModels:
                 self.recentModels.append(model_dict)
-                if len(self.recentModels) > 10:
-                    del self.recentModels[0]
-                self.settings.setValue("recent_models", self.recentModels)
+            else:
+                # 移动位置确保自动加载的正确
+                self.recentModels.remove(model_dict)
+                self.recentModels.append(model_dict)
+            if len(self.recentModels) > 10:
+                del self.recentModels[0]
+            self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
             return True
         else:

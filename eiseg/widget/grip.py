@@ -69,7 +69,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         return super(GripItem, self).itemChange(change, value)
 
     def shape(self):
-        s = super(GripItem, self).shape().boundingRect().x() * 3
+        s = super(GripItem, self).shape().boundingRect().x() * 1.2  # 控制激活区域大小
         path = QtGui.QPainterPath()
         path.addRect(QtCore.QRectF(-s, -s, 2 * s, 2 * s))
         return path
