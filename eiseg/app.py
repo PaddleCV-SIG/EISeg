@@ -943,8 +943,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # plt.show()
 
     def openRecentImage(self, file_path):
+        self.saveImage(True)  # 清除
         self.queueEvent(partial(self.loadImage, file_path))
-        self.listFiles.addItems([file_path.replace("\\", "/")])
+        self.listFiles.addItems([osp.normcase(file_path)])
         self.imagePaths.append(file_path)
 
     def openImage(self):
