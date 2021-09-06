@@ -1,5 +1,4 @@
 import os.path as osp
-import re
 from eiseg import pjpath
 from collections import defaultdict
 import json

@@ -1,11 +1,10 @@
 import os.path as osp
-import math
 from functools import partial
 
 from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QDesktopWidget
 
-from qtpy import QtCore, QtWidgets
+from qtpy import QtCore
 from qtpy.QtWidgets import (
     QWidget,
     QLabel,

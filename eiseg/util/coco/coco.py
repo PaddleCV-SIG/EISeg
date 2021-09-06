@@ -1,10 +1,7 @@
 import json
 import time
-import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection
-from matplotlib.patches import Polygon
 import numpy as np
-import copy
 import itertools
 # from . import mask as maskUtils
 import os

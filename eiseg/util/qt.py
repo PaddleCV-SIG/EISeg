@@ -1,7 +1,4 @@
-from math import sqrt
 import os.path as osp
-
-import numpy as np
 
 from eiseg import pjpath
 from qtpy import QtCore

@@ -1,6 +1,5 @@
 import paddle
 import paddle.distributed as dist
-import numpy as np
 
 def get_rank():
     return dist.get_rank()

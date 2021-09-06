@@ -1,6 +1,5 @@
 import yaml
 import os.path as osp
-import os
 
 from eiseg import pjpath
 

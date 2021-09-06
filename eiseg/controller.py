@@ -1,9 +1,7 @@
 import time
 import json
-import paddle
 import cv2
 import numpy as np
-import paddleseg.transforms as T
 from skimage.measure import label
 
 from inference import clicker

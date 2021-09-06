@@ -1,17 +1,14 @@
-from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
-import sys
 import os.path as osp
-from enum import Enum
 from functools import partial
 
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
-from qtpy.QtWidgets import QGraphicsView
 
 from eiseg import pjpath, __APPNAME__
+from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 from models import ModelsNick
-from util import MODELS, Instructions
-from widget import LineItem, GripItem, AnnotationScene, AnnotationView
+from util import MODELS
+from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
 

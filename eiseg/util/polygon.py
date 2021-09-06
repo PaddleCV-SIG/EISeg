@@ -2,7 +2,6 @@ from enum import Enum
 
 import cv2
 from math import sqrt
-import matplotlib.pyplot as plt
 
 
 class Instructions(Enum):

@@ -1,27 +1,25 @@
-from eiseg.util import label
-import math
 import os
+import sys
+import math
 import os.path as osp
 from functools import partial
-import sys
 import warnings
 import json
 from distutils.util import strtobool
-
 import imghdr
+
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
-from qtpy.QtCore import Qt, QFile, QByteArray, QDataStream, QVariant
-import paddle
+from qtpy.QtCore import Qt, QByteArray, QVariant
+
 import cv2
 import numpy as np
-from PIL import Image
 import matplotlib.pyplot as plt
 
 from eiseg import pjpath, __APPNAME__
 from widget import ShortcutWindow, PolygonAnnotation
-from models import EISegModel, ModelsNick
+from models import ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
@@ -96,7 +94,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
         self.detimg = None  # 宫格初始图像
         self.imagesGrid = []  # 图像宫格
-        self.maskGrid = []  # 标签宫格
+        self.masksGrid = []  # 标签宫格
         self.gridCount = None  # (row count, colcount)
         self.gridIndex = None  # (current row, current col, current idx)
 
@@ -1180,6 +1178,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveImage(True)
 
         # 2. 打开新图
+        self.eximgsInit()
         self.loadImage(self.imagePaths[self.currIdx])
         self.listFiles.setCurrentRow(self.currIdx)
         self.setClean()
@@ -1292,16 +1291,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # name, ext = self.imagePaths[self.currIdx].split("/")[-1].split(".")
         # gridpath = osp.join(self.outputDir, (name + "_" + str(index) + "." + ext))
         self.completeLastMask()
-        self.maskGrid[index] = self.getMask()
+        self.masksGrid[index] = self.getMask()
         # 可以完成全部了
-        if all(m is not None for m in self.maskGrid):
+        if all(m is not None for m in self.masksGrid):
             self.btnFinishedGrid.setText(self.tr("完成宫格"))
             self.btnFinishedGrid.clicked.disconnect()
             self.btnFinishedGrid.clicked.connect(self.saveGridLabel)
 
     def saveGridLabel(self):
         h, w = self.detimg.shape[:2]
-        mask = splicing_list(self.maskGrid, (h, w))
+        mask = splicing_list(self.masksGrid, (h, w))
         self.image = self.detimg
         self.controller.image = self.detimg
         self.updateImage(True)
@@ -1458,6 +1457,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setClean()
         self.statusbar.showMessage(self.tr("标签成功保存至") + " " + savePath, 5000)
 
+    def eximgsInit(self):
+        self.gridTable.setRowCount(0)
+        self.gridTable.clearContents()
+        # 清零
+        self.rawimg = None
+        self.detimg = None
+        self.imagesGrid = []
+        self.masksGrid = []
+        self.gridCount = None
+        self.gridIndex = None
+    
     def setClean(self):
         self.isDirty = False
 
@@ -1715,7 +1725,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             grid_col_count = math.ceil(w / 512)
             self.gridCount = (grid_row_count, grid_col_count)
             self.imagesGrid = slide_out(self.detimg, grid_row_count, grid_col_count)
-            self.maskGrid = [None] * len(self.imagesGrid)
+            self.masksGrid = [None] * len(self.imagesGrid)
             self.gridTable.setRowCount(grid_row_count)
             self.gridTable.setColumnCount(grid_col_count)
             # 事件注册

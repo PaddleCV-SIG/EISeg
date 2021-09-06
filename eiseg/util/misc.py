@@ -1,6 +1,6 @@
 import paddle
 import numpy as np
-import pickle
+
 
 def get_dims_with_exclusion(dim, exclude=None):
     dims = list(range(dim))
