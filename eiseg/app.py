@@ -733,6 +733,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 ".",
                 filters,
             )
+        file_path = osp.normcase(file_path)
         if not osp.exists(file_path):
             return
         labelJson = open(file_path, "r").read()
@@ -799,16 +800,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.labelListTable.setColumnWidth(2, 50)
         print("end")
 
-    def clearLabelList(self):
+    def clearLabelList(self, display=True):
         if len(self.controller.labelList) == 0:
             return True
-        res = self.warn(
-            self.tr("清空标签列表?"),
-            self.tr("请确认是否要清空标签列表"),
-            QMessageBox.Yes | QMessageBox.Cancel,
-        )
-        if res == QMessageBox.Cancel:
-            return False
+        if display:
+            res = self.warn(
+                self.tr("清空标签列表?"),
+                self.tr("请确认是否要清空标签列表"),
+                QMessageBox.Yes | QMessageBox.Cancel,
+            )
+            if res == QMessageBox.Cancel:
+                return False
         self.controller.labelList.clear()
         if self.controller:
             self.controller.label_list = []
@@ -943,9 +945,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # plt.show()
 
     def openRecentImage(self, file_path):
+        file_path = osp.normcase(file_path)
         self.saveImage(True)  # 清除
         self.queueEvent(partial(self.loadImage, file_path))
-        self.listFiles.addItems([osp.normcase(file_path)])
+        self.listFiles.addItems([file_path])
         self.imagePaths.append(file_path)
 
     def openImage(self):
@@ -970,9 +973,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if len(file_path) == 0:
             return
+        file_path = osp.normcase(file_path)
         self.saveImage(True)  # 清除
         self.queueEvent(partial(self.loadImage, file_path))
-        self.listFiles.addItems([file_path.replace("\\", "/")])
+        self.listFiles.addItems([file_path])
         self.imagePaths.append(file_path)
 
     def openFolder(self):
@@ -1032,7 +1036,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for p in imagePaths:
             if p not in self.imagePaths:
                 self.imagePaths.append(p)
-                self.listFiles.addItem(p.replace("\\", "/"))
+                self.listFiles.addItem(osp.normcase(p))
 
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
@@ -1682,7 +1686,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not osp.exists(coco_path):
                     coco_path = None
         self.coco = COCO(coco_path)
-        if self.clearLabelList():
+        if self.clearLabelList(False):
             self.controller.labelList = util.LabelList(self.coco.dataset["categories"])
             self.refreshLabelList()
 
