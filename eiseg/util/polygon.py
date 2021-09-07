@@ -20,7 +20,10 @@ def get_polygon(label, sample="Dynamic"):
         polygons = []
         relas = []
         for contour, hierarchy in zip(contours, hierarchys[0]):
-            epsilon = 0.0001 * cv2.arcLength(contour, True) if sample == "Dynamic" else sample
+            epsilon = 0.0005 * cv2.arcLength(contour, True) if sample == "Dynamic" else sample
+            if not isinstance(epsilon, float) and not isinstance(epsilon, int):
+                epsilon = 0
+            print("epsilon:", epsilon)
             out = cv2.approxPolyDP(contour, epsilon, True)
             # 判断自己，如果是子对象就不管自己是谁
             if hierarchy[2] == -1:
