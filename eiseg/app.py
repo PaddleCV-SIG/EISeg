@@ -1686,7 +1686,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not osp.exists(coco_path):
                     coco_path = None
         self.coco = COCO(coco_path)
-        if self.clearLabelList(False):
+        # 避免有coco时不重新加载标签导致报错
+        display_cll = False if coco_path is not None else True
+        if self.clearLabelList(display_cll):
             self.controller.labelList = util.LabelList(self.coco.dataset["categories"])
             self.refreshLabelList()
 
