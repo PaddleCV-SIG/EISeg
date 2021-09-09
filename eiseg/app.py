@@ -142,7 +142,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         ## 按钮点击
         self.btnSave.clicked.connect(self.saveLabel)  # 保存
-        self.listFiles.itemDoubleClicked.connect(self.imageListClicked)  # 标签列表点击
+        self.listFiles.itemDoubleClicked.connect(self.imageListClicked)  # 文件列表点击
         self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
         self.btnAddClass.clicked.connect(self.addLabel)
         self.btnParamsSelect.clicked.connect(self.changeParam)  # 模型参数选择
@@ -661,10 +661,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setModelParam(self, modelName, paramPath):
         if self.changeModel(ModelsNick[modelName][1]):
             self.comboModelSelect.setCurrentText(self.tr(ModelsNick[modelName][0]))  # 更改显示
-            res = self.changeParam(paramPath)
-            if res:
-                return True
-        return False
+            self.changeParam(paramPath)
 
     def changeModel(self, idx: int or str):
         success, res = self.controller.setModel(MODELS[idx].__name__)
@@ -691,12 +688,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 filters,
             )
         if not param_path:
-            return False
-
+            return 
+        param_path = osp.normcase(param_path)
         success, res = self.controller.setParam(param_path)
         if success:
             model_dict = {
-                "param_path": osp.normcase(param_path),
+                "param_path": param_path,
                 "model_name": self.controller.modelName,
             }
             if model_dict not in self.recentModels:
@@ -709,10 +706,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 del self.recentModels[0]
             self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
-            return True
         else:
             self.warnException(res)
-            return False
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:

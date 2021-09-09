@@ -99,6 +99,7 @@ class InteractiveController:
             return False, "模型未设置，请先设置模型"
         try:
             self.model.load_param(paramPath)
+            self.reset_predictor()  # 即刻生效
         except Exception as e:
             return False, str(e)
         return True, "权重设置成功"
