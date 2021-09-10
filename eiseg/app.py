@@ -1309,8 +1309,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         mask = splicing_list(self.masksGrid, (h, w))
         self.image = self.detimg
         self.controller.image = self.detimg
-        self.updateImage(True)
+        self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
+        # 清理刷新  # TODO: 代码重复
+        self.setClean()
+        for p in self.scene.polygon_items[::-1]:
+            p.remove()
+        self.scene.polygon_items = []
+        self.controller.resetLastObject()
+        self.updateImage(True)
+        # TODO: 怎么显示多边形 
 
     def saveLabel(self, saveAs=False, savePath=None, lab_input=None):
         # 1. 需要处于标注状态
