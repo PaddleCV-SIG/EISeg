@@ -1,6 +1,6 @@
 # EISeg
 
-[![Python 3.6](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)
+[![Python 3.6](https://img.shields.io/badge/python-3.6+-orange.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-orange.svg)](LICENSE) ![GitHub Repo stars](https://img.shields.io/github/stars/PaddleCV-SIG/EISeg) ![GitHub forks](https://img.shields.io/github/forks/PaddleCV-SIG/EISeg) [![Downloads](https://static.pepy.tech/personalized-badge/eiseg?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20user)](https://pepy.tech/project/eiseg)
 <!-- [![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/PaddleCV-SIG/iseg/releases) -->
 
 EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智能的交互式分割标注软件。涵盖了高精度和轻量级等不同方向的高质量交互式分割模型，方便开发者快速实现语义及实例标签的标注，降低标注成本。 另外，将EISeg获取到的标注应用到PaddleSeg提供的其他分割模型进行训练，便可得到定制化场景的高精度模型，打通分割任务从数据标注到模型训练及预测的全流程。
@@ -22,7 +22,7 @@ EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智
 
 ### 稳定版
 
-EISeg提供多种安装方式，其中使用[pip](#PIP)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
+稳定版的EISe位于[PaddleSeg](https://github.com/PaddlePaddle/PaddleSeg/tree/release/2.2/contrib/EISeg)官方仓库中，并提供多种安装方式，其中使用[pip](#PIP)和[运行代码](#运行代码)方式可兼容Windows，Mac OS和Linux。为了避免环境冲突，推荐在conda创建的虚拟环境中安装。
 
 版本要求:
 
@@ -71,7 +71,7 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
 
 ### 开发版
 
-本repo下EISeg为开发版，更新频率高，不提供pip包和exe打包版本，可以通过clone代码运行：
+此repo下EISeg为开发版，更新频率高，不提供pip包和exe打包版本，可以通过clone代码运行：
 
 ```shell
 git clone https://github.com/PaddleCV-SIG/EISeg.git
