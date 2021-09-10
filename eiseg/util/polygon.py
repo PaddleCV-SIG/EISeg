@@ -125,6 +125,7 @@ def approx_poly_DP(contour, min_dist=10, ang_err=10):
                 ang_j = _cal_ang(cs[last], cs[j], cs[next])
                 # print(ang_i, ang_j)  # 角度值为-180到+180
                 if abs(ang_i - ang_j) < ang_err:
+                    # TODO: 目前这样很可能删除两个点中在边界的点，这里需要改进一下
                     del cs[j]
                 else:
                     i += 1

@@ -297,6 +297,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "RemovePolygon",
             tr("删除当前选中的多边形"),
         )
+        rm_all_polygon = action(
+            tr("&删除所有多边形"),
+            self.rmAllPolygon,
+            "rm_all_polygon",
+            "RemoveAllPolygon",
+            tr("删除所有的多边形"),
+        )
         largest_component = action(
             tr("&保留最大连通块"),
             self.toggleLargestCC,
@@ -508,6 +515,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             workMenu=(
                 largest_component,
                 del_active_polygon,
+                rm_all_polygon,
                 None,
                 origional_extension,
                 save_pseudo,
@@ -911,6 +919,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
         self.setDirty()
 
+    def rmAllPolygon(self):
+        for p in self.scene.polygon_items[::-1]:
+            p.remove()
+        self.scene.polygon_items = []
+        self.controller.resetLastObject()
+
     def delActivePoint(self):
         for polygon in self.scene.polygon_items:
             polygon.removeFocusPoint()
@@ -1311,12 +1325,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = self.detimg
         self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
-        # 清理刷新  # TODO: 代码重复
-        self.setClean()
-        for p in self.scene.polygon_items[::-1]:
-            p.remove()
-        self.scene.polygon_items = []
-        self.controller.resetLastObject()
+        # 清理刷新
+        self.rmAllPolygon()
         self.updateImage(True)
         # TODO: 怎么显示多边形 
 
@@ -1802,11 +1812,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.setImage(image)
         self.gridIndex = (row, col, idx)
         # 清除与刷新
-        self.setClean()
-        for p in self.scene.polygon_items[::-1]:
-            p.remove()
-        self.scene.polygon_items = []
-        self.controller.resetLastObject()
+        self.rmAllPolygon()
         self.updateImage(True)
 
     def quickHelp(self):

@@ -10,7 +10,7 @@ shortcut:
   del_active_polygon: Backspace
   edit_shortcuts: E
   finish_object: Space
-  grid_ann: ''
+  grid_ann_worker: ''
   label_worker: ''
   largest_component: ''
   load_label: ''
@@ -24,12 +24,15 @@ shortcut:
   quit: ''
   redo: Ctrl+Y
   remote_worker: ''
-  save: ''
+  rm_all_polygon: Shift+Backspace
+  save: Ctrl+S
   save_as: ''
   save_coco: ''
   save_json: ''
   save_label: ''
+  save_matting: ''
   save_pseudo: ''
+  set_matting_background: ''
   set_worker: ''
   turn_next: F
   turn_prev: S

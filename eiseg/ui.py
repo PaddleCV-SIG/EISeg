@@ -96,7 +96,7 @@ class Ui_EISeg(object):
             "btnParamsLoad",
             self.tr("加载网络参数"),
             osp.join(pjpath, "resource/Model.png"),
-            "Ctrl+D",
+            "",
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         horizontalLayout.addLayout(ModelRegion)
@@ -118,7 +118,7 @@ class Ui_EISeg(object):
             "btnSave",
             self.tr("保存"),
             osp.join(pjpath, "resource/Save.png"),
-            "Ctrl+S",
+            "",
         )
         ListRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ListRegion)
