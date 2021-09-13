@@ -1645,10 +1645,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.canvas.scale(1 / self.canvas.zoom_all, 1 / self.canvas.zoom_all)  # 重置缩放
         self.canvas.zoom_all = 1
         # 最佳缩放
-        s_eps = 5e-2
+        s_eps = 0.98
         scr_cont = [
-            self.scrollArea.width() / width - s_eps,
-            self.scrollArea.height() / height - s_eps,
+            (self.scrollArea.width() * s_eps) / width,
+            (self.scrollArea.height() * s_eps) / height,
         ]
         if scr_cont[0] * height > self.scrollArea.height():
             self.canvas.zoom_all = scr_cont[1]
