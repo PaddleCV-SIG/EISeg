@@ -921,9 +921,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def rmAllPolygon(self):
         for p in self.scene.polygon_items[::-1]:
-            p.remove()
-        self.scene.polygon_items = []
-        self.controller.resetLastObject()
+            self.delPolygon(p)
 
     def delActivePoint(self):
         for polygon in self.scene.polygon_items:
