@@ -95,6 +95,11 @@ def _cal_ang(p1, p2, p3):
     return ang
 
 
+# 计算两点距离
+def _cal_dist(p1, p2):
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
 # 边界点简化
 def approx_poly_DP(contour, min_dist=10, ang_err=10):
     # print(contour.shape)  # N, 1, 2
@@ -117,16 +122,20 @@ def approx_poly_DP(contour, min_dist=10, ang_err=10):
     while i < len(cs):
         try:
             j = (i + 1) if (i != len(cs) - 1) else 0
-            if math.sqrt((cs[i][0] - cs[j][0]) ** 2 + \
-                        (cs[i][1] - cs[j][1]) ** 2) < min_dist:
+            if _cal_dist(cs[i], cs[j]) < min_dist:
                 last = (i - 1) if (i != 0) else (len(cs) - 1)
                 next = (j + 1) if (j != len(cs) - 1) else 0
                 ang_i = _cal_ang(cs[last], cs[i], cs[next])
                 ang_j = _cal_ang(cs[last], cs[j], cs[next])
                 # print(ang_i, ang_j)  # 角度值为-180到+180
                 if abs(ang_i - ang_j) < ang_err:
-                    # TODO: 目前这样很可能删除两个点中在边界的点，这里需要改进一下
-                    del cs[j]
+                    # 删除距离两点小的
+                    dist_i = _cal_dist(cs[last], cs[i]) + _cal_dist(cs[i], cs[next])
+                    dist_j = _cal_dist(cs[last], cs[j]) + _cal_dist(cs[j], cs[next])
+                    if dist_j < dist_i:
+                        del cs[j]
+                    else:
+                        del cs[i]
                 else:
                     i += 1
             else:
