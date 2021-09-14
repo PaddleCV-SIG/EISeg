@@ -1636,8 +1636,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def viewZoomed(self, scale):
         self.scene.scale = scale
-        # TODO:目前直接这样使用大图会造成卡顿。把这个地方优化成滚轮完了之后修改
-        self.updateImage()
         # print("self.scene.scale:", self.scene.scale)
         self.scene.updatePolygonSize()
 
@@ -1882,3 +1880,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             print("autosave label finished!")
         # 关闭主窗体退出程序，子窗体也关闭
         sys.exit(0)
+
+    def keyReleaseEvent(self, event):
+        # print(event.key(), Qt.Key_Control)
+        # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
+        # TODO:过大的图还是有一点延迟
+        if event.key() == Qt.Key_Control:
+            self.updateImage()
