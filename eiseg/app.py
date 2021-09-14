@@ -39,6 +39,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     # EDITING：多边形编辑，可以交互式，但是多边形内部不能点
     # ANNING：交互式标注，只能交互式，不能编辑多边形，多边形不接hover
 
+    # table背景颜色
+    BG_COLOR = {
+        "idle": QtGui.QColor(255, 255, 255),
+        "current": QtGui.QColor(192, 220, 243),
+        "finised": QtGui.QColor(185, 185, 225),
+        "overlying": QtGui.QColor(51, 52, 227)}
+
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
@@ -93,9 +100,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO：保存图像较多有没有办法优化
         self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
         self.detimg = None  # 宫格初始图像
+        self.gridInit = False  # 是否初始化了宫格
         self.imagesGrid = []  # 图像宫格
         self.masksGrid = []  # 标签宫格
-        self.gridCount = None  # (row count, colcount)
+        self.gridCount = None  # (row count, col count)
         self.gridIndex = None  # (current row, current col, current idx)
 
         # worker
@@ -882,8 +890,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if col == 0 or col == 1:
             for cl in range(2):
                 for idx in range(len(self.controller.labelList)):
-                    table.item(idx, cl).setBackground(QtGui.QColor(255, 255, 255))
-                table.item(row, cl).setBackground(QtGui.QColor(48, 140, 198))
+                    table.item(idx, cl).setBackground(self.BG_COLOR["idle"])
+                table.item(row, cl).setBackground(self.BG_COLOR["current"])
                 table.item(row, 0).setSelected(True)
             if self.controller:
                 self.controller.setCurrLabelIdx(int(table.item(row, 0).text()))
@@ -1181,26 +1189,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
-        # 1. 检查是否有图可翻，保存标签
-        self.currIdx += delta
-        print("Turn img", self.currIdx, delta, len(self.imagePaths))
-        if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
-            print("------", self.currIdx, len(self.imagePaths))
-            self.currIdx -= delta
-            if delta == 1:
-                self.statusbar.showMessage(self.tr(f"没有后一张图片"))
+        if self.gridInit is False:
+            # 1. 检查是否有图可翻，保存标签
+            self.currIdx += delta
+            print("Turn img", self.currIdx, delta, len(self.imagePaths))
+            if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
+                print("------", self.currIdx, len(self.imagePaths))
+                self.currIdx -= delta
+                if delta == 1:
+                    self.statusbar.showMessage(self.tr(f"没有后一张图片"))
+                else:
+                    self.statusbar.showMessage(self.tr(f"没有前一张图片"))
+                self.saveImage(False)
+                return
             else:
-                self.statusbar.showMessage(self.tr(f"没有前一张图片"))
-            self.saveImage(False)
-            return
-        else:
-            self.saveImage(True)
+                self.saveImage(True)
 
-        # 2. 打开新图
-        self.eximgsInit()
-        self.loadImage(self.imagePaths[self.currIdx])
-        self.listFiles.setCurrentRow(self.currIdx)
-        self.setClean()
+            # 2. 打开新图
+            self.eximgsInit()
+            self.loadImage(self.imagePaths[self.currIdx])
+            self.listFiles.setCurrentRow(self.currIdx)
+            self.setClean()
+        else:
+            self.turnGrid(delta)
 
     def imageListClicked(self):
         if not self.controller:
@@ -1212,6 +1223,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveLabel()
         toRow = self.listFiles.currentRow()
         delta = toRow - self.currIdx
+        self.gridInit = False
+        self.menus.toolBar[0].triggered.disconnect()
+        self.menus.toolBar[0].triggered.connect(self.finishObject)
         self.turnImg(delta)
 
     def finishObject(self):
@@ -1256,17 +1270,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 p.setAnning(isAnning=False)
         self.getMask()
 
-    def completeLastMask(self):
+    def completeLastMask(self, display=True):
         # 返回最后一个标签是否完成，false就是还有带点的
         if not self.controller or self.controller.image is None:
             return True
         if not self.controller.is_incomplete_mask:
             return True
-        res = self.warn(
-            self.tr("完成最后一个目标？"),
-            self.tr("是否完成最后一个目标的标注，不完成不会进行保存。"),
-            QMessageBox.Yes | QMessageBox.Cancel,
-        )
+        res = QMessageBox.Yes
+        if display:
+            res = self.warn(
+                self.tr("完成最后一个目标？"),
+                self.tr("是否完成最后一个目标的标注，不完成不会进行保存。"),
+                QMessageBox.Yes | QMessageBox.Cancel,
+            )
         if res == QMessageBox.Yes:
             self.finishObject()
             self.setDirty()
@@ -1305,11 +1321,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.gridIndex is None:
             return
         row, col, index = self.gridIndex
-        self.gridTable.setItem(row, col, QtWidgets.QTableWidgetItem())
-        self.gridTable.item(row, col).setBackground(QtGui.QColor(185, 185, 225))
+        self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
         # name, ext = self.imagePaths[self.currIdx].split("/")[-1].split(".")
         # gridpath = osp.join(self.outputDir, (name + "_" + str(index) + "." + ext))
-        self.completeLastMask()
+        self.completeLastMask(False)
         self.masksGrid[index] = self.getMask()
         # 可以完成全部了
         if all(m is not None for m in self.masksGrid):
@@ -1486,6 +1501,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 清零
         self.rawimg = None
         self.detimg = None
+        self.gridInit = False
         self.imagesGrid = []
         self.masksGrid = []
         self.gridCount = None
@@ -1744,6 +1760,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def initGrid(self):
         if self.image is not None:
+            self.gridInit = True
             self.detimg = self.image.copy()
             h, w = self.detimg.shape[:2]
             # TODO: 暂定大小512
@@ -1754,13 +1771,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.masksGrid = [None] * len(self.imagesGrid)
             self.gridTable.setRowCount(grid_row_count)
             self.gridTable.setColumnCount(grid_col_count)
+            for r in range(grid_row_count):
+                for c in range(grid_col_count):
+                    self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
+                    self.gridTable.item(r, c).setBackground(self.BG_COLOR["idle"])
+                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)
             # 事件注册
             self.gridTable.cellClicked.connect(self.changeGrid)
             try:
                 self.btnFinishedGrid.clicked.disconnect()
+                self.menus.toolBar[0].triggered.disconnect()  # finish_object
             except:
                 pass
             self.btnFinishedGrid.clicked.connect(self.saveGrid)
+            self.menus.toolBar[0].triggered.connect(self.saveGrid)
         else:
             self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
 
@@ -1805,15 +1829,43 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             pass
 
     def changeGrid(self, row, col):
+        # 清除未保存的切换
+        if self.gridIndex is not None:
+            last_r, last_c, last_i = self.gridIndex
+            if self.masksGrid[last_i] is None:
+                self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["idle"])
+            else:
+                self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["finised"])
+        # 切换到当前
         idx = row * self.gridCount[1] + col
         image = self.imagesGrid[idx]
         plt.imshow(image.astype("uint8"))
         self.image = image
         self.controller.setImage(image)
         self.gridIndex = (row, col, idx)
+        if self.masksGrid[idx] is None:
+            self.gridTable.item(row, col).setBackground(self.BG_COLOR["current"])
+        else:
+            self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
         # 清除与刷新
         self.rmAllPolygon()
         self.updateImage(True)
+
+    def turnGrid(self, delta):
+        # 切换下一个宫格
+        r, c, _ = self.gridIndex if self.gridIndex is not None else (0, -1, -1)
+        c += delta
+        if c >= self.gridCount[1]:
+            c = 0
+            r += 1
+            if r >= self.gridCount[0]:
+                r = 0
+        if c < 0:
+            c = self.gridCount[1] - 1
+            r -= 1
+            if r < 0:
+                r = self.gridCount[0] - 1
+        self.changeGrid(r, c)
 
     def quickHelp(self):
         self.saveImage(True)

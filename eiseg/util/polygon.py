@@ -61,6 +61,7 @@ def get_polygon(label, sample="Dynamic"):
                         # 连接
                         polygons[j].append(polygons[j][0])  # 闭合
                         polygons[j].extend(polygons[i])
+                        # TODO:偶见越界崩溃，待检查
                         polygons[j].append(polygons[i][0])  # 闭合
                         polygons[i] = None
         polygons = list(filter(None, polygons))  # 清除加到外圈的内圈多边形
