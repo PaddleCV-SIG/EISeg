@@ -1775,7 +1775,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for c in range(grid_col_count):
                     self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
                     self.gridTable.item(r, c).setBackground(self.BG_COLOR["idle"])
-                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)
+                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
             # 事件注册
             self.gridTable.cellClicked.connect(self.changeGrid)
             try:
