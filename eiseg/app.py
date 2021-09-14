@@ -1620,7 +1620,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         image = self.controller.get_visualization(
             alpha_blend=self.opacity,
-            click_radius=self.clickRadius,
+            click_radius=max(self.clickRadius, int(self.clickRadius / self.scene.scale)),
         )
         height, width, _ = image.shape
         bytesPerLine = 3 * width
@@ -1636,6 +1636,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def viewZoomed(self, scale):
         self.scene.scale = scale
+        # TODO:目前直接这样使用大图会造成卡顿。把这个地方优化成滚轮完了之后修改
+        self.updateImage()
+        # print("self.scene.scale:", self.scene.scale)
         self.scene.updatePolygonSize()
 
     # 界面缩放重置

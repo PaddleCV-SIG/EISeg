@@ -8,6 +8,7 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
     def __init__(self, parent=None):
         super(AnnotationScene, self).__init__(parent)
         self.creating = False
+        self.scale = 1
         self.polygon_items = []
 
     def updatePolygonSize(self):
