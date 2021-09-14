@@ -713,6 +713,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if len(self.recentModels) > 10:
                 del self.recentModels[0]
             self.settings.setValue("recent_models", self.recentModels)
+            self.statusbar.showMessage(self.tr("已加载模型参数") + " " + param_path, 10000)
             # self.status = self.ANNING
         else:
             self.warnException(res)
