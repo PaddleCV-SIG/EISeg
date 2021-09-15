@@ -5,7 +5,9 @@
 
 EISeg(Efficient Interactive Segmentation)是基于飞桨开发的一个高效智能的交互式分割标注软件。涵盖了高精度和轻量级等不同方向的高质量交互式分割模型，方便开发者快速实现语义及实例标签的标注，降低标注成本。 另外，将EISeg获取到的标注应用到PaddleSeg提供的其他分割模型进行训练，便可得到定制化场景的高精度模型，打通分割任务从数据标注到模型训练及预测的全流程。
 
-![eiseg_demo](docs/gif/eiseg_demo.gif)
+<video width="960" height="540" controls>
+    <source src="https://user-images.githubusercontent.com/71769312/133402262-a4bdf55b-55d0-4dc8-9591-6aae46a6b7b6.mp4" type="video/mp4">
+</video>
 
 ## 模型准备
 

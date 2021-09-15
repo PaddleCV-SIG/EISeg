@@ -8,6 +8,8 @@ import json
 from distutils.util import strtobool
 import imghdr
 
+from matplotlib import colors
+
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
@@ -1064,6 +1066,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path):
         if not path or not osp.exists(path):
             return
+        self.eximgsInit()  # 清除
         file_head, ext = os.path.splitext(path)
         if ext == ".gz":
             ext = os.path.splitext(file_head)[-1] + ext
@@ -1206,7 +1209,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.saveImage(True)
 
             # 2. 打开新图
-            self.eximgsInit()
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
             self.setClean()
@@ -1228,6 +1230,30 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.menus.toolBar[0].triggered.connect(self.finishObject)
         self.turnImg(delta)
 
+    def createPoly(self, curr_polygon, color):
+        if curr_polygon is None:
+            return
+        for points in curr_polygon:
+            if len(points) < 3:
+                continue
+            print(
+                "the id is ", self.controller.labelList[self.currLabelIdx].idx
+            )
+            poly = PolygonAnnotation(
+                self.controller.labelList[self.currLabelIdx].idx,
+                self.controller.image.shape,
+                self.delPolygon,
+                color,
+                color,
+                self.opacity,
+            )
+            poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
+            self.scene.addItem(poly)
+            self.scene.polygon_items.append(poly)
+            for p in points:
+                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+            self.setDirty()
+
     def finishObject(self):
         print("status:", self.status)
         if not self.controller or self.image is None:
@@ -1239,26 +1265,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 # current_mask = current_mask.astype(np.uint8) * 255
                 # polygon = util.get_polygon(current_mask)
                 color = self.controller.labelList[self.currLabelIdx].color
-                for points in curr_polygon:
-                    if len(points) < 3:
-                        continue
-                    print(
-                        "the id is ", self.controller.labelList[self.currLabelIdx].idx
-                    )
-                    poly = PolygonAnnotation(
-                        self.controller.labelList[self.currLabelIdx].idx,
-                        self.controller.image.shape,
-                        self.delPolygon,
-                        color,
-                        color,
-                        self.opacity,
-                    )
-                    poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
-                    self.scene.addItem(poly)
-                    self.scene.polygon_items.append(poly)
-                    for p in points:
-                        poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-                    self.setDirty()
+                self.createPoly(curr_polygon, color)
         # 状态改变
         if self.status == self.EDITING:
             self.anning = True
@@ -1331,18 +1338,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.btnFinishedGrid.setText(self.tr("完成宫格"))
             self.btnFinishedGrid.clicked.disconnect()
             self.btnFinishedGrid.clicked.connect(self.saveGridLabel)
+            self.menus.toolBar[0].triggered.connect(self.saveGridLabel)
 
     def saveGridLabel(self):
+        self.rmAllPolygon()  # 清理
         h, w = self.detimg.shape[:2]
         mask = splicing_list(self.masksGrid, (h, w))
         self.image = self.detimg
         self.controller.image = self.detimg
         self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
-        # 清理刷新
-        self.rmAllPolygon()
+        # 显示多边形
+        curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
+        # TODO: 标签颜色怎么与原来对应？
+        color = self.controller.labelList[self.currLabelIdx].color  # BUG
+        self.createPoly(curr_polygon, color)
+        for p in self.scene.polygon_items:
+            p.setAnning(isAnning=False)
+        # 刷新
         self.updateImage(True)
-        # TODO: 怎么显示多边形 
 
     def saveLabel(self, saveAs=False, savePath=None, lab_input=None):
         # 1. 需要处于标注状态
@@ -1399,7 +1413,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["gray_scale"]:
             if self.rsSave.isChecked() and self.geoinfo is not None:
                 pathHead, _ = osp.splitext(savePath)
-                tifPath = pathHead + ".tif"
+                tifPath = pathHead + "_mask.tif"
                 save_tif(mask_output, self.geoinfo, tifPath)
                 self.geoinfo = None
             else:
@@ -1836,10 +1850,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["idle"])
             else:
                 self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["finised"])
+        self.rmAllPolygon()
         # 切换到当前
         idx = row * self.gridCount[1] + col
         image = self.imagesGrid[idx]
-        plt.imshow(image.astype("uint8"))
         self.image = image
         self.controller.setImage(image)
         self.gridIndex = (row, col, idx)
@@ -1847,8 +1861,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.gridTable.item(row, col).setBackground(self.BG_COLOR["current"])
         else:
             self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
-        # 清除与刷新
-        self.rmAllPolygon()
+            curr_polygon = util.get_polygon(self.masksGrid[idx].astype(np.uint8) * 255)
+            # TODO: 标签颜色怎么与原来对应？
+            color = self.controller.labelList[self.currLabelIdx].color  # BUG
+            self.createPoly(curr_polygon, color)
+            for p in self.scene.polygon_items:
+                p.setAnning(isAnning=False)
+        # 刷新
         self.updateImage(True)
 
     def turnGrid(self, delta):
