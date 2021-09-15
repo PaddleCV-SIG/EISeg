@@ -32,23 +32,33 @@ PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quic
 
 ### 克隆到本地
 
-通过git将PaddleSeg克隆到本地：
+通过git将PaddleSeg克隆到本地，并安装所需要的依赖：
 
 ```shell
 git clone https://github.com/PaddlePaddle/PaddleSeg.git
+cd PaddleSeg\contrib\EISeg 
+pip install –r requirements.txt
 ```
 
-安装好所需环境后，进入EISeg，可通过直接运行eiseg打开EISeg：
+之后可以通过下面三种方法任意之一运行EISeg。
+
+1. 安装EISeg，之后就可以直接通过`eiseg`的指令打开：
 
 ```shell
-cd PaddleSeg\contrib\EISeg
+python setup.py install 
+eiseg
+```
+
+2. 通过直接运行eiseg打开EISeg：
+
+```shell
 python -m eiseg
 ```
 
-或进入eiseg，运行exe.py打开EISeg：
+3. 再进入到eiseg目录，运行exe.py打开EISeg：
 
 ```shell
-cd PaddleSeg\contrib\EISeg\eiseg
+cd eiseg
 python exe.py
 ```
 

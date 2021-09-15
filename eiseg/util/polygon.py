@@ -27,7 +27,7 @@ def get_polygon(label, sample="Dynamic"):
                 epsilon = 0
             # print("epsilon:", epsilon)
             out = cv2.approxPolyDP(contour, epsilon, True)
-            # 自定义边界简化
+            # 自定义边界简化  TODO:感觉这一块还需要再优化
             out = approx_poly_DP(out)
             # 判断自己，如果是子对象就不管自己是谁
             if hierarchy[2] == -1:
@@ -103,7 +103,7 @@ def _cal_dist(p1, p2):
 
 
 # 边界点简化
-def approx_poly_DP(contour, min_dist=10, ang_err=10):
+def approx_poly_DP(contour, min_dist=10, ang_err=5):
     # print(contour.shape)  # N, 1, 2
     cs = [contour[i][0] for i in range(contour.shape[0])]
     ## 1. 先删除夹角接近180度的点
