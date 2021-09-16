@@ -1,14 +1,11 @@
 import os
 import sys
-import math
 import os.path as osp
 from functools import partial
 import warnings
 import json
 from distutils.util import strtobool
 import imghdr
-
-from matplotlib import colors
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -25,7 +22,7 @@ from models import ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
-from util import MODELS, COCO
+from util import MODELS, COCO, Grids
 from util.remotesensing import *
 from util.medical import *
 from util.grid import *
@@ -99,14 +96,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.rsRGB = [0, 0, 0]  # 遥感RGB索引
         self.geoinfo = None
         self.midx = 0  # 医疗切片索引
-        # TODO：保存图像较多有没有办法优化
-        self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
-        self.detimg = None  # 宫格初始图像
-        self.gridInit = False  # 是否初始化了宫格
-        self.imagesGrid = []  # 图像宫格
-        self.masksGrid = []  # 标签宫格
-        self.gridCount = None  # (row count, col count)
-        self.gridIndex = None  # (current row, current col, current idx)
+        self.grids = Grids()  # 宫格
 
         # worker
         self.display_dockwidget = [True, True, True, True, False, False, False]
@@ -174,6 +164,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
         # self.gridSelect.currentIndexChanged.connect(self.gridNumSet)  # 打开宫格
         self.btnInitGrid.clicked.connect(self.initGrid)  # 打开宫格
+        self.btnFinishedGrid.clicked.connect(self.saveGridLabel)
 
     def initActions(self):
         tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
@@ -1078,7 +1069,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 except IndexError:
                     self.rsRGB = [0, 0, 0]
                     image = selec_band(self.rawimg, self.rsRGB)
-                self.update_bandList()
+                self.updateBandList()
             else:
                 self.warn(
                     self.tr("未打开遥感工具"),
@@ -1093,7 +1084,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 except IndexError:
                     self.midx = 0
                     image = slice_img(self.rawimg, self.midx)
-                self.update_slideSld()
+                self.updateSlideSld()
             else:
                 self.warn(
                     self.tr("未打开医疗工具"),
@@ -1192,7 +1183,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
-        if self.gridInit is False:
+        if self.grids.gridInit is False:
             # 1. 检查是否有图可翻，保存标签
             self.currIdx += delta
             print("Turn img", self.currIdx, delta, len(self.imagePaths))
@@ -1225,9 +1216,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveLabel()
         toRow = self.listFiles.currentRow()
         delta = toRow - self.currIdx
-        self.gridInit = False
-        self.menus.toolBar[0].triggered.disconnect()
-        self.menus.toolBar[0].triggered.connect(self.finishObject)
+        self.grids.gridInit = False
         self.turnImg(delta)
 
     def createPoly(self, curr_polygon, color):
@@ -1325,27 +1314,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.annImage.setPixmap(QPixmap())
 
     def saveGrid(self):
-        if self.gridIndex is None:
+        row, col, index = self.grids.gridIndex
+        if self.grids.gridIndex is None:
             return
-        row, col, index = self.gridIndex
         self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
-        # name, ext = self.imagePaths[self.currIdx].split("/")[-1].split(".")
-        # gridpath = osp.join(self.outputDir, (name + "_" + str(index) + "." + ext))
-        self.completeLastMask(False)
-        self.masksGrid[index] = self.getMask()
-        # 可以完成全部了
-        if all(m is not None for m in self.masksGrid):
-            self.btnFinishedGrid.setText(self.tr("完成宫格"))
-            self.btnFinishedGrid.clicked.disconnect()
-            self.btnFinishedGrid.clicked.connect(self.saveGridLabel)
-            self.menus.toolBar[0].triggered.connect(self.saveGridLabel)
+        self.grids.masksGrid[index] = self.getMask()
 
     def saveGridLabel(self):
+        self.saveGrid()  # 先保存当前
         self.rmAllPolygon()  # 清理
-        h, w = self.detimg.shape[:2]
-        mask = splicing_list(self.masksGrid, (h, w))
-        self.image = self.detimg
-        self.controller.image = self.detimg
+        mask = self.grids.splicingList()
+        if mask is False:
+            self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
+            return
+        self.image = self.grids.detimg
+        self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
         # 显示多边形
@@ -1513,13 +1496,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.gridTable.setRowCount(0)
         self.gridTable.clearContents()
         # 清零
-        self.rawimg = None
-        self.detimg = None
-        self.gridInit = False
-        self.imagesGrid = []
-        self.masksGrid = []
-        self.gridCount = None
-        self.gridIndex = None
+        self.grids.reInit()
     
     def setClean(self):
         self.isDirty = False
@@ -1774,15 +1751,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def initGrid(self):
         if self.image is not None:
-            self.gridInit = True
-            self.detimg = self.image.copy()
-            h, w = self.detimg.shape[:2]
-            # TODO: 暂定大小512
-            grid_row_count = math.ceil(h / 512)
-            grid_col_count = math.ceil(w / 512)
-            self.gridCount = (grid_row_count, grid_col_count)
-            self.imagesGrid = slide_out(self.detimg, grid_row_count, grid_col_count)
-            self.masksGrid = [None] * len(self.imagesGrid)
+            grid_row_count, grid_col_count = self.grids.createGrids(self.image)
             self.gridTable.setRowCount(grid_row_count)
             self.gridTable.setColumnCount(grid_col_count)
             for r in range(grid_row_count):
@@ -1792,13 +1761,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
             # 事件注册
             self.gridTable.cellClicked.connect(self.changeGrid)
-            try:
-                self.btnFinishedGrid.clicked.disconnect()
-                self.menus.toolBar[0].triggered.disconnect()  # finish_object
-            except:
-                pass
-            self.btnFinishedGrid.clicked.connect(self.saveGrid)
-            self.menus.toolBar[0].triggered.connect(self.saveGrid)
         else:
             self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
 
@@ -1819,7 +1781,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 w.hide()
 
-    def update_bandList(self):
+    def updateBandList(self):
         bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
         for i in range(len(self.bandCombos)):
             self.bandCombos[i].currentIndexChanged.disconnect()
@@ -1832,7 +1794,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
-    def update_slideSld(self):
+    def updateSlideSld(self):
         C = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
         self.sldMISlide.setMaximum(C)
 
@@ -1844,25 +1806,26 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def changeGrid(self, row, col):
         # 清除未保存的切换
-        if self.gridIndex is not None:
-            last_r, last_c, last_i = self.gridIndex
-            if self.masksGrid[last_i] is None:
+        if self.grids.gridIndex is not None:
+            self.saveGrid()  # 切换时自动保存上一块
+            last_r, last_c, last_i = self.grids.gridIndex
+            if self.grids.masksGrid[last_i] is None:
                 self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["idle"])
             else:
                 self.gridTable.item(last_r, last_c).setBackground(self.BG_COLOR["finised"])
         self.rmAllPolygon()
         # 切换到当前
-        idx = row * self.gridCount[1] + col
-        image = self.imagesGrid[idx]
+        idx = row * self.grids.gridCount[1] + col
+        image = self.grids.imagesGrid[idx]
         self.image = image
         self.controller.setImage(image)
-        self.gridIndex = (row, col, idx)
-        if self.masksGrid[idx] is None:
+        self.grids.gridIndex = (row, col, idx)
+        if self.grids.masksGrid[idx] is None:
             self.gridTable.item(row, col).setBackground(self.BG_COLOR["current"])
         else:
             self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
-            curr_polygon = util.get_polygon(self.masksGrid[idx].astype(np.uint8) * 255)
-            # TODO: 标签颜色怎么与原来对应？
+            curr_polygon = util.get_polygon(self.grids.masksGrid[idx].astype(np.uint8) * 255)
+            # TODO:1.标签颜色怎么与原来对应.2.不创建直接点击宫格就会崩溃
             color = self.controller.labelList[self.currLabelIdx].color  # BUG
             self.createPoly(curr_polygon, color)
             for p in self.scene.polygon_items:
@@ -1872,18 +1835,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def turnGrid(self, delta):
         # 切换下一个宫格
-        r, c, _ = self.gridIndex if self.gridIndex is not None else (0, -1, -1)
+        r, c, _ = self.grids.gridIndex if self.grids.gridIndex is not None else (0, -1, -1)
         c += delta
-        if c >= self.gridCount[1]:
+        if c >= self.grids.gridCount[1]:
             c = 0
             r += 1
-            if r >= self.gridCount[0]:
+            if r >= self.grids.gridCount[0]:
                 r = 0
         if c < 0:
-            c = self.gridCount[1] - 1
+            c = self.grids.gridCount[1] - 1
             r -= 1
             if r < 0:
-                r = self.gridCount[0] - 1
+                r = self.grids.gridCount[0] - 1
         self.changeGrid(r, c)
 
     def quickHelp(self):

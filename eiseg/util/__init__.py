@@ -7,3 +7,4 @@ from .manager import MODELS
 from .language import TransUI
 from .coco.coco import COCO
 from .label import LabelList
+from .grid import Grids

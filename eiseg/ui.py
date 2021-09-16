@@ -233,7 +233,7 @@ class Ui_EISeg(object):
         )
         self.btnFinishedGrid = p_create_button(
             "btnFinishedGrid",
-            self.tr("完成当前宫格"),
+            self.tr("完成宫格"),
             osp.join(pjpath, "resource/Save.png"),
             "",
         )

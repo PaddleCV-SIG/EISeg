@@ -2,7 +2,8 @@ import sys
 import os.path as osp
 
 pjpath = osp.dirname(osp.realpath(__file__))
-sys.path.append(pjpath)
+# sys.path.append(pjpath)
+sys.path.insert(1, pjpath)
 
 __APPNAME__ = "EISeg"
 __VERSION__ = "0.3.0.4"
