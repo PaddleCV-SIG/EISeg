@@ -1321,7 +1321,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.grids.masksGrid[index] = self.getMask()
 
     def saveGridLabel(self):
-        self.saveGrid()  # 先保存当前
+        if self.grids.gridInit is False:
+            return
+        try:
+            self.saveGrid()  # 先保存当前
+        except:
+            pass
         self.rmAllPolygon()  # 清理
         mask = self.grids.splicingList()
         if mask is False:
@@ -1331,10 +1336,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
+        if self.currLabelIdx == -1:
+            return  
         # 显示多边形
         curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-        # TODO: 标签颜色怎么与原来对应？
-        color = self.controller.labelList[self.currLabelIdx].color  # BUG
+        # TODO:标签颜色怎么与原来对应
+        color = self.controller.labelList[self.currLabelIdx].color
         self.createPoly(curr_polygon, color)
         for p in self.scene.polygon_items:
             p.setAnning(isAnning=False)
@@ -1733,6 +1740,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 return
         self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
         self.toggleDockWidgets()
+        self.saveLayout()
 
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
@@ -1825,11 +1833,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         else:
             self.gridTable.item(row, col).setBackground(self.BG_COLOR["overlying"])
             curr_polygon = util.get_polygon(self.grids.masksGrid[idx].astype(np.uint8) * 255)
-            # TODO:1.标签颜色怎么与原来对应.2.不创建直接点击宫格就会崩溃
-            color = self.controller.labelList[self.currLabelIdx].color  # BUG
-            self.createPoly(curr_polygon, color)
-            for p in self.scene.polygon_items:
-                p.setAnning(isAnning=False)
+            if self.currLabelIdx != -1:
+                # TODO:标签颜色怎么与原来对应
+                color = self.controller.labelList[self.currLabelIdx].color
+                self.createPoly(curr_polygon, color)
+                for p in self.scene.polygon_items:
+                    p.setAnning(isAnning=False)
         # 刷新
         self.updateImage(True)
 
@@ -1902,7 +1911,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.restoreState(self.layoutStatus)
         print("Load Layout")
 
-    def closeEvent(self, event):
+
+    def saveLayout(self):
         # 保存界面
         self.settings.setValue("layout_status", QByteArray(self.saveState()))
         self.settings.setValue(
@@ -1912,6 +1922,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.outputDir is not None and len(self.controller.labelList) != 0:
             self.saveLabelList(osp.join(self.outputDir, "autosave_label.txt"))
             print("autosave label finished!")
+
+    def closeEvent(self, event):
+        self.saveLayout()
         # 关闭主窗体退出程序，子窗体也关闭
         sys.exit(0)
 
