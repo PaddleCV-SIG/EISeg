@@ -1346,6 +1346,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for p in self.scene.polygon_items:
             p.setAnning(isAnning=False)
         # 刷新
+        self.grids.gridIndex = None
         self.updateImage(True)
 
     def saveLabel(self, saveAs=False, savePath=None, lab_input=None):

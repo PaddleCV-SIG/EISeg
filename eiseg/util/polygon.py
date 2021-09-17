@@ -59,11 +59,11 @@ def get_polygon(label, sample="Dynamic"):
                         polygons[i] = polygons[i][min_i:]
                         polygons[i].extend(s_pi)
                         # 连接
-                        polygons[j].append(polygons[j][0])  # 闭合
-                        polygons[j].extend(polygons[i])
-                        # TODO:偶见越界崩溃，加了一个判断看后续效果
-                        if len(polygons[i]) != 0:
-                            polygons[j].append(polygons[i][0])  # 闭合
+                        j_connect = polygons[j][0].copy()
+                        i_connect = polygons[i][0].copy()
+                        polygons[j].append(j_connect)  # 外圈闭合
+                        polygons[j].extend(polygons[i])  # 连接内圈
+                        polygons[j].append(i_connect)  # 内圈闭合
                         polygons[i] = None
         polygons = list(filter(None, polygons))  # 清除加到外圈的内圈多边形
         return polygons
@@ -79,8 +79,8 @@ def _find_min_point(i_list, o_list):
     for i in range(len(i_list)):
         for o in range(len(o_list)):
             dis = math.sqrt((i_list[i][0] - o_list[o][0]) ** 2 + \
-                       (i_list[i][1] - o_list[o][1]) ** 2)
-            if dis < min_dis:
+                            (i_list[i][1] - o_list[o][1]) ** 2)
+            if dis <= min_dis:
                 min_dis = dis
                 idx_i = i
                 idx_o = o
