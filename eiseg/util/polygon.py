@@ -20,7 +20,8 @@ def get_polygon(label, sample="Dynamic"):
     if len(contours) != 0:  # 可能出现没有边界的情况
         polygons = []
         relas = []
-        for contour, hierarchy in zip(contours, hierarchys[0]):
+        for idx, (contour, hierarchy) in enumerate(zip(contours, hierarchys[0])):
+            # print(hierarchy)
             # opencv实现边界简化
             epsilon = 0.0005 * cv2.arcLength(contour, True) if sample == "Dynamic" else sample
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
@@ -29,17 +30,8 @@ def get_polygon(label, sample="Dynamic"):
             out = cv2.approxPolyDP(contour, epsilon, True)
             # 自定义边界简化  TODO:感觉这一块还需要再优化
             out = approx_poly_DP(out)
-            # 判断自己，如果是子对象就不管自己是谁
-            if hierarchy[2] == -1:
-                own = None
-            else:
-                if hierarchy[0] == -1 and hierarchy[1] == -1:
-                    own = 0
-                elif hierarchy[0] != -1 and hierarchy[1] == -1:
-                    own = hierarchy[0] - 1
-                else:
-                    own = hierarchy[1] + 1
-            rela = (own,  # own
+            # 给出关系
+            rela = (idx,  # own
                     hierarchy[-1] if hierarchy[-1] != -1 else None)  # parent
             polygon = []
             for p in out:
@@ -47,24 +39,26 @@ def get_polygon(label, sample="Dynamic"):
             polygons.append(polygon)  # 边界
             relas.append(rela)  # 关系
         for i in range(len(relas)):
-            if relas[i][1] != None:  # 有父母
+            if relas[i][1] != None:  # 有父圈
                 for j in range(len(relas)):
-                    if relas[j][0] == relas[i][1]:  # i的父母就是j（i是j的内圈）
-                        min_i, min_o = _find_min_point(polygons[i], polygons[j])
-                        # 改变顺序
-                        s_pj = polygons[j][: min_o]
-                        polygons[j] = polygons[j][min_o:]
-                        polygons[j].extend(s_pj)
-                        s_pi = polygons[i][: min_i]
-                        polygons[i] = polygons[i][min_i:]
-                        polygons[i].extend(s_pi)
-                        # 连接
-                        j_connect = polygons[j][0].copy()
-                        i_connect = polygons[i][0].copy()
-                        polygons[j].append(j_connect)  # 外圈闭合
-                        polygons[j].extend(polygons[i])  # 连接内圈
-                        polygons[j].append(i_connect)  # 内圈闭合
-                        polygons[i] = None
+                    if relas[j][0] == relas[i][1]:  # i的父圈就是j（i是j的子圈）
+                        if polygons[i] is not None and polygons[j] is not None:
+                            min_i, min_o = _find_min_point(polygons[i], polygons[j])
+                            # 改变顺序
+                            s_pj = polygons[j][: min_o]
+                            polygons[j] = polygons[j][min_o:]
+                            polygons[j].extend(s_pj)
+                            s_pi = polygons[i][: min_i]
+                            polygons[i] = polygons[i][min_i:]
+                            polygons[i].extend(s_pi)
+                            # 连接
+                            polygons[j].append(polygons[j][0])  # 外圈闭合
+                            polygons[j].extend(polygons[i])  # 连接内圈
+                            try:  # TODO:这里为什么会越界
+                                polygons[j].append(polygons[i][0])  # 内圈闭合
+                            except:
+                                pass
+                            polygons[i] = None
         polygons = list(filter(None, polygons))  # 清除加到外圈的内圈多边形
         return polygons
     else:
