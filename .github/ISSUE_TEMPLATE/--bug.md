@@ -3,7 +3,7 @@ name: 反馈bug
 about: 反馈使用过程中出现的各种错误
 title: ''
 labels: bug
-assignees: linhandev
+assignees: ''
 
 ---
 
