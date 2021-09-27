@@ -8,7 +8,7 @@ from distutils.util import strtobool
 import imghdr
 
 from qtpy import QtGui, QtCore, QtWidgets
-from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem, QDialog
 from qtpy.QtGui import QImage, QPixmap, QPolygonF, QPen
 from qtpy.QtCore import Qt, QByteArray, QVariant
 
@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from eiseg import pjpath, __APPNAME__
-from widget import ShortcutWindow, PolygonAnnotation
+from widget import ShortcutWindow, PolygonAnnotation, ProgressDialog
 from models import ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
@@ -1055,6 +1055,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.turnImg(0)
 
     def loadImage(self, path):
+        # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
+        # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
+        # class DialogWindow(QDialog, ProgressDialog):
+        #     def __init__(self, parent=None):
+        #         super(DialogWindow, self).__init__(parent)
+        #         self.setupUi(self)
+
+        # dialog = DialogWindow(self)
+        # dialog.show()
+        self.loadImageBase(path)
+        # dialog.close()
+
+    def loadImageBase(self, path):
         if not path or not osp.exists(path):
             return
         self.eximgsInit()  # 清除
@@ -1063,40 +1076,56 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ext = os.path.splitext(file_head)[-1] + ext
         if imghdr.what(path) == "tiff":
             if self.RSDock.isVisible():
-                self.rawimg, self.geoinfo = open_tif(path)
+                self.grids.rawimg, self.geoinfo = open_tif(path)
                 try:
-                    image = selec_band(self.rawimg, self.rsRGB)
+                    image = selec_band(self.grids.rawimg, self.rsRGB)
                 except IndexError:
                     self.rsRGB = [0, 0, 0]
-                    image = selec_band(self.rawimg, self.rsRGB)
+                    image = selec_band(self.grids.rawimg, self.rsRGB)
                 self.updateBandList()
+                self.updateSlideSld(True)
             else:
                 self.warn(
                     self.tr("未打开遥感工具"),
-                    self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"),
-                )
+                    self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"))
                 return
         elif ext == ".nii" or ext == ".nii.gz":
             if self.MIDock.isVisible():
-                self.rawimg = open_nii(path)
+                self.grids.rawimg = open_nii(path)
                 try:
-                    image = slice_img(self.rawimg, self.midx)
+                    image = slice_img(self.grids.rawimg, self.midx)
                 except IndexError:
                     self.midx = 0
-                    image = slice_img(self.rawimg, self.midx)
+                    image = slice_img(self.grids.rawimg, self.midx)
+                self.updateBandList(True)
                 self.updateSlideSld()
             else:
                 self.warn(
                     self.tr("未打开医疗工具"),
-                    self.tr("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"),
-                )
+                    self.tr("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"))
                 return
         else:
             # 1. 读取图片
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
-        self.image = image
-        self.controller.setImage(image)
+            self.updateBandList(True)
+            self.updateSlideSld(True)
+        self.grids.detimg = image
+        thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
+        if resize:
+            self.warn(
+                self.tr("图像过大"),
+                self.tr("图像过大，已压缩显示，若想高品质标注请使用宫格标注功能！"))
+            # 打开宫格功能
+            if self.dock_widgets[-1].isVisible() is False:
+                self.menus.showMenu[-1].setChecked(True)
+                self.display_dockwidget[-1] = True
+                self.dock_widgets[-1].show()
+            self.image = thumbnail
+            self.controller.setImage(thumbnail)
+        else:
+            self.image = image
+            self.controller.setImage(image)
         self.updateImage(True)
 
         # 2. 加载标签
@@ -1337,17 +1366,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller._result_mask = mask
         self.saveLabel(lab_input=mask)
         if self.currLabelIdx == -1:
-            return  
-        # 显示多边形
-        curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-        # TODO:标签颜色怎么与原来对应
-        color = self.controller.labelList[self.currLabelIdx].color
-        self.createPoly(curr_polygon, color)
-        for p in self.scene.polygon_items:
-            p.setAnning(isAnning=False)
-        # 刷新
-        self.grids.gridIndex = None
-        self.updateImage(True)
+            return
+        # TODO：不显示了，图像太大造成卡顿
+        # # 显示多边形
+        # curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
+        # # BUG：标签颜色怎么与原来对应（仍需处理）
+        # color = self.controller.labelList[self.currLabelIdx].color
+        # self.createPoly(curr_polygon, color)
+        # for p in self.scene.polygon_items:
+        #     p.setAnning(isAnning=False)
+        # # 刷新
+        # self.grids.gridIndex = None
+        # self.updateImage(True)
 
     def saveLabel(self, saveAs=False, savePath=None, lab_input=None):
         # 1. 需要处于标注状态
@@ -1746,21 +1776,26 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
-        image = selec_band(self.rawimg, self.rsRGB)
-        self.image = image
-        # if self.rsShow.currentIndex() == 0 else twoPercentLinear(self.image)
-        self.controller.image = image
-        self.updateImage()
+        image = selec_band(self.grids.rawimg, self.rsRGB)
+        self.test_show(image)
 
     def miSlideSet(self):
-        image = slice_img(self.rawimg, self.midx)
-        self.image = image
-        self.controller.image = image
-        self.updateImage()
+        image = slice_img(self.grids.rawimg, self.midx)
+        self.test_show(image)
+
+    def test_show(self, image):
+        self.grids.detimg = image
+        try:
+            thumbnail, _ = get_thumbnail(image)
+            self.image = thumbnail
+            self.controller.image = thumbnail
+            self.updateImage()
+        except:
+            pass
 
     def initGrid(self):
-        if self.image is not None:
-            grid_row_count, grid_col_count = self.grids.createGrids(self.image)
+        if self.grids.detimg is not None:
+            grid_row_count, grid_col_count = self.grids.createGrids(self.grids.detimg)
             self.gridTable.setRowCount(grid_row_count)
             self.gridTable.setColumnCount(grid_col_count)
             for r in range(grid_row_count):
@@ -1790,10 +1825,23 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             else:
                 w.hide()
 
-    def updateBandList(self):
-        bands = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
+    def updateBandList(self, clean=False):
+        if clean:
+            for i in range(len(self.bandCombos)):
+                # TODO：还可以怎么处理
+                try:  # 避免打开jpg后再打开tif报错
+                    self.bandCombos[i].currentIndexChanged.disconnect()
+                except TypeError:
+                    pass
+                self.bandCombos[i].clear()
+                self.bandCombos[i].addItems(["band_1"])
+            return
+        bands = self.grids.rawimg.shape[-1] if len(self.grids.rawimg.shape) == 3 else 1
         for i in range(len(self.bandCombos)):
-            self.bandCombos[i].currentIndexChanged.disconnect()
+            try:  # 避免打开jpg后再打开tif报错
+                self.bandCombos[i].currentIndexChanged.disconnect()
+            except TypeError:
+                pass
             self.bandCombos[i].clear()
             self.bandCombos[i].addItems([("band_" + str(j + 1)) for j in range(bands)])
             try:
@@ -1803,8 +1851,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
-    def updateSlideSld(self):
-        C = self.rawimg.shape[-1] if len(self.rawimg.shape) == 3 else 1
+    def updateSlideSld(self, clean=False):
+        if clean:
+            self.sldMISlide.setMaximum(1)
+            return
+        C = self.grids.rawimg.shape[-1] if len(self.grids.rawimg.shape) == 3 else 1
         self.sldMISlide.setMaximum(C)
 
     def toggleLargestCC(self, on):

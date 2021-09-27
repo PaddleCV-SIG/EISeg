@@ -68,3 +68,15 @@ def stretch(ima, NUMS):
             n += hist[i + bt]
         np.take(lut, ima, out=ima)
         return ima
+
+
+def get_thumbnail(image, range=2000, max_size=1000):
+    h, w = image.shape[:2]
+    resize = False
+    if h >= range or w >= range:
+        if h >= w:
+            image = cv2.resize(image, (int(max_size / h * w), max_size))
+        else:
+            image = cv2.resize(image, (max_size, int(max_size / w * h)))
+        resize = True
+    return image, resize
