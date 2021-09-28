@@ -50,9 +50,6 @@ class EISegModel:
         return params
 
 
-# ModelsNick = {"HRNet18s_OCR48": ["轻量级模型", 0], "HRNet18_OCR64": ["高精度模型", 1]}
-
-
 @MODELS.add_component
 class HRNet18s_OCR48(EISegModel):
     name = "轻量级模型"
@@ -89,6 +86,3 @@ class HRNet18_OCR64(EISegModel):
             with_prev_mask=True,
             cpu_dist_maps=False,  # 目前打包cython有些问题，先默认用False
         )
-
-
-print(MODELS)

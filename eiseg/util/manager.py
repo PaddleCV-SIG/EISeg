@@ -65,11 +65,6 @@ class ComponentManager:
         self._components_dict = dict()
         self._name = name
 
-    # def __enter__(self):
-    #     print("enter")
-    #     self.start = locals()
-    #     print(locals())
-
     def __len__(self):
         return len(self._components_dict)
 
@@ -84,9 +79,7 @@ class ComponentManager:
             return list(self._components_dict.values())[index]
         if index in self._components_dict.keys():
             return self._components_dict[index]
-        print(self.components_dict.values())
         for item in self._components_dict.values():
-            print(item.name)
             if item.name == index:
                 return item
         raise KeyError(f"{self} 中不存在 {index}")

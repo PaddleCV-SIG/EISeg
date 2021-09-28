@@ -27,7 +27,7 @@ from util import MODELS, COCO, Grids
 from util.remotesensing import *
 from util.medical import *
 from util.grid import *
-from plugin.medical.med import dcm_reader
+from plugin.medical import med
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
@@ -158,7 +158,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.scene.addItem(self.annImage)
 
         ## 按钮点击
-        self.btnSave.clicked.connect(self.saveLabel)  # 保存
+        self.btnSave.clicked.connect(self.exportLabel)  # 保存
         self.listFiles.itemDoubleClicked.connect(self.imageListClicked)  # 文件列表点击
         self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
         self.btnAddClass.clicked.connect(self.addLabel)  # 添加标签
@@ -219,14 +219,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         save = action(
             tr("&保存"),
-            self.saveLabel,
+            self.exportLabel,
             "save",
             "Save",
             tr("保存图像标签"),
         )
         save_as = action(
             tr("&另存为"),
-            partial(self.saveLabel, saveAs=True),
+            partial(self.exportLabel, saveAs=True),
             "save_as",
             "SaveAs",
             tr("在指定位置另存为标签"),
@@ -701,6 +701,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.changeModel(modelName):
             self.comboModelSelect.setCurrentText(self.tr(modelName))  # 更改显示
             self.changeParam(paramPath)
+            return True
+        return False
 
     def changeModel(self, idx: int or str):
         # 模型选择下拉菜单传下标，近期模型传名字
@@ -717,7 +719,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not param_path:
             filters = self.tr("Paddle模型权重文件(*.pdparams)")
             start_path = (
-                "."
+                "."  # TODO: 这些打开默认路径换成home dir，感觉默认当前路径会看起来比较迷惑
                 if len(self.recentModels) == 0
                 else osp.dirname(self.recentModels[-1]["param_path"])
             )
@@ -737,16 +739,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 "model_name": self.controller.modelName,
             }
             if model_dict not in self.recentModels:
-                self.recentModels.append(model_dict)
+                self.recentModels.insert(0, model_dict)
             else:
                 # 移动位置确保自动加载的正确
                 self.recentModels.remove(model_dict)
-                self.recentModels.append(model_dict)
+                self.recentModels.insert(0, model_dict)
             if len(self.recentModels) > 10:
-                del self.recentModels[0]
+                del self.recentModels[-1]
             self.settings.setValue("recent_models", self.recentModels)
-            self.statusbar.showMessage(self.tr("已加载模型参数") + " " + param_path, 10000)
-            # self.status = self.ANNING
+            self.statusbar.showMessage(
+                self.tr("已加载") + f" {self.controller.modelName} {param_path}",
+                10000,
+            )
         else:
             self.warnException(res)
 
@@ -754,10 +758,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.recentModels) == 0:
             self.statusbar.showMessage(self.tr("没有最近使用模型信息，请加载模型"), 10000)
             return
-        m = self.recentModels[-1]
-        model = m["model_name"]
-        param_path = m["param_path"]
-        self.setModelParam(model, param_path)
+        self.setModelParam(*self.recentModels[0].values())
 
     # 标签列表
     def importLabelList(self, file_path=None):
@@ -773,35 +774,32 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(file_path):
             return
         labelJson = open(file_path, "r").read()
-        self.controller.readLabel(file_path)
+        self.controller.importLabel(file_path)
         print("Loaded label list:", self.controller.labelList.labelList)
         self.refreshLabelList()
-        self.settings.setValue("label_list_file", file_path)
+        # self.settings.setValue("label_list_file", file_path)
 
-    def exportLabelList(self, auto_save_path=None):
+    def exportLabelList(self, savePath: str = None):
         if len(self.controller.labelList) == 0:
             self.warn(self.tr("没有需要保存的标签"), self.tr("请先添加标签之后再进行保存！"))
             return
-        if auto_save_path is None:
+        if savePath is None:
             filters = self.tr("标签配置文件") + "(*.txt)"
             dlg = QtWidgets.QFileDialog(self, self.tr("保存标签配置文件"), ".", filters)
             dlg.setDefaultSuffix("txt")
             dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
             dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
-            dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
+            # dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
             savePath, _ = dlg.getSaveFileName(
                 self, self.tr("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
             )
-        else:
-            savePath = auto_save_path
-        self.controller.saveLabel(savePath)
+        self.controller.exportLabel(savePath)
         print("Save label list:", self.controller.labelList.labelList, savePath)
-        if auto_save_path is None:
-            self.settings.setValue("label_list_file", savePath)
 
+    # TODO: cleanup
     def addLabel(self):
-        c = self.colorMap.get_color()
         table = self.labelListTable
+        c = self.colorMap.get_color()
         idx = table.rowCount()
         table.insertRow(table.rowCount())
         self.controller.addLabel(idx + 1, "", c)
@@ -834,7 +832,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             2, QtWidgets.QHeaderView.Fixed
         )
         self.labelListTable.setColumnWidth(2, 50)
-        print("end")
 
     def clearLabelList(self, display=True):
         if len(self.controller.labelList) == 0:
@@ -941,6 +938,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
                 if res == QMessageBox.Yes:
                     self.delPolygon(polygon)
+                return
 
     def delPolygon(self, polygon):
         polygon.remove()
@@ -967,6 +965,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         s = self.controller.image.shape
         img = np.zeros([s[0], s[1]])
         # 覆盖顺序，从上往下
+        # TODO: 是标签数值大的会覆盖小的吗?
         len_lab = self.labelListTable.rowCount()
         for i in range(len_lab):
             idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
@@ -980,7 +979,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # plt.imshow(img)
         # plt.show()
 
-    def openImage(self, file_path=None):
+    def openImage(self, file_path: str = None):
+        # BUG: 打开图像的时候filepath是false不是none
         if not isinstance(file_path, str):
             prompts = ["图片", "医学影像"]
             filters = ""
@@ -988,9 +988,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 filters += f"{p} ({' '.join(['*' + f for f in fmts])}) ;; "
             recentPath = self.settings.value("recent_files", [])
             if len(recentPath) == 0:
-                recentPath = "."
+                recentPath = "."  # TODO: 改成 home dir
             else:
-                recentPath = osp.dirname(recentPath[-1])
+                recentPath = osp.dirname(recentPath[0])
             file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择待标注图片") + " - " + __APPNAME__,
@@ -999,9 +999,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(file_path) == 0:  # 用户没有选择，直接关闭窗口
                 return
-        self.queueEvent(partial(self.loadImage, file_path))
+        if not self.loadImage(file_path):
+            return False
         self.listFiles.addItems([file_path])
         self.imagePaths.append(file_path)
+        return True
 
     def openFolder(self):
         # 1. 选择文件夹
@@ -1079,13 +1081,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         path = osp.normcase(path)
         self.saveImage(True)  # 关闭当前图像
         self.eximgsInit()  # 清除  # TODO: 将grid的部分整合到saveImage里
-        # file_head, ext = os.path.splitext(path)
 
         if imghdr.what(path) == "tiff":
             if not self.RSDock.isVisible():
-                self.warn(self.tr("未打开遥感工具"), self.tr("未打开遥感工具，请先在菜单栏-显示中打开遥感设置！"))
-                # TODO: ok直接打开
-                return
+                res = self.warn(
+                    self.tr("未打开遥感工具"),
+                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Cancel:
+                    return False
+                self.toggleWidget(4)
             self.grids.rawimg, self.geoinfo = open_tif(path)
             try:
                 image = selec_band(self.grids.rawimg, self.rsRGB)
@@ -1102,20 +1108,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         if path.endswith(tuple(self.formats[1])):
             if not self.MIDock.isVisible():
-                self.warn(self.tr("未打开医疗工具"), self.tr("未打开医疗工具，请先在菜单栏-显示中打开医疗设置！"))
-                # TODO: 这里直接给一个带ok的，确定直接打开
-                return
+                res = self.warn(
+                    self.tr("未启用医疗组件"),
+                    self.tr("加载医疗影像需启用医疗组件，是否立即启用？"),
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Cancel:
+                    return False
+                self.toggleWidget(5)
 
             # self.grids.rawimg = open_nii(path)
-            self.image = dcm_reader(path)
-            print(self.image.shape)
+            image = med.dcm_reader(path)
             # try:
             #     image = slice_img(self.grids.rawimg, self.midx)
             # except IndexError:
             #     self.midx = 0
             #     image = slice_img(self.grids.rawimg, self.midx)
-            self.updateBandList(True)
-            self.updateSlideSld()
+            # self.updateBandList(True)
+            # self.updateSlideSld()
 
         self.grids.detimg = image
         thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
@@ -1247,7 +1257,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not self.controller:
                 return
         if self.controller.is_incomplete_mask:
-            self.saveLabel()
+            self.exportLabel()
         toRow = self.listFiles.currentRow()
         delta = toRow - self.currIdx
         self.grids.gridInit = False
@@ -1324,7 +1334,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             # 2. 进行保存
             if self.isDirty:
                 if self.actions.auto_save.isChecked():
-                    self.saveLabel()
+                    self.exportLabel()
                 else:
                     res = self.warn(
                         self.tr("保存标签？"),
@@ -1332,7 +1342,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                         QMessageBox.Yes | QMessageBox.Cancel,
                     )
                     if res == QMessageBox.Yes:
-                        self.saveLabel()
+                        self.exportLabel()
                 self.setClean()
             if close:
                 # 3. 清空多边形标注，删掉图片
@@ -1367,7 +1377,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.image = self.grids.detimg
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
-        self.saveLabel(lab_input=mask)
+        self.exportLabel(lab_input=mask)
         if self.currLabelIdx == -1:
             return
         # TODO：不显示了，图像太大造成卡顿
@@ -1382,7 +1392,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # self.grids.gridIndex = None
         # self.updateImage(True)
 
-    def saveLabel(self, saveAs=False, savePath=None, lab_input=None):
+    def exportLabel(self, saveAs=False, savePath=None, lab_input=None):
         # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
             return
@@ -1752,6 +1762,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.refreshLabelList()
 
     def toggleWidget(self, index):
+        # TODO: 输入从数字改成名字
         if index == 4:
             if check_gdal() == False:
                 self.warn(
@@ -1793,21 +1804,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.updateImage()
         except:
             pass
-
-    def initGrid(self):
-        if self.grids.detimg is not None:
-            grid_row_count, grid_col_count = self.grids.createGrids(self.grids.detimg)
-            self.gridTable.setRowCount(grid_row_count)
-            self.gridTable.setColumnCount(grid_col_count)
-            for r in range(grid_row_count):
-                for c in range(grid_col_count):
-                    self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
-                    self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
-                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
-            # 事件注册
-            self.gridTable.cellClicked.connect(self.changeGrid)
-        else:
-            self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
 
     def toggleDockWidgets(self, is_init=False):
         if is_init == True:
@@ -1865,6 +1861,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         except:
             pass
 
+    # 宫格标注
+    def initGrid(self):
+        if self.grids.detimg is not None:
+            grid_row_count, grid_col_count = self.grids.createGrids(self.grids.detimg)
+            self.gridTable.setRowCount(grid_row_count)
+            self.gridTable.setColumnCount(grid_col_count)
+            for r in range(grid_row_count):
+                for c in range(grid_col_count):
+                    self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
+                    self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
+                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
+            # 事件注册
+            self.gridTable.cellClicked.connect(self.changeGrid)
+        else:
+            self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
+
     def changeGrid(self, row, col):
         # 清除未保存的切换
         if self.grids.gridIndex is not None:
@@ -1919,11 +1931,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 r = self.grids.gridCount[0] - 1
         self.changeGrid(r, c)
 
-    def quickStart(self):
-        # TODO: 弹出窗口，直接关了图片感觉不太好
-        self.saveImage(True)
-        self.canvas.setStyleSheet(self.note_style)
-
     @property
     def opacity(self):
         return self.sldOpacity.value() / 100
@@ -1940,6 +1947,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def slideMi(self):
         return self.sldMISlide.value()
 
+    # 弹框
     def warnException(self, e):
         e = str(e)
         title = e.split("。")[0]
@@ -1953,9 +1961,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         msg.setStandardButtons(buttons)
         return msg.exec_()
 
-    def toBeImplemented(self):
-        self.statusbar.showMessage(self.tr("功能尚在开发"))
-
     @property
     def status(self):
         if not self.controller:
@@ -1968,7 +1973,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return self.ANNING
         return self.EDITING
 
-    # 加载界面
+    # 界面布局
     def loadLayout(self):
         self.restoreState(self.layoutStatus)
         print("Load Layout")
@@ -2000,3 +2005,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def reportBug(self):
         webbrowser.open("https://github.com/PaddleCV-SIG/EISeg/issues/new/choose")
+
+    def quickStart(self):
+        # TODO: 弹出窗口，直接关了图片感觉不太好
+        self.saveImage(True)
+        self.canvas.setStyleSheet(self.note_style)
+
+    def toBeImplemented(self):
+        self.statusbar.showMessage(self.tr("功能尚在开发"))

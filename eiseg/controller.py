@@ -31,6 +31,7 @@ class InteractiveController:
         self.predictor_params = predictor_params
         self.prob_thresh = prob_thresh
         self.model = None
+        self.rawImage = None
         self.image = None
         self.predictor = None
         self.clicker = clicker.Clicker()
@@ -110,10 +111,10 @@ class InteractiveController:
         Parameters
         ----------
         image : np.array
-            当前标注的图片
+            当前标注的图片,HWC格式
 
         """
-        self.image = image
+        self.rawImage = self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
         self.resetLastObject()
 
@@ -154,11 +155,11 @@ class InteractiveController:
     def clearLabel(self):
         self.labelList.clear()
 
-    def readLabel(self, path):
-        self.labelList.readLabel(path)
+    def importLabel(self, path):
+        self.labelList.importLabel(path)
 
-    def saveLabel(self, path):
-        self.labelList.saveLabel(path)
+    def exportLabel(self, path):
+        self.labelList.exportLabel(path)
 
     # 点击操作
     def addClick(self, x: int, y: int, is_positive: bool):
