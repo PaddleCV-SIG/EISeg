@@ -129,7 +129,9 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         LabelRegion = QtWidgets.QVBoxLayout()
         LabelRegion.setObjectName("LabelRegion")
-        self.labelListTable = TableWidget(CentralWidget)  # QtWidgets.QTableWidget(CentralWidget)
+        self.labelListTable = TableWidget(
+            CentralWidget
+        )  # QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 铺满
         self.labelListTable.horizontalHeader().setSectionResizeMode(
@@ -176,8 +178,8 @@ class Ui_EISeg(object):
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
         horizontalLayout.addLayout(ShowSetRegion)
-        self.ShowSetDock = p_create_dock("ShowSetDock", self.tr("分割设置"), widget)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
+        self.SegSettingDock = p_create_dock("SegSettingDock", self.tr("分割设置"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.SegSettingDock)
         ## 专业功能区工作区
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
@@ -247,9 +249,11 @@ class Ui_EISeg(object):
         self.gridTable.verticalHeader().hide()
         # 铺满
         self.gridTable.horizontalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch)
+            QtWidgets.QHeaderView.Stretch
+        )
         self.gridTable.verticalHeader().setSectionResizeMode(
-            QtWidgets.QHeaderView.Stretch)
+            QtWidgets.QHeaderView.Stretch
+        )
         self.gridTable.setObjectName("gridTable")
         self.gridTable.clearContents()
         self.gridTable.setColumnCount(1)

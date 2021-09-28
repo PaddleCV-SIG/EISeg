@@ -19,6 +19,7 @@ def main():
         app.installTranslator(trans)
 
     window = APP_EISeg()  # 创建对象
+    window.currLanguage = lang
     window.showMaximized()  # 全屏显示窗口
     # 加载近期模型
     QApplication.processEvents()
