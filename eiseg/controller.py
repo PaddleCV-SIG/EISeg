@@ -65,7 +65,7 @@ class InteractiveController:
         Parameters
         ----------
         modelName : str
-            模型名称，模型类中的__name__属性
+            模型名称，模型类中的name属性
 
         Returns
         -------
@@ -407,7 +407,7 @@ class InteractiveController:
 
     @property
     def modelName(self):
-        return self.model.__name__
+        return self.model.name
 
     @property
     def imageSet(self):

@@ -77,14 +77,19 @@ class ComponentManager:
         name_str = self._name if self._name else self.__class__.__name__
         return "{}:{}".format(name_str, list(self._components_dict.keys()))
 
-    def __getitem__(self, item):
-        if isinstance(item, int):
-            if item >= len(self):
-                raise KeyError(f"指定的下标 {item} 在长度为 {len(self)} 的 {self} 中越界")
-            return list(self._components_dict.values())[item]
-        if item not in self._components_dict.keys():
-            raise KeyError(f"{self} 中不存在 {item}")
-        return self._components_dict[item]
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            if index >= len(self):
+                raise KeyError(f"指定的下标 {index} 在长度为 {len(self)} 的 {self} 中越界")
+            return list(self._components_dict.values())[index]
+        if index in self._components_dict.keys():
+            return self._components_dict[index]
+        print(self.components_dict.values())
+        for item in self._components_dict.values():
+            print(item.name)
+            if item.name == index:
+                return item
+        raise KeyError(f"{self} 中不存在 {index}")
 
     # def __iter__(self):
     #     return list(self._components_dict.values())
