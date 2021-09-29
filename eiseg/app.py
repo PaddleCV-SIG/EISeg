@@ -169,6 +169,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
         self.sldMISlide.valueChanged.connect(self.slideChanged)
+        self.textWw.returnPressed.connect(self.wwChanged)
+        self.textWc.returnPressed.connect(self.wcChanged)
 
         ## 标签列表点击
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
@@ -1076,9 +1078,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path):
         # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
         # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
-        if not path or not osp.exists(path):
+        if not path:
             return
         path = osp.normcase(path)
+        if not osp.exists(path):
+            return
         self.saveImage(True)  # 关闭当前图像
         self.eximgsInit()  # 清除  # TODO: 将grid的部分整合到saveImage里
 
@@ -1102,7 +1106,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.updateSlideSld(True)
 
         if path.endswith(tuple(self.formats[0])):
-            # 1. 读取图片
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
 
@@ -1117,7 +1120,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     return False
                 self.toggleWidget(5)
 
-            # self.grids.rawimg = open_nii(path)
             image = med.dcm_reader(path)
             # try:
             #     image = slice_img(self.grids.rawimg, self.midx)
@@ -1126,6 +1128,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             #     image = slice_img(self.grids.rawimg, self.midx)
             # self.updateBandList(True)
             # self.updateSlideSld()
+            self.image = image
+            self.controller.setImage(image)
 
         self.grids.detimg = image
         thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
@@ -1947,6 +1951,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def slideMi(self):
         return self.sldMISlide.value()
 
+    @property
+    def ww(self):
+        return int(self.textWw.text())
+
+    @property
+    def wc(self):
+        return int(self.textWc.text())
+
     # 弹框
     def warnException(self, e):
         e = str(e)
@@ -2013,3 +2025,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def toBeImplemented(self):
         self.statusbar.showMessage(self.tr("功能尚在开发"))
+
+    # 医疗
+    def wwChanged(self):
+        if not self.controller or self.image is None:
+            return
+        self.textWw.selectAll()
+        self.controller.image = med.windowlize(
+            self.controller.rawImage, self.ww, self.wc
+        )
+        self.updateImage()
+
+    def wcChanged(self):
+        if not self.controller or self.image is None:
+            return
+        self.textWc.selectAll()
+        self.controller.image = med.windowlize(
+            self.controller.rawImage, self.ww, self.wc
+        )
+        # self.updateImage()
