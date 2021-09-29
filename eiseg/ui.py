@@ -6,8 +6,6 @@ from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__
 from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
-
-# from models import ModelsNick
 from models import MODELS
 from util import MODELS
 from widget import AnnotationScene, AnnotationView
@@ -208,7 +206,7 @@ class Ui_EISeg(object):
         horizontalLayout.addLayout(bandRegion)
         self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
-        # TODO：添加医疗功能的工作区
+        ## 医学影像设置
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         MIRegion = QtWidgets.QVBoxLayout()
@@ -219,10 +217,26 @@ class Ui_EISeg(object):
             "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
         )
         self.sldMISlide.setMinimum(1)
+        wwLabel = QtWidgets.QLabel("窗宽")
+        self.textWw = QtWidgets.QLineEdit()
+        self.textWw.setText("200")
+        self.textWw.setValidator(QtGui.QIntValidator())
+        self.textWw.setMaxLength(4)
+
+        wcLabel = QtWidgets.QLabel("窗位")
+        self.textWc = QtWidgets.QLineEdit()
+        self.textWc.setText("0")
+        self.textWc.setValidator(QtGui.QIntValidator())
+        self.textWc.setMaxLength(4)
+
         MIRegion.addLayout(slideRegion)
         MIRegion.addWidget(self.sldMISlide)
+        MIRegion.addWidget(wwLabel)
+        MIRegion.addWidget(self.textWw)
+        MIRegion.addWidget(wcLabel)
+        MIRegion.addWidget(self.textWc)
         horizontalLayout.addLayout(MIRegion)
-        self.MIDock = p_create_dock("RSDock", self.tr("医疗设置"), widget)
+        self.MIDock = p_create_dock("MIDock", self.tr("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
         ## 宫格区域
         widget = QtWidgets.QWidget()

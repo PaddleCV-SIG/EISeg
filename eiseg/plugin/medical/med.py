@@ -28,6 +28,17 @@ def dcm_reader(path):
     return img.astype(np.int32)
 
 
+def windowlize(scan, ww, wc):
+    wl = wc - ww / 2
+    wh = wc + ww / 2
+    res = scan.copy()
+    res = res.astype(np.float32)
+    res = np.clip(res, wl, wh)
+    res = (res - wl) / ww * 255
+    res = res.astype(np.uint8)
+    return res
+
+
 # def open_nii(niiimg_path):
 #     if IPT_SITK == True:
 #         sitk_image = sitk.ReadImage(niiimg_path)
