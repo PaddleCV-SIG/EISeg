@@ -7,6 +7,7 @@ import json
 from distutils.util import strtobool
 import imghdr
 import webbrowser
+import logging
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem, QDialog
@@ -32,6 +33,11 @@ from plugin.medical import med
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
 warnings.filterwarnings("ignore")
+logging.basicConfig(
+    level=logging.CRITICAL,
+    filename=osp.join(pjpath, "log/eiseg.log"),
+    format="%(levelname)s - %(asctime)s - %(message)s",
+)
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -128,7 +134,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.layoutStatus = self.settings.value("layout_status", QByteArray())
 
         # 支持的图像格式
-        # TODO: 挪出去，插件实现
         rs_ext = [".tif", ".tiff"]
         self.formats = [
             [
@@ -136,11 +141,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for fmt in QtGui.QImageReader.supportedImageFormats()
                 if fmt not in rs_ext
             ],  # 自然图像
-            [".dcm", ".DCM"],  # 医学影像
-            rs_ext,  # 遥感影像单独放一下
+            [".dcm"],  # 医学影像
+            rs_ext,  # 遥感影像单独放一下 # RE: 这块是个临时的，formats里一行一个场景就行，到时候各个插件都一个class，每个插件弄一个检测是不是自己格式的method
         ]
-        # TODO: 研究文件选择怎么处理大写拓展名 dcm vs DCM
-        # A: 可以用`osp.normcase`，可以把路径全部都搞成小写
 
         # 初始化action
         self.initActions()
@@ -491,6 +494,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Shortcut",
             tr("编辑软件快捷键"),
         )
+        toggle_logging = action(
+            tr("&调试日志"),
+            self.toggleLogging,
+            "toggle_logging",
+            "",
+            tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
+            checkable=True,
+        )
+        toggle_logging.setChecked(bool(self.settings.value("logging", False)))
+
         self.actions = util.struct()
         for name in dir():
             if name not in start:
@@ -572,6 +585,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 quick_start,
                 report_bug,
                 edit_shortcuts,
+                toggle_logging,
             ),
             toolBar=(
                 finish_object,
@@ -982,7 +996,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def openImage(self, filePath: str = None):
         # BUG: 打开图像的时候filepath是false不是none
-        if not isinstance(file_path, str):
+        if not isinstance(filePath, str):
             prompts = ["图片", "医学影像", "遥感影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
@@ -1000,8 +1014,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
-        file_path = osp.normcase(file_path)  # TODO: 这里试试大小写可以吗
-        if not self.loadImage(file_path):
+        filePath = osp.normcase(filePath)  # TODO: 这里试试大小写可以吗
+        if not self.loadImage(filePath):
             return False
         # 3. 添加记录
         self.listFiles.addItems([filePath])
@@ -1359,43 +1373,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if close:
             self.annImage.setPixmap(QPixmap())
 
-    def saveGrid(self):
-        row, col, index = self.grids.gridIndex
-        if self.grids.gridIndex is None:
-            return
-        self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-        self.grids.masksGrid[index] = self.getMask()
-
-    def saveGridLabel(self):
-        if self.grids.gridInit is False:
-            return
-        try:
-            self.saveGrid()  # 先保存当前
-        except:
-            pass
-        self.delAllPolygon()  # 清理
-        mask = self.grids.splicingList()
-        if mask is False:
-            self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
-            return
-        self.image = self.grids.detimg
-        self.controller.image = self.grids.detimg
-        self.controller._result_mask = mask
-        self.exportLabel(lab_input=mask)
-        if self.currLabelIdx == -1:
-            return
-        # TODO：不显示了，图像太大造成卡顿
-        # # 显示多边形
-        # curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-        # # BUG：标签颜色怎么与原来对应（仍需处理）
-        # color = self.controller.labelList[self.currLabelIdx].color
-        # self.createPoly(curr_polygon, color)
-        # for p in self.scene.polygon_items:
-        #     p.setAnning(isAnning=False)
-        # # 刷新
-        # self.grids.gridIndex = None
-        # self.updateImage(True)
-
     def exportLabel(self, saveAs=False, savePath=None, lab_input=None):
         # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
@@ -1547,7 +1524,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.gridTable.setRowCount(0)
         self.gridTable.clearContents()
         # 清零
-        self.grids.reInit()
+        self.grids.clear()
 
     def setClean(self):
         self.isDirty = False
@@ -1867,26 +1844,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     # 宫格标注
     def initGrid(self):
-        if self.grids.detimg is not None:
-            grid_row_count, grid_col_count = self.grids.createGrids(self.grids.detimg)
-            self.gridTable.setRowCount(grid_row_count)
-            self.gridTable.setColumnCount(grid_col_count)
-            for r in range(grid_row_count):
-                for c in range(grid_col_count):
-                    self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
-                    self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
-                    self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
-            # 事件注册
-            self.gridTable.cellClicked.connect(self.changeGrid)
-        else:
+        if self.grids.detimg is None:
             self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
+        grid_row_count, grid_col_count = self.grids.createGrids(self.grids.detimg)
+        self.gridTable.setRowCount(grid_row_count)
+        self.gridTable.setColumnCount(grid_col_count)
+        for r in range(grid_row_count):
+            for c in range(grid_col_count):
+                self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
+                self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
+                self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
+        # 事件注册
+        self.gridTable.cellClicked.connect(self.changeGrid)
+        # img, lab = self.grids.getGrid(0, 0)
+        # self.controller.setImage(img)
+        # self.updateImage(True)
 
     def changeGrid(self, row, col):
         # 清除未保存的切换
-        if self.grids.gridIndex is not None:
+        # TODO: 这块应该通过dirty判断?
+        if self.grids.currIdx is not None:
             self.saveGrid()  # 切换时自动保存上一块
-            last_r, last_c, last_i = self.grids.gridIndex
-            if self.grids.masksGrid[last_i] is None:
+            last_r, last_c = self.grids.currIdx
+            if self.grids.masksGrid[last_r][last_c] is None:
                 self.gridTable.item(last_r, last_c).setBackground(
                     self.GRID_COLOR["idle"]
                 )
@@ -1896,18 +1876,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
         self.delAllPolygon()
         # 切换到当前
-        idx = row * self.grids.gridCount[1] + col
-        image = self.grids.imagesGrid[idx]
-        self.image = image
+        # idx = row * self.grids.gridCount[1] + col
+        image, mask = self.grids.getGrid(row, col)
         self.controller.setImage(image)
-        self.grids.gridIndex = (row, col, idx)
-        if self.grids.masksGrid[idx] is None:
+        self.grids.currIdx = (row, col)
+        if mask is None:
             self.gridTable.item(row, col).setBackground(self.GRID_COLOR["current"])
         else:
             self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-            curr_polygon = util.get_polygon(
-                self.grids.masksGrid[idx].astype(np.uint8) * 255
-            )
+            curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
             if self.currLabelIdx != -1:
                 # TODO:标签颜色怎么与原来对应
                 color = self.controller.labelList[self.currLabelIdx].color
@@ -1917,11 +1894,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 刷新
         self.updateImage(True)
 
+    def saveGrid(self):
+        row, col = self.grids.currIdx
+        if self.grids.currIdx is None:
+            return
+        self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
+        self.grids.masksGrid[row][col] = self.getMask()
+
     def turnGrid(self, delta):
         # 切换下一个宫格
-        r, c, _ = (
-            self.grids.gridIndex if self.grids.gridIndex is not None else (0, -1, -1)
-        )
+        r, c, _ = self.grids.currIdx if self.grids.currIdx is not None else (0, -1, -1)
         c += delta
         if c >= self.grids.gridCount[1]:
             c = 0
@@ -1934,6 +1916,36 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if r < 0:
                 r = self.grids.gridCount[0] - 1
         self.changeGrid(r, c)
+
+    def saveGridLabel(self):
+        if self.grids.gridInit is False:
+            return
+        try:
+            self.saveGrid()  # 先保存当前
+        except:
+            pass
+        self.delAllPolygon()  # 清理
+        mask = self.grids.splicingList()
+        if mask is False:
+            self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
+            return
+        self.image = self.grids.detimg
+        self.controller.image = self.grids.detimg
+        self.controller._result_mask = mask
+        self.exportLabel(lab_input=mask)
+        if self.currLabelIdx == -1:
+            return
+        # TODO：不显示了，图像太大造成卡顿
+        # # 显示多边形
+        # curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
+        # # BUG：标签颜色怎么与原来对应（仍需处理）
+        # color = self.controller.labelList[self.currLabelIdx].color
+        # self.createPoly(curr_polygon, color)
+        # for p in self.scene.polygon_items:
+        #     p.setAnning(isAnning=False)
+        # # 刷新
+        # self.grids.currIdx = None
+        # self.updateImage(True)
 
     @property
     def opacity(self):
@@ -2022,6 +2034,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO: 弹出窗口，直接关了图片感觉不太好
         self.saveImage(True)
         self.canvas.setStyleSheet(self.note_style)
+
+    def toggleLogging(self):
+        logOn = bool(self.settings.value("logging", False))
+        logOn = not logOn
+        self.actions.toggle_logging.setChecked(logOn)
+        self.settings.setValue("logging", logOn)
+        if logOn:
+            logging.getLogger().setLevel(logging.DEBUG)
+        else:
+            logging.getLogger().setLevel(logging.CRITICAL)
 
     def toBeImplemented(self):
         self.statusbar.showMessage(self.tr("功能尚在开发"))

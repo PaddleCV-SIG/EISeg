@@ -1,72 +1,56 @@
 import math
+from collections import namedtuple
+
 import numpy as np
-from math import ceil
 
 
 class Grids:
-    def __init__(self, grid_size=512, overlap=12):
-        # 1
-        self.grid_size = grid_size
-        self.overlap = overlap
-        # 2
+    def __init__(self, gridSize=(512, 512), overlap=(10, 10)):
+        # TODO: 这个size如果支持长和宽不同有用吗
+        # 可能可以铺满用户屏幕？
+        # self.sizePair = namedtuple("sizePair", "h w")
+        self.gridSize = np.array(gridSize)
+        self.overlap = np.array(overlap)
+        print("_------------", self.gridSize, self.overlap)
+        self.clear()
+
+    def clear(self):
+        # 图像HWC格式
         self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
         self.detimg = None  # 宫格初始图像
         self.gridInit = False  # 是否初始化了宫格
         self.imagesGrid = []  # 图像宫格
         self.masksGrid = []  # 标签宫格
         self.gridCount = None  # (row count, col count)
-        self.gridIndex = None  # (current row, current col, current idx)
-
-    # TODO: 合入init
-    def reInit(self):
-        self.rawimg = None
-        self.detimg = None
-        self.gridInit = False
-        self.imagesGrid = []
-        self.masksGrid = []
-        self.gridCount = None
-        self.gridIndex = None
+        self.currIdx = None  # (current row, current col, current idx)
 
     def createGrids(self, img):
         self.detimg = img.copy()
-        h, w = self.detimg.shape[:2]
-        grid_row_count = math.ceil(h / self.grid_size)
-        grid_col_count = math.ceil(w / self.grid_size)
-        self.gridCount = (grid_row_count, grid_col_count)
-        self.imagesGrid = self.slideOut(grid_row_count, grid_col_count)
-        self.masksGrid = [None] * len(self.imagesGrid)
+        # 计算宫格横纵向格数
+        imgSize = np.array(img.shape[:2])
+        gridCount = np.ceil((imgSize + self.overlap) / self.gridSize)
+        self.gridCount = gridCount = gridCount.astype("uint16")
+        ul = self.overlap - self.gridSize
+        for row in range(gridCount[0]):
+            ul[0] = ul[0] + self.gridSize[0] - self.overlap[0]
+            for col in range(gridCount[1]):
+                ul[1] = ul[1] + self.gridSize[1] - self.overlap[1]
+                lr = ul + self.gridSize
+                print("ul, lr", ul, lr)
+                self.imagesGrid.append(self.detimg[ul[0] : lr[0], ul[1] : lr[1]])
+        self.masksGrid = [[None] * gridCount[1]] * gridCount[0]
         self.gridInit = True
-        return grid_row_count, grid_col_count
+        return list(gridCount)
 
-    def slideOut(self, row, col):
-        """
-        根据输入的图像[H, W, C]和行列数以及索引输出对应图像块
-        index (list)
-        """
-        bimg = self.detimg
-        H, W = bimg.shape[:2]
-        c_size = [ceil(H / row), ceil(W / col)]
-        # 扩展不够的以及重叠部分
-        h_new = row * c_size[0] + self.overlap
-        w_new = col * c_size[1] + self.overlap
-        # 新图
-        tmp = np.zeros((h_new, w_new, bimg.shape[-1]))
-        tmp[: bimg.shape[0], : bimg.shape[1], :] = bimg
-        H, W = tmp.shape[:2]
-        cell_h = c_size[0]
-        cell_w = c_size[1]
-        # 开始分块
-        result = []
-        for i in range(row):
-            for j in range(col):
-                start_h = i * cell_h
-                end_h = start_h + cell_h + self.overlap
-                start_w = j * cell_w
-                end_w = start_w + cell_w + self.overlap
-                result.append(tmp[start_h:end_h, start_w:end_w, :])
-        # for r in result:
-        #     print(r.shape)
-        return result
+    def getGrid(self, row, col):
+        gridIdx = np.array([row, col])
+        ul = gridIdx * self.gridSize - self.overlap
+        ul = ul + self.overlap * (gridIdx == 0)
+        lr = ul + self.gridSize
+        img = self.detimg[ul[0] : lr[0], ul[1] : lr[1]]
+        mask = self.masksGrid[row][col]
+        self.currIdx = (row, col)
+        return img, mask
 
     def splicingList(self):
         """
@@ -81,8 +65,8 @@ class Grids:
                 break
         if h is None and w is None:
             return False
-        row = ceil(raw_size[0] / h)
-        col = ceil(raw_size[1] / w)
+        row = math.ceil(raw_size[0] / h)
+        col = math.ceil(raw_size[1] / w)
         # print('row, col:', row, col)
         result_1 = np.zeros((h * row, w * col), dtype=np.uint8)
         result_2 = result_1.copy()
@@ -104,3 +88,38 @@ class Grids:
                 # print('r, c, k:', i_r, i_c, k)
         result = np.where(result_2 != 0, result_2, result_1)
         return result[: raw_size[0], : raw_size[1]]
+
+
+# g = Grids()
+# g.getGrid(0, 1)
+
+
+# def sliceImage(self, row, col):
+#     """
+#     根据输入的图像[h, w, C]和行列数以及索引输出对应图像块
+#     index (list)
+#     """
+#     bimg = self.detimg
+#     h, w = bimg.shape[:2]
+#     c_size = [math.ceil(h / row), math.ceil(w / col)]
+#     # 扩展不够的以及重叠部分
+#     h_new = row * c_size[0] + self.overlap
+#     w_new = col * c_size[1] + self.overlap
+#     # 新图
+#     tmp = np.zeros((h_new, w_new, bimg.shape[-1]))
+#     tmp[: bimg.shape[0], : bimg.shape[1], :] = bimg
+#     h, w = tmp.shape[:2]
+#     cell_h = c_size[0]
+#     cell_w = c_size[1]
+#     # 开始分块
+#     result = []
+#     for i in range(row):
+#         for j in range(col):
+#             start_h = i * cell_h
+#             end_h = start_h + cell_h + self.overlap
+#             start_w = j * cell_w
+#             end_w = start_w + cell_w + self.overlap
+#             result.append(tmp[start_h:end_h, start_w:end_w, :])
+#     # for r in result:
+#     #     print(r.shape)
+#     return result
