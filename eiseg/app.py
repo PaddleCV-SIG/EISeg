@@ -129,14 +129,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 支持的图像格式
         # TODO: 挪出去，插件实现
+        rs_ext = [".tif", ".tiff"]
         self.formats = [
             [
                 ".{}".format(fmt.data().decode())
                 for fmt in QtGui.QImageReader.supportedImageFormats()
+                if fmt not in rs_ext
             ],  # 自然图像
             [".dcm", ".DCM"],  # 医学影像
+            rs_ext,  # 遥感影像单独放一下
         ]
         # TODO: 研究文件选择怎么处理大写拓展名 dcm vs DCM
+        # A: 可以用`osp.normcase`，可以把路径全部都搞成小写
 
         # 初始化action
         self.initActions()
@@ -966,6 +970,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         img = np.zeros([s[0], s[1]])
         # 覆盖顺序，从上往下
         # TODO: 是标签数值大的会覆盖小的吗?
+        # A: 是列表中上面的覆盖下面的，由于标签可以移动，不一定是大小按顺序覆盖
         len_lab = self.labelListTable.rowCount()
         for i in range(len_lab):
             idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
@@ -982,7 +987,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def openImage(self, file_path: str = None):
         # BUG: 打开图像的时候filepath是false不是none
         if not isinstance(file_path, str):
-            prompts = ["图片", "医学影像"]
+            prompts = ["图片", "医学影像", "遥感影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
                 filters += f"{p} ({' '.join(['*' + f for f in fmts])}) ;; "
@@ -999,6 +1004,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(file_path) == 0:  # 用户没有选择，直接关闭窗口
                 return
+        file_path = osp.normcase(file_path)  # TODO: 这里试试大小写可以吗
         if not self.loadImage(file_path):
             return False
         self.listFiles.addItems([file_path])
@@ -1082,25 +1088,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.saveImage(True)  # 关闭当前图像
         self.eximgsInit()  # 清除  # TODO: 将grid的部分整合到saveImage里
 
-        if imghdr.what(path) == "tiff":
-            if not self.RSDock.isVisible():
-                res = self.warn(
-                    self.tr("未打开遥感工具"),
-                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
-                    QMessageBox.Yes | QMessageBox.Cancel,
-                )
-                if res == QMessageBox.Cancel:
-                    return False
-                self.toggleWidget(4)
-            self.grids.rawimg, self.geoinfo = open_tif(path)
-            try:
-                image = selec_band(self.grids.rawimg, self.rsRGB)
-            except IndexError:
-                self.rsRGB = [0, 0, 0]
-                image = selec_band(self.grids.rawimg, self.rsRGB)
-            self.updateBandList()
-            self.updateSlideSld(True)
-
+        # 直接if会报错，因为打开遥感图像后多波段不存在，现在把遥感图像的单独抽出来了
         if path.endswith(tuple(self.formats[0])):
             # 1. 读取图片
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
@@ -1127,6 +1115,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             # self.updateBandList(True)
             # self.updateSlideSld()
 
+        if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
+            if not self.RSDock.isVisible():
+                res = self.warn(
+                    self.tr("未打开遥感工具"),
+                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Cancel:
+                    return False
+                self.toggleWidget(4)
+            self.grids.rawimg, self.geoinfo = open_tif(path)
+            try:
+                image = selec_band(self.grids.rawimg, self.rsRGB)
+            except IndexError:
+                self.rsRGB = [0, 0, 0]
+                image = selec_band(self.grids.rawimg, self.rsRGB)
+            self.updateBandList()
+            self.updateSlideSld(True)
+
         self.grids.detimg = image
         thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
         if resize:
@@ -1148,6 +1155,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.addRecentFile(path)
         self.imagePath = path
         # self.status = self.ANNING
+        return True
 
     def loadLabel(self, imgPath):
         if imgPath == "":
