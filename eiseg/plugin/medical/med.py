@@ -17,13 +17,10 @@ if check_sitk:
 
 
 def dcm_reader(path):
-    print(path)
     reader = sitk.ImageSeriesReader()
     reader.SetFileNames([path])
     image = reader.Execute()
-    # print("image", image, type(image))
     img = sitk.GetArrayFromImage(image)
-    print(img.shape, type(img))
     img = np.transpose(img, [1, 2, 0])
     return img.astype(np.int32)
 
@@ -36,6 +33,8 @@ def windowlize(scan, ww, wc):
     res = np.clip(res, wl, wh)
     res = (res - wl) / ww * 255
     res = res.astype(np.uint8)
+    res = cv2.cvtColor(res, cv2.COLOR_GRAY2BGR)
+
     return res
 
 

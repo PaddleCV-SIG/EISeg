@@ -731,30 +731,30 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 start_path,
                 filters,
             )
-        if not param_path:
+        if not osp.exists(param_path):
             return
         param_path = osp.normcase(param_path)
         success, res = self.controller.setParam(param_path)
-        if success:
-            model_dict = {
-                "param_path": param_path,
-                "model_name": self.controller.modelName,
-            }
-            if model_dict not in self.recentModels:
-                self.recentModels.insert(0, model_dict)
-            else:
-                # 移动位置确保自动加载的正确
-                self.recentModels.remove(model_dict)
-                self.recentModels.insert(0, model_dict)
-            if len(self.recentModels) > 10:
-                del self.recentModels[-1]
-            self.settings.setValue("recent_models", self.recentModels)
-            self.statusbar.showMessage(
-                self.tr("已加载") + f" {self.controller.modelName} {param_path}",
-                10000,
-            )
-        else:
+
+        if not success:
             self.warnException(res)
+            return
+
+        model_dict = {
+            "param_path": param_path,
+            "model_name": self.controller.modelName,
+        }
+        # 如果已有记录删掉，保证下次加载是这个
+        if model_dict in self.recentModels:
+            self.recentModels.remove(model_dict)
+        self.recentModels.insert(0, model_dict)
+        if len(self.recentModels) > 10:
+            del self.recentModels[-1]
+        self.settings.setValue("recent_models", self.recentModels)
+        self.statusbar.showMessage(
+            self.tr("已加载") + f" {self.controller.modelName} {param_path}",
+            10000,
+        )
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
@@ -763,23 +763,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setModelParam(*self.recentModels[0].values())
 
     # 标签列表
-    def importLabelList(self, file_path=None):
-        if file_path is None:
+    def importLabelList(self, filePath=None):
+        if filePath is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
-            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择标签配置文件路径") + " - " + __APPNAME__,
                 ".",
                 filters,
             )
-        file_path = osp.normcase(file_path)
-        if not osp.exists(file_path):
+        filePath = osp.normcase(filePath)
+        if not osp.exists(filePath):
             return
-        labelJson = open(file_path, "r").read()
-        self.controller.importLabel(file_path)
-        print("Loaded label list:", self.controller.labelList.labelList)
+        self.controller.importLabel(filePath)
+        # print("Loaded label list:", self.controller.labelList.labelList)
         self.refreshLabelList()
-        # self.settings.setValue("label_list_file", file_path)
 
     def exportLabelList(self, savePath: str = None):
         if len(self.controller.labelList) == 0:
@@ -791,12 +789,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             dlg.setDefaultSuffix("txt")
             dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
             dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
-            # dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
             savePath, _ = dlg.getSaveFileName(
                 self, self.tr("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
             )
         self.controller.exportLabel(savePath)
-        print("Save label list:", self.controller.labelList.labelList, savePath)
 
     # TODO: cleanup
     def addLabel(self):
@@ -953,7 +949,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setDirty()
 
     def delAllPolygon(self):
-        for p in self.scene.polygon_items[::-1]:
+        for p in self.scene.polygon_items:
             self.delPolygon(p)
 
     def delActivePoint(self):
@@ -965,9 +961,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller or self.controller.image is None:
             return
         s = self.controller.image.shape
-        img = np.zeros([s[0], s[1]])
-        # 覆盖顺序，从上往下
-        # TODO: 是标签数值大的会覆盖小的吗?
+        pesudo = np.zeros([s[0], s[1]])
+        # 按照标签列表从上往下的顺序，下面的会覆盖上面的
         len_lab = self.labelListTable.rowCount()
         for i in range(len_lab):
             idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
@@ -975,15 +970,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             for poly in self.scene.polygon_items:
                 if poly.labelIndex == idx:
                     pts = np.int32([np.array(poly.scnenePoints)])
-                    cv2.fillPoly(img, pts=pts, color=idx)
-        # self.controller.result_mask = img
-        return img
-        # plt.imshow(img)
-        # plt.show()
+                    cv2.fillPoly(pesudo, pts=pts, color=idx)
+        return pesudo
 
-    def openImage(self, file_path: str = None):
+    def openImage(self, filePath: str = None):
         # BUG: 打开图像的时候filepath是false不是none
-        if not isinstance(file_path, str):
+        # 1. 如果没有指定图像路径，弹框让用户选图像
+        if not isinstance(filePath, str):
             prompts = ["图片", "医学影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
@@ -993,36 +986,39 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 recentPath = "."  # TODO: 改成 home dir
             else:
                 recentPath = osp.dirname(recentPath[0])
-            file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择待标注图片") + " - " + __APPNAME__,
                 recentPath,
                 filters,
             )
-            if len(file_path) == 0:  # 用户没有选择，直接关闭窗口
+            if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
-        if not self.loadImage(file_path):
+        # 2. 读取图像
+        if not self.loadImage(filePath):
             return False
-        self.listFiles.addItems([file_path])
-        self.imagePaths.append(file_path)
+        # 3. 添加记录
+        self.listFiles.addItems([filePath])
+        self.imagePaths.append(filePath)
         return True
 
-    def openFolder(self):
-        # 1. 选择文件夹
-        recentPath = self.settings.value("recent_files", [])
-        if len(recentPath) == 0:
-            recentPath = "."
-        else:
-            recentPath = osp.dirname(recentPath[-1])
-        self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
-            recentPath,
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
-        if len(self.inputDir) == 0:
-            return
+    def openFolder(self, inputDir: str = None):
+        # 1. 如果没传文件夹，弹框让用户选
+        if not isinstance(inputDir, str):
+            recentPath = self.settings.value("recent_files", [])
+            if len(recentPath) == 0:
+                recentPath = "."
+            else:
+                recentPath = osp.dirname(recentPath[-1])
+            inputDir = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
+                recentPath,
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks,
+            )
+            if not osp.exists(inputDir):
+                return
 
         # 2. 关闭当前图片，清空文件列表
         self.saveImage(close=True)
@@ -1031,17 +1027,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 3. 扫描文件夹下所有图片
         # 3.1 获取所有文件名
-        imagePaths = os.listdir(self.inputDir)
+        imagePaths = os.listdir(inputDir)
         exts = tuple(f for fmts in self.formats for f in fmts)
         imagePaths = [n for n in imagePaths if n.endswith(exts)]
+        imagePaths.sort()
         if len(imagePaths) == 0:
             return
         # 3.2 设置默认输出路径为文件夹下的 label 文件夹
-        opd = osp.join(self.inputDir, "label")
+        opd = osp.join(inputDir, "label")
         self.outputDir = opd
         if not osp.exists(opd):
             os.makedirs(opd)
-        # 3.3 有重名标签都保留原来拓展名
+        # 3.3 有重名图片，标签保留原来拓展名
         names = []
         for name in imagePaths:
             name = osp.splitext(name)[0]
@@ -1049,11 +1046,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 names.append(name)
             else:
                 self.toggleOrigExt(True)
-        imagePaths = [osp.join(self.inputDir, n) for n in imagePaths]
+                break
+        imagePaths = [osp.join(inputDir, n) for n in imagePaths]
         for p in imagePaths:
-            if p not in self.imagePaths:
-                self.imagePaths.append(p)
-                self.listFiles.addItem(osp.normcase(p))
+            self.imagePaths.append(p)
+            self.listFiles.addItem(osp.normcase(p))
 
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
@@ -1061,6 +1058,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.imagePaths) != 0:
             self.currIdx = 0
             self.turnImg(0)
+        self.inputDir = inputDir
 
     # def loadImage(self, path):
     # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
@@ -1121,15 +1119,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.toggleWidget(5)
 
             image = med.dcm_reader(path)
-            # try:
-            #     image = slice_img(self.grids.rawimg, self.midx)
-            # except IndexError:
-            #     self.midx = 0
-            #     image = slice_img(self.grids.rawimg, self.midx)
-            # self.updateBandList(True)
-            # self.updateSlideSld()
-            self.image = image
-            self.controller.setImage(image)
+            self.controller.rawImage = self.image = image
+            print("wwwc", self.ww, self.wc)
+            image = med.windowlize(image, self.ww, self.wc)
 
         self.grids.detimg = image
         thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
@@ -1565,7 +1557,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 QtWidgets.QFileDialog.ShowDirsOnly
                 | QtWidgets.QFileDialog.DontResolveSymlinks,
             )
-        if len(outputDir) == 0 or not osp.exists(outputDir):
+        if not osp.exists(outputDir):
             return False
         self.settings.setValue("output_dir", outputDir)
         self.outputDir = outputDir

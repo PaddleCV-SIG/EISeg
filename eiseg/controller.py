@@ -114,7 +114,7 @@ class InteractiveController:
             当前标注的图片,HWC格式
 
         """
-        self.rawImage = self.image = image
+        self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
         self.resetLastObject()
 
