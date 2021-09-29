@@ -1,4 +1,3 @@
-from paddle.fluid.layers.rnn import dynamic_decode
 from .base import BasePredictor
 from .brs import InputBRSPredictor, FeatureBRSPredictor, HRNetFeatureBRSPredictor
 from .brs_functors import InputOptimizer, ScaleBiasOptimizer
@@ -8,7 +7,7 @@ from model.is_hrnet_model import HRNetModel
 
 def get_predictor(net, brs_mode,
                   prob_thresh=0.49,
-                  with_flip=True,
+                  with_flip=False,  # 加快计算
                   zoom_in_params=dict(),
                   predictor_params=None,
                   brs_opt_func_params=None,

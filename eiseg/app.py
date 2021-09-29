@@ -72,15 +72,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             predictor_params={
                 # 'brs_mode': 'f-BRS-B',
                 "brs_mode": "NoBRS",
-                "prob_thresh": 0.5,
+                # "prob_thresh": 0.5,
                 "zoom_in_params": {
                     "skip_clicks": -1,
                     "target_size": (400, 400),
                     "expansion_ratio": 1.4,
                 },
                 "predictor_params": {"net_clicks_limit": None, "max_size": 800},
-                "brs_opt_func_params": {"min_iou_diff": 0.001},
-                "lbfgs_params": {"maxfun": 20},
+                # "brs_opt_func_params": {"min_iou_diff": 0.001},
+                # "lbfgs_params": {"maxfun": 20},
             },
             prob_thresh=self.segThresh,
         )
@@ -129,14 +129,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 支持的图像格式
         # TODO: 挪出去，插件实现
+        rs_ext = [".tif", ".tiff"]
         self.formats = [
             [
                 ".{}".format(fmt.data().decode())
                 for fmt in QtGui.QImageReader.supportedImageFormats()
+                if fmt not in rs_ext
             ],  # 自然图像
             [".dcm", ".DCM"],  # 医学影像
+            rs_ext,  # 遥感影像单独放一下
         ]
         # TODO: 研究文件选择怎么处理大写拓展名 dcm vs DCM
+        # A: 可以用`osp.normcase`，可以把路径全部都搞成小写
 
         # 初始化action
         self.initActions()
@@ -962,9 +966,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         s = self.controller.image.shape
         pesudo = np.zeros([s[0], s[1]])
-        # 按照标签列表从上往下的顺序，下面的会覆盖上面的
+        # 覆盖顺序，从上往下
+        # TODO: 是标签数值大的会覆盖小的吗?
+        # A: 是列表中上面的覆盖下面的，由于标签可以移动，不一定是大小按顺序覆盖
+        # RE: 我们做医学的时候覆盖比较多，感觉一般是数值大的标签覆盖数值小的标签。按照上面覆盖下面的话可能跟常见的情况正好是反过来的，感觉可能从下往上覆盖会比较好
         len_lab = self.labelListTable.rowCount()
-        for i in range(len_lab):
+        for i in range(len_lab - 1, -1, -1):
             idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
             color = self.controller.labelList.getLabelById(idx).color
             for poly in self.scene.polygon_items:
@@ -975,9 +982,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def openImage(self, filePath: str = None):
         # BUG: 打开图像的时候filepath是false不是none
-        # 1. 如果没有指定图像路径，弹框让用户选图像
-        if not isinstance(filePath, str):
-            prompts = ["图片", "医学影像"]
+        if not isinstance(file_path, str):
+            prompts = ["图片", "医学影像", "遥感影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
                 filters += f"{p} ({' '.join(['*' + f for f in fmts])}) ;; "
@@ -994,8 +1000,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
-        # 2. 读取图像
-        if not self.loadImage(filePath):
+        file_path = osp.normcase(file_path)  # TODO: 这里试试大小写可以吗
+        if not self.loadImage(file_path):
             return False
         # 3. 添加记录
         self.listFiles.addItems([filePath])
@@ -1084,25 +1090,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.saveImage(True)  # 关闭当前图像
         self.eximgsInit()  # 清除  # TODO: 将grid的部分整合到saveImage里
 
-        if imghdr.what(path) == "tiff":
-            if not self.RSDock.isVisible():
-                res = self.warn(
-                    self.tr("未打开遥感工具"),
-                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
-                    QMessageBox.Yes | QMessageBox.Cancel,
-                )
-                if res == QMessageBox.Cancel:
-                    return False
-                self.toggleWidget(4)
-            self.grids.rawimg, self.geoinfo = open_tif(path)
-            try:
-                image = selec_band(self.grids.rawimg, self.rsRGB)
-            except IndexError:
-                self.rsRGB = [0, 0, 0]
-                image = selec_band(self.grids.rawimg, self.rsRGB)
-            self.updateBandList()
-            self.updateSlideSld(True)
-
+        # 直接if会报错，因为打开遥感图像后多波段不存在，现在把遥感图像的单独抽出来了
         if path.endswith(tuple(self.formats[0])):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
@@ -1122,6 +1110,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.rawImage = self.image = image
             print("wwwc", self.ww, self.wc)
             image = med.windowlize(image, self.ww, self.wc)
+
+        if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
+            if not self.RSDock.isVisible():
+                res = self.warn(
+                    self.tr("未打开遥感工具"),
+                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
+                    QMessageBox.Yes | QMessageBox.Cancel,
+                )
+                if res == QMessageBox.Cancel:
+                    return False
+                self.toggleWidget(4)
+            self.grids.rawimg, self.geoinfo = open_tif(path)
+            try:
+                image = selec_band(self.grids.rawimg, self.rsRGB)
+            except IndexError:
+                self.rsRGB = [0, 0, 0]
+                image = selec_band(self.grids.rawimg, self.rsRGB)
+            self.updateBandList()
+            self.updateSlideSld(True)
 
         self.grids.detimg = image
         thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
@@ -1144,6 +1151,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.addRecentFile(path)
         self.imagePath = path
         # self.status = self.ANNING
+        return True
 
     def loadLabel(self, imgPath):
         if imgPath == "":
