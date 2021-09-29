@@ -21,10 +21,11 @@ def dcm_reader(path):
     reader = sitk.ImageSeriesReader()
     reader.SetFileNames([path])
     image = reader.Execute()
-    print("image", image, type(image))
+    # print("image", image, type(image))
     img = sitk.GetArrayFromImage(image)
     print(img.shape, type(img))
-    return img
+    img = np.transpose(img, [1, 2, 0])
+    return img.astype(np.int32)
 
 
 # def open_nii(niiimg_path):

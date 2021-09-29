@@ -46,7 +46,8 @@ class LabelList(object):
             seq = int(seq)
         return seq
 
-    def readLabel(self, path):
+    def importLabel(self, path):
+        path = osp.normcase(path)
         if not osp.exists(path):
             return []
         with open(path, "r", encoding="utf-8") as f:
@@ -61,7 +62,8 @@ class LabelList(object):
             labelList.append(label)
         self.labelList = labelList
 
-    def saveLabel(self, path):
+    def exportLabel(self, path):
+        path = osp.normcase(path)
         print("save label", self.labelList, path)
         if not path or not osp.exists(osp.dirname(path)):
             print("label path don't exist")

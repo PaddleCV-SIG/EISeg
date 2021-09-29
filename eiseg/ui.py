@@ -6,7 +6,9 @@ from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__
 from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
-from models import ModelsNick
+
+# from models import ModelsNick
+from models import MODELS
 from util import MODELS
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
@@ -88,7 +90,7 @@ class Ui_EISeg(object):
         # labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
         # ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
-        combo.addItems([self.tr(ModelsNick[m.__name__][0]) for m in MODELS])
+        combo.addItems([self.tr(m.name) for m in MODELS])
         self.comboModelSelect = combo
         ModelRegion.addWidget(self.comboModelSelect)
         # 网络参数

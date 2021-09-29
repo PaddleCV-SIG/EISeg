@@ -36,7 +36,7 @@ class EISegModel:
             return None
 
     def get_param(self, param_path):
-        print("param_path", self.__name__, param_path)
+        print("param_path", self.name, param_path)
         if param_path is None or not osp.exists(param_path):
             raise Exception(f"权重路径{param_path}不存在。请指定正确的模型路径")
         params = paddle.load(param_path)
@@ -50,12 +50,9 @@ class EISegModel:
         return params
 
 
-ModelsNick = {"HRNet18s_OCR48": ["轻量级模型", 0],
-              "HRNet18_OCR64": ["高精度模型", 1]}
-
 @MODELS.add_component
 class HRNet18s_OCR48(EISegModel):
-    __name__ = "HRNet18s_OCR48"
+    name = "轻量级模型"
 
     def create_model(self):
         self.model = HRNetModel(
@@ -74,7 +71,7 @@ class HRNet18s_OCR48(EISegModel):
 
 @MODELS.add_component
 class HRNet18_OCR64(EISegModel):
-    __name__ = "HRNet18_OCR64"
+    name = "高精度模型"
 
     def create_model(self):
         self.model = HRNetModel(
