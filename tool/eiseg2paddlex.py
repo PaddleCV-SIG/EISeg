@@ -58,6 +58,7 @@ def Eiseg2Semantic(save_folder, imgs_folder, lab_folder=None, split_rate=0.9):
     with open(label_path, "r") as rf:
         with open(save_label_path, "w") as wf:
             tmps = rf.readlines()
+            wf.write("background\n")
             for i in range(len(tmps)):
                 lab = tmps[i].split(" ")[1]
                 wf.write(lab + "\n")
@@ -84,16 +85,6 @@ def Eiseg2Semantic(save_folder, imgs_folder, lab_folder=None, split_rate=0.9):
                     ef.write(new_img_path + " " + new_lab_path + "\n")
     print("===== create data list finished! =====")
     print("===== all done! =====")
-
-
-# TODO: 实例分割
-def Eiseg2Instance():
-    pass
-
-
-# TODO: 目标检测
-def Eiseg2Detection():
-    pass
 
 
 # 测试
