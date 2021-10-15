@@ -1,3 +1,5 @@
+English | [简体中文](README.md)
+
 # EISeg
 
 [![Python 3.6](https://img.shields.io/badge/python-3.6+-orange.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-orange.svg)](LICENSE) ![GitHub Repo stars](https://img.shields.io/github/stars/PaddleCV-SIG/EISeg) ![GitHub forks](https://img.shields.io/github/forks/PaddleCV-SIG/EISeg) [![Downloads](https://static.pepy.tech/personalized-badge/eiseg?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20user)](https://pepy.tech/project/eiseg)
