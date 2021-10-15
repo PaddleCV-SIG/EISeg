@@ -33,9 +33,13 @@ from plugin.medical import med
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
 warnings.filterwarnings("ignore")
+
+log_folder = osp.join(pjpath, "log")
+if not osp.exists(log_folder):
+    os.mkdir(log_folder)
 logging.basicConfig(
     level=logging.CRITICAL,
-    filename=osp.join(pjpath, "log/eiseg.log"),
+    filename=osp.join(log_folder, "eiseg.log"),
     format="%(levelname)s - %(asctime)s - %(message)s",
 )
 
@@ -1014,7 +1018,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
-        filePath = osp.normcase(filePath)  # TODO: 这里试试大小写可以吗
+        filePath = osp.normcase(filePath)
         if not self.loadImage(filePath):
             return False
         # 3. 添加记录
@@ -1049,7 +1053,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 3.1 获取所有文件名
         imagePaths = os.listdir(inputDir)
         exts = tuple(f for fmts in self.formats for f in fmts)
-        imagePaths = [n for n in imagePaths if n.endswith(exts)]
+        imagePaths = [n for n in imagePaths if n.lower().endswith(exts)]  # 修复大写后缀名
         imagePaths.sort()
         if len(imagePaths) == 0:
             return
@@ -1069,8 +1073,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 break
         imagePaths = [osp.join(inputDir, n) for n in imagePaths]
         for p in imagePaths:
+            p = osp.normcase(p)
             self.imagePaths.append(p)
-            self.listFiles.addItem(osp.normcase(p))
+            self.listFiles.addItem(p)
 
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
