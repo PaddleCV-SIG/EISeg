@@ -4,6 +4,7 @@ import shutil
 import random
 from tqdm import tqdm
 from qtpy import QtGui
+import argparse
 
 
 # 参考paddlex数据准备文档
@@ -49,12 +50,13 @@ def Eiseg2Semantic(save_folder, imgs_folder, lab_folder=None, split_rate=0.9):
                 lab_path = osp.join(lab_folder, name)
             save_img_path = osp.join(save_img_folder, name)
             save_lab_path = osp.join(save_lab_folder, os.path.split(lab_path)[-1])
-            shutil.copy(img_path, save_img_path)
-            shutil.copy(lab_path, save_lab_path)
+            if osp.exists(img_path) and osp.exists(lab_path):
+                shutil.copy(img_path, save_img_path)
+                shutil.copy(lab_path, save_lab_path)
     print("===== copy data finished! =====")
     # create label
     label_path = osp.join(lab_folder, "autosave_label.txt")
-    save_label_path = osp.join(save_folder, "label.txt")
+    save_label_path = osp.join(save_folder, "labels.txt")
     with open(label_path, "r") as rf:
         with open(save_label_path, "w") as wf:
             tmps = rf.readlines()
@@ -87,8 +89,16 @@ def Eiseg2Semantic(save_folder, imgs_folder, lab_folder=None, split_rate=0.9):
     print("===== all done! =====")
 
 
-# 测试
-# if __name__ == "__main__":
-#     save_folder = r"E:\PdCVSIG\github\images\humanseg"
-#     img_folder = r"E:\PdCVSIG\github\images\people_img"
-#     Eiseg2Semantic(save_folder, img_folder)
+parser = argparse.ArgumentParser(description='Save path, image path, label path and split rate')
+parser.add_argument('--save_path', '-d', help='保存文件夹路径，必要参数', required=True)
+parser.add_argument('--image_path', '-o', help='图像文件夹路径，必要参数', required=True)
+parser.add_argument('--label_path', '-l', help='标签文件夹路径', default=None)
+parser.add_argument('--split_rate', '-s', help='分割参数', default=0.9)
+args = parser.parse_args()
+
+if __name__ == "__main__":
+    save_path = args.save_path
+    image_path = args.image_path
+    label_path = args.label_path
+    split_rate = args.split_rate
+    Eiseg2Semantic(save_path, image_path, label_path, split_rate)
