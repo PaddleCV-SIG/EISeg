@@ -970,6 +970,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
         self.setDirty()
 
+    # BUG
     def delAllPolygon(self):
         for p in self.scene.polygon_items:
             self.delPolygon(p)

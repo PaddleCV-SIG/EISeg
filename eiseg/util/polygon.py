@@ -3,6 +3,7 @@ from enum import Enum
 import cv2
 import numpy as np
 import math
+from .regularization import boundary_regularization
 
 
 class Instructions(Enum):
@@ -20,6 +21,7 @@ def get_polygon(label, sample="Dynamic"):
     if len(contours) != 0:  # 可能出现没有边界的情况
         polygons = []
         relas = []
+        img_shape = label.shape
         for idx, (contour, hierarchy) in enumerate(zip(contours, hierarchys[0])):
             # print(hierarchy)
             # opencv实现边界简化
@@ -27,8 +29,11 @@ def get_polygon(label, sample="Dynamic"):
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
-            out = cv2.approxPolyDP(contour, epsilon, True)
-            # 自定义边界简化  TODO:感觉这一块还需要再优化
+            # TODO: 待优化
+            out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
+            # TODO & BUG: 建筑简化待优化
+            # out = boundary_regularization(contour, img_shape, epsilon)  # 建筑物边界简化
+            # 自定义边界简化
             out = approx_poly_DP(out)
             # 给出关系
             rela = (idx,  # own
