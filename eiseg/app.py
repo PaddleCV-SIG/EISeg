@@ -970,9 +970,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
         self.setDirty()
 
-    # BUG
     def delAllPolygon(self):
-        for p in self.scene.polygon_items:
+        for p in self.scene.polygon_items[::-1]:  # 删除所有多边形
             self.delPolygon(p)
 
     def delActivePoint(self):
@@ -1905,11 +1904,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.grids.currIdx is None:
             return
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-        self.grids.masksGrid[row][col] = self.getMask()
+        self.grids.masksGrid[row][col] = np.array(self.getMask())
+        # test
+        for i in range(len(self.grids.masksGrid)):
+            for j in range(len(self.grids.masksGrid[i])):
+                print(self.grids.masksGrid[i][j].shape, 
+                      np.unique(self.grids.masksGrid[i][j]))
 
     def turnGrid(self, delta):
         # 切换下一个宫格
-        self.delAllPolygon()  # 清理
         r, c = self.grids.currIdx if self.grids.currIdx is not None else (0, -1)
         c += delta
         if c >= self.grids.gridCount[1]:

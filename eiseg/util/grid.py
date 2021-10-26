@@ -1,6 +1,4 @@
 import math
-from collections import namedtuple
-
 import numpy as np
 
 
@@ -11,7 +9,7 @@ class Grids:
         # self.sizePair = namedtuple("sizePair", "h w")
         self.gridSize = np.array(gridSize)
         self.overlap = np.array(overlap)
-        print("_------------", self.gridSize, self.overlap)
+        # print("_------------", self.gridSize, self.overlap)
         self.clear()
 
     def clear(self):
@@ -19,7 +17,7 @@ class Grids:
         self.rawimg = None  # 保存原始的遥感图像或者医疗图像（多通道）
         self.detimg = None  # 宫格初始图像
         self.gridInit = False  # 是否初始化了宫格
-        self.imagesGrid = []  # 图像宫格
+        # self.imagesGrid = []  # 图像宫格
         self.masksGrid = []  # 标签宫格
         self.gridCount = None  # (row count, col count)
         self.currIdx = None  # (current row, current col, current idx)
@@ -30,15 +28,21 @@ class Grids:
         imgSize = np.array(img.shape[:2])
         gridCount = np.ceil((imgSize + self.overlap) / self.gridSize)
         self.gridCount = gridCount = gridCount.astype("uint16")
-        ul = self.overlap - self.gridSize
-        for row in range(gridCount[0]):
-            ul[0] = ul[0] + self.gridSize[0] - self.overlap[0]
-            for col in range(gridCount[1]):
-                ul[1] = ul[1] + self.gridSize[1] - self.overlap[1]
-                lr = ul + self.gridSize
-                print("ul, lr", ul, lr)
-                self.imagesGrid.append(self.detimg[ul[0] : lr[0], ul[1] : lr[1]])
-        self.masksGrid = [[None] * gridCount[1]] * gridCount[0]
+        # ul = self.overlap - self.gridSize
+        # for row in range(gridCount[0]):
+        #     ul[0] = ul[0] + self.gridSize[0] - self.overlap[0]
+        #     for col in range(gridCount[1]):
+        #         ul[1] = ul[1] + self.gridSize[1] - self.overlap[1]
+        #         lr = ul + self.gridSize
+        #         # print("ul, lr", ul, lr)
+        #         # 扩充
+        #         det_tmp = self.detimg[ul[0]: lr[0], ul[1]: lr[1]]
+        #         tmp = np.zeros((self.gridSize[0], self.gridSize[1], self.detimg.shape[-1]))
+        #         tmp[:det_tmp.shape[0], :det_tmp.shape[1], :] = det_tmp
+        #         self.imagesGrid.append(tmp)
+        # self.masksGrid = [[np.zeros(self.gridSize)] * gridCount[1]] * gridCount[0]  # 不能用浅拷贝
+        self.masksGrid = [[np.zeros(self.gridSize) for _ in range(gridCount[1])] for _ in range(gridCount[0])]
+        # print(len(self.masksGrid), len(self.masksGrid[0]))
         self.gridInit = True
         return list(gridCount)
 
@@ -47,27 +51,28 @@ class Grids:
         ul = gridIdx * self.gridSize - self.overlap
         ul = ul + self.overlap * (gridIdx == 0)
         lr = ul + self.gridSize
-        img = self.detimg[ul[0] : lr[0], ul[1] : lr[1]]
+        img = self.detimg[ul[0]: lr[0], ul[1]: lr[1]]
         mask = self.masksGrid[row][col]
         self.currIdx = (row, col)
         return img, mask
 
-    # BUG
     def splicingList(self):
         """
         将slide的out进行拼接，raw_size保证恢复到原状
         """
         imgs = self.masksGrid
+        # print(len(imgs), len(imgs[0]))
         raw_size = self.detimg.shape[:2]
-        h, w = None, None
-        for i in range(len(imgs)):
-            if imgs[i] is not None:
-                for j in range(len(imgs[i])):
-                    if imgs[i][j] is not None:
-                        h, w = imgs[i][j].shape[:2]
-                        break
-        if h is None and w is None:
-            return False
+        # h, w = None, None
+        # for i in range(len(imgs)):
+        #     for j in range(len(imgs[i])):
+        #         im = imgs[i][j]
+        #         if im is not None:
+        #             h, w = im.shape[:2]
+        #             break
+        # if h is None and w is None:
+        #     return False
+        h, w = self.gridSize
         row = math.ceil(raw_size[0] / h)
         col = math.ceil(raw_size[1] / w)
         # print('row, col:', row, col)
@@ -77,20 +82,23 @@ class Grids:
         for i in range(row):
             for j in range(col):
                 # print('h, w:', h, w)
-                if imgs[i][j] is not None:
-                    start_h = (i * h) if i == 0 else (i * (h - self.overlap))
-                    end_h = start_h + h
-                    start_w = (j * w) if j == 0 else (j * (w - self.overlap))
-                    end_w = start_w + w
-                    # 单区自己，重叠取或
-                    if (i + j) % 2 == 0:
-                        result_1[start_h:end_h, start_w:end_w] = imgs[i][j]
-                    else:
-                        result_2[start_h:end_h, start_w:end_w] = imgs[i][j]
+                ih, iw = imgs[i][j].shape[:2]
+                im = np.zeros(self.gridSize)
+                im[:ih, :iw] = imgs[i][j]
+                start_h = (i * h) if i == 0 else (i * (h - self.overlap[0]))
+                end_h = start_h + h
+                start_w = (j * w) if j == 0 else (j * (w - self.overlap[1]))
+                end_w = start_w + w
+                # print("se: ", start_h, end_h, start_w, end_w)
+                # 单区自己，重叠取或
+                if (i + j) % 2 == 0:
+                    result_1[start_h: end_h, start_w: end_w] = im
+                else:
+                    result_2[start_h: end_h, start_w: end_w] = im
                 # k += 1
                 # print('r, c, k:', i_r, i_c, k)
         result = np.where(result_2 != 0, result_2, result_1)
-        return result[: raw_size[0], : raw_size[1]]
+        return result[:raw_size[0], :raw_size[1]]
 
 
 # g = Grids()
