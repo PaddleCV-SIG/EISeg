@@ -1908,7 +1908,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def turnGrid(self, delta):
         # 切换下一个宫格
-        r, c, _ = self.grids.currIdx if self.grids.currIdx is not None else (0, -1, -1)
+        self.delAllPolygon()  # 清理
+        r, c = self.grids.currIdx if self.grids.currIdx is not None else (0, -1)
         c += delta
         if c >= self.grids.gridCount[1]:
             c = 0
