@@ -5,7 +5,7 @@ English | [简体中文](README.md)
 [![Python 3.6](https://img.shields.io/badge/python-3.6+-orange.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-orange.svg)](LICENSE) ![GitHub Repo stars](https://img.shields.io/github/stars/PaddleCV-SIG/EISeg) ![GitHub forks](https://img.shields.io/github/forks/PaddleCV-SIG/EISeg) [![Downloads](https://static.pepy.tech/personalized-badge/eiseg?period=total&units=international_system&left_color=grey&right_color=blue&left_text=pypi%20user)](https://pepy.tech/project/eiseg)
 <!-- [![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/PaddleCV-SIG/iseg/releases) -->
 
-EISeg(Efficient Interactive Segmentation) is an intelligent and efficient image segmentation annotation software with deep learning enabled by PaddlePaddle at it's core. EISeg ships with a wide variaty of high quality deep learning models, high resulution or light weight for many annotation senarials. The annotated images can be fed directly to PaddleSeg toolkit to yield accurate models for customized use cases. Helping you build annotation models efficiently.
+EISeg (Efficient Interactive Segmentation) helps you perform image segmentation intelligently and efficiently. EISeg ships with a wide variaty of high quality deep learning models, high resulution or light weight for many annotation senarials. The annotated images can be fed directly to PaddleSeg toolkit to yield accurate models for customized use cases. Helping you build annotation models efficiently.
 
 
 ![xk8v4-vqsms](https://user-images.githubusercontent.com/71769312/133406591-1079b7b5-16f2-401f-a4c6-06b8d8c2bbe7.gif)
