@@ -1507,14 +1507,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.coco.updateAnnotation(polygon.coco_id, imgId, points)
             for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
-                    print("+_+_+_+_+", lab.name)
                     self.coco.updateCategory(lab.idx, lab.name, lab.color)
                 else:
                     self.coco.addCategory(lab.idx, lab.name, lab.color)
             saveDir = (
                 self.outputDir if self.outputDir is not None else osp.dirname(savePath)
             )
-            cocoPath = osp.join(saveDir, "coco.json")
+            cocoPath = osp.join(saveDir, "annotations.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 
         self.setClean()

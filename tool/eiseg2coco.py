@@ -103,7 +103,7 @@ def main():
         return -1
 
     coco_annotation_dir = args.json_input_dir
-    coco_annotation_file = os.path.join(coco_annotation_dir, "coco.json")
+    coco_annotation_file = os.path.join(coco_annotation_dir, "annotations.json")
 
     setattr(settings, "DATA_DIR", args.image_input_dir)
     raw_images = list(glob.iglob(os.path.join(settings.DATA_DIR, "*.jpg")))
