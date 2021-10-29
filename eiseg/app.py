@@ -8,6 +8,7 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 import logging
+from datetime import datetime
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem, QDialog
@@ -19,13 +20,11 @@ import matplotlib.pyplot as plt
 
 from eiseg import pjpath, __APPNAME__
 from widget import ShortcutWindow, PolygonAnnotation, ProgressDialog
-
-# from models import ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
 from util import MODELS, COCO, Grids
-from util.remotesensing import *
+from util.remotesensing import *  # TODO: 修改
 from util.medical import *
 from util.grid import *
 from plugin.medical import med
@@ -39,16 +38,16 @@ if not osp.exists(log_folder):
     os.mkdir(log_folder)
 logging.basicConfig(
     level=logging.CRITICAL,
-    filename=osp.join(log_folder, "eiseg.log"),
+    filename=osp.join(log_folder, f"eiseg-{datetime.now()}.log"),
     format="%(levelname)s - %(asctime)s - %(message)s",
 )
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
-    IDILE, ANNING, EDITING = 0, 1, 2
     # IDILE：网络，权重，图像三者任一没有加载
     # EDITING：多边形编辑，可以交互式，但是多边形内部不能点
     # ANNING：交互式标注，只能交互式，不能编辑多边形，多边形不接hover
+    IDILE, ANNING, EDITING = 0, 1, 2
 
     # 宫格标注背景颜色
     GRID_COLOR = {
@@ -1502,14 +1501,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
                 if not polygon.coco_id:
                     print("adding: ", polygon.labelIndex)
-                    annId = self.coco.addAnnotation(
-                        imgId, polygon.labelIndex, points, polygon.bbox.to_array()
-                    )
+                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
                     polygon.coco_id = annId
                 else:
-                    self.coco.updateAnnotation(
-                        polygon.coco_id, imgId, points, polygon.bbox.to_array()
-                    )
+                    self.coco.updateAnnotation(polygon.coco_id, imgId, points)
             for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
                     print("+_+_+_+_+", lab.name)
@@ -1908,8 +1903,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # test
         for i in range(len(self.grids.masksGrid)):
             for j in range(len(self.grids.masksGrid[i])):
-                print(self.grids.masksGrid[i][j].shape, 
-                      np.unique(self.grids.masksGrid[i][j]))
+                print(
+                    self.grids.masksGrid[i][j].shape,
+                    np.unique(self.grids.masksGrid[i][j]),
+                )
 
     def turnGrid(self, delta):
         # 切换下一个宫格

@@ -3,6 +3,7 @@ import time
 from matplotlib.collections import PatchCollection
 import numpy as np
 import itertools
+
 # from . import mask as maskUtils
 import os
 from collections import defaultdict
@@ -55,8 +56,8 @@ class COCO:
             self.dataset = dataset
             self.createIndex()
             print(
-                    f"load coco with {len(self.dataset['images'])} images and {len(self.dataset['annotations'])} annotations."
-                )
+                f"load coco with {len(self.dataset['images'])} images and {len(self.dataset['annotations'])} annotations."
+            )
 
     def hasImage(self, imageName):
         imgId = self.imgNameToId.get(imageName, None)
@@ -190,14 +191,26 @@ class COCO:
         self.imgNameToId[file_name] = id
         return id
 
+    def calArea(self, segmentation: list):
+        assert len(segmentation) % 2 == 0
+        x = segmentation[0::2]
+        y = segmentation[1::2]
+        return 0.5 * np.abs(np.dot(x, np.roll(y, 1)) - np.dot(y, np.roll(x, 1)))
+
+    def calBB(self, segmentation):
+        x = segmentation[0::2]
+        y = segmentation[1::2]
+        minx, maxx = np.min(x), np.max(x)
+        miny, maxy = np.min(y), np.max(y)
+        return [minx, miny, maxx - minx, maxy - miny]
+
     def addAnnotation(
         self,
         image_id: int,
         category_id: int,
         segmentation: list,
-        bbox: list = None,
-        area: float = None,
         id: int = None,
+        iscrowd: int = 0,
     ):
         if id is not None and self.anns.get(id, None) is not None:
             print("标签已经存在")
@@ -205,13 +218,8 @@ class COCO:
         if not id:
             self.maxAnnId += 1
             id = self.maxAnnId
-        if not bbox:
-            x, y, width, height = 0, 0, 0, 0
-        else:
-            x, y, width, height = bbox[:]
-        # TODO: cal area
-        if not area:
-            area = 0
+
+        area = self.calArea(segmentation)
 
         ann = {
             "id": id,
@@ -219,7 +227,8 @@ class COCO:
             "category_id": category_id,
             "segmentation": [segmentation],
             "area": area,
-            "bbox": [x, y, width, height],
+            "bbox": self.calBB(segmentation),
+            "iscrowd": iscrowd,
         }
 
         self.dataset["annotations"].append(ann)
@@ -240,25 +249,23 @@ class COCO:
             if ann["id"] == annId:
                 del self.imgToAnns[imgId][idx]
 
-    def updateAnnotation(self, id, imgId, points, bbox=None):
-        self.anns[id]["segmentation"] = [points]
+    def updateAnnotation(
+        self,
+        id: int,
+        imgId: int,
+        segmentation: list,
+    ):
+        self.anns[id]["segmentation"] = [segmentation]
 
         for rec in self.dataset["annotations"]:
             if rec["id"] == id:
                 rec["segmentation"] = [points]
-                if bbox is not None:
-                    rec["bbox"] = bbox
-                break
-
-        for rec in self.dataset["annotations"]:
-            if rec["id"] == id:
-                # @todo TODO move into debug codes or controls
-                print("record point : ", rec["segmentation"][0][0], rec["segmentation"][0][1])
+                rec["bbox"] = self.calBB(segmentation)
                 break
 
         for rec in self.imgToAnns[imgId]:
             if rec["id"] == id:
-                rec["segmentation"] = [points]
+                rec["segmentation"] = [segmentation]
                 break
 
     def info(self):
