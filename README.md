@@ -39,7 +39,7 @@ PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quic
 
 ```shell
 git clone https://github.com/PaddlePaddle/PaddleSeg.git
-cd PaddleSeg\contrib\EISeg 
+cd PaddleSeg\contrib\EISeg
 pip install –r requirements.txt
 ```
 
@@ -48,7 +48,7 @@ pip install –r requirements.txt
 1. 安装EISeg，之后就可以直接通过`eiseg`的指令打开：
 
 ```shell
-python setup.py install 
+python setup.py install
 eiseg
 ```
 
@@ -84,7 +84,7 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
 
 ### 开发版
 
-此repo下EISeg为开发版，更新频率高，不提供pip包和exe打包版本，可以通过clone代码运行：
+EISeg[开发版repo地址](https://github.com/PaddleCV-SIG/EISeg)，开发版更新频率高，不提供pip包和exe打包版本，可以通过clone代码运行：
 
 ```shell
 git clone https://github.com/PaddleCV-SIG/EISeg.git
@@ -98,7 +98,7 @@ pip install git+https://github.com/PaddleCV-SIG/EISeg
 eiseg
 ```
 
-## 使用
+## 标注
 
 打开软件后，在对项目进行标注前，需要进行如下设置：
 
@@ -178,7 +178,36 @@ pip install --upgrade paddlepaddle-gpu</code>
 2. Paddle安装问题：GPU版本Paddle和Cuda之间版本需要对应，检查安装是否存在问题可以运行。
 <code>python -c "import paddle; paddle.utils.run_check()"</code></pre></details>
 
+## 下一步
+
+EISeg可以将标注结果保存为灰度标签，coco标签，伪彩色标签等格式，训练时前两种应用较多。这一部分介绍一些使用EISeg标注的数据进行训练的方法。
+
+[//]: # (TODO: 完善这一部分，实际操作)
+
+### Paddlex
+Paddlex集成了飞桨在计算机视觉领域多方面的能力，其中针对[语义分割](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)任务提供了deeplabv3，bisenetv2，fast_scnn，hrnet，unet等多个网络结构，针对实例分割任务提供了[MaskRCNN](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)网络结构。使用EISeg标注的数据经过数据及划分后就可以用于PaddleX训练。步骤如下
+
+首先安装PaddleX
+```shell
+pip install paddlex
+```
+
+EISeg默认将coco格式标签保存在被标注图片文件夹下的label文件夹中，文件名annotations.json。paddlex可以对coco数据集进行训练，验证和测试集的划分。
+
+```shell
+paddlex --split_dataset --format COCO --val_value 0.2 --test_value 0.1 --dataset_dir /path/to/images/
+```
+参数解释:
+|参数|功能|值|
+|-|-|-|
+|--split_dataset| 让PaddleX进行数据集划分 | 无 |
+|--format  | 声明数据集格式 | COCO |
+|--val_value   | 验证集占比 | 0~1的数字  |
+|--test_value   | 测试集占比 | 0~1的数字 |
+|--dataset_dir | 数据集路径 | 填写annotations.json文件所在路径<br>EISeg默认保存在被标注图片所在路径  |
+
+数据集划分完成后就可以进行网络训练了，具体方法可以参考[PaddleX官方示例](https://aistudio.baidu.com/aistudio/projectdetail/2161600)
+
 ## 开发者
 
 [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev/), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Zhiliang Yu](https://github.com/yzl19940819)
-
