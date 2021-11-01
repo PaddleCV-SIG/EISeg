@@ -16,14 +16,27 @@ def main():
         osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
     )
 
-    log_folder = osp.join(pjpath, "log")
-    if not osp.exists(log_folder):
-        os.makedirs(log_folder)
-    # TODO: 删除一周以上的log
+    logFolder = settings.value("logFolder")
+    logLevel = settings.value("logLevel")
+    logDays = settings.value("logDays")
+    if logFolder is None or len(logFolder) == 0:
+        logFolder = osp.join(pjpath, "log")
+    if logLevel is None or len(logLevel) == 0:
+        logLevel = eval("logging.DEBUG")
+    if logDays is None or len(logDays) == 0:
+        logDays = 7
+    else:
+        logDays = int(logDays)
+
+    if not osp.exists(logFolder):
+        os.makedirs(logFolder)
+
+    # TODO: 删除大于logDays 的 log
+
     logging.basicConfig(
-        level=logging.DEBUG,
-        filename=osp.join(log_folder, f"eiseg-{datetime.now()}.log"),
-        format="%(levelname)s - %(asctime)s - %(message)s",
+        level=logLevel,
+        filename=osp.join(logFolder, f"eiseg-{datetime.now()}.log"),
+        format="%(levelname)s - %(asctime)s - %(filename)s - %(funcName)s - %(message)s",
     )
 
     app = QApplication(sys.argv)

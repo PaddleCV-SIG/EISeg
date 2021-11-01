@@ -1,5 +1,6 @@
 import os.path as osp
 from functools import partial
+import logging
 
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
@@ -12,6 +13,8 @@ from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
 
+log = logging.getLogger(__name__ + ".ui")
+
 
 class Ui_EISeg(object):
     def __init__(self):
@@ -19,6 +22,7 @@ class Ui_EISeg(object):
         self.tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
 
     def setupUi(self, MainWindow):
+        log.info("Setting up UI")
         ## -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
@@ -280,6 +284,8 @@ class Ui_EISeg(object):
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.GridDock)
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+        log.info("Set up UI finished")
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):
