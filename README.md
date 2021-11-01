@@ -180,33 +180,41 @@ pip install --upgrade paddlepaddle-gpu</code>
 
 ## 下一步
 
-EISeg可以将标注结果保存为灰度标签，coco标签，伪彩色标签等格式，训练时前两种应用较多。这一部分介绍一些使用EISeg标注的数据进行训练的方法。
+EISeg可以将图像分割标注结果保存为灰度标签，coco标签，伪彩色标签等格式，分割训练时前两种应用较多。此外，在coco格式保存时标签中包含包围框信息，因此也可以用EIseg标注的结果进行目标检测训练。这一部分介绍一些使用EISeg标注的数据进行训练的方法。
 
 [//]: # (TODO: 完善这一部分，实际操作)
 
-### Paddlex
-Paddlex集成了飞桨在计算机视觉领域多方面的能力，其中针对[语义分割](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)任务提供了deeplabv3，bisenetv2，fast_scnn，hrnet，unet等多个网络结构，针对实例分割任务提供了[MaskRCNN](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)网络结构。使用EISeg标注的数据经过数据及划分后就可以用于PaddleX训练。步骤如下
-
-首先安装PaddleX
+### 数据集划分
+深度学习网络训练过程中通常需要将整个数据及划分为训练，验证和测试三个集合。使用PaddleX工具可以快速对coco格式数据集进行划分。
 ```shell
-pip install paddlex
-```
-
-EISeg默认将coco格式标签保存在被标注图片文件夹下的label文件夹中，文件名annotations.json。paddlex可以对coco数据集进行训练，验证和测试集的划分。
-
-```shell
-paddlex --split_dataset --format COCO --val_value 0.2 --test_value 0.1 --dataset_dir /path/to/images/
+pip install paddlex # 安装PaddleX
+paddlex --split_dataset --format COCO --val_value 0.2 --test_value 0.1 --dataset_dir /path/to/annotations.json/folder/
 ```
 参数解释:
 |参数|功能|值|
 |-|-|-|
-|--split_dataset| 让PaddleX进行数据集划分 | 无 |
+|--split_dataset| 使用数据集划分功能 | 无 |
 |--format  | 声明数据集格式 | COCO |
 |--val_value   | 验证集占比 | 0~1的数字  |
 |--test_value   | 测试集占比 | 0~1的数字 |
-|--dataset_dir | 数据集路径 | 填写annotations.json文件所在路径<br>EISeg默认保存在被标注图片所在路径  |
+|--dataset_dir | 数据集路径 | annotations.json文件所在的**文件夹**<br>EISeg默认将其保存在被标注图片文件夹下的label文件夹中<br>/被标注图片文件夹/label/|
 
-数据集划分完成后就可以进行网络训练了，具体方法可以参考[PaddleX官方示例](https://aistudio.baidu.com/aistudio/projectdetail/2161600)
+运行后将出现train.json, val.json, test.json为划分后的标签。
+
+[//]: # (TODO: 灰度标签划分)
+
+### 使用PaddleX进行训练
+
+Paddlex集成了飞桨在计算机视觉领域多方面的能力，其中针对[语义分割](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)任务提供了deeplabv3，bisenetv2，fast_scnn，hrnet，unet等多个网络结构，针对[实例分割](https://github.com/PaddlePaddle/PaddleX/blob/release/2.0.0/docs/apis/models/semantic_segmentation.md)任务提供了MaskRCNN网络结构。
+
+[//]: # (TODO: 完善这一部分)
+
+使用EISeg标注的数据经过数据集划分后就可以用于PaddleX训练。具体训练方法可以参考[PaddleX官方示例](https://aistudio.baidu.com/aistudio/projectdetail/2161600)
+
+<!-- ### 使用PaddleSeg进行训练 -->
+
+[//]: # (TODO: 完善这一部分)
+
 
 ## 开发者
 
