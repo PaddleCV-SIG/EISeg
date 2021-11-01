@@ -1,7 +1,6 @@
 import sys
 import os
 import os.path as osp
-from datetime import datetime
 
 import cv2
 

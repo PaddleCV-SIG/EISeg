@@ -29,6 +29,8 @@ from util.medical import *
 from util.grid import *
 from plugin.medical import med
 
+log = logging.getLogger(__name__ + ".main")
+
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
 warnings.filterwarnings("ignore")
