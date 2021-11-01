@@ -33,15 +33,6 @@ from plugin.medical import med
 np.set_printoptions(threshold=sys.maxsize)
 warnings.filterwarnings("ignore")
 
-log_folder = osp.join(pjpath, "log")
-if not osp.exists(log_folder):
-    os.mkdir(log_folder)
-logging.basicConfig(
-    level=logging.CRITICAL,
-    filename=osp.join(log_folder, f"eiseg-{datetime.now()}.log"),
-    format="%(levelname)s - %(asctime)s - %(message)s",
-)
-
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
     # IDILE：网络，权重，图像三者任一没有加载
@@ -1730,7 +1721,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not self.outputDir or not osp.exists(self.outputDir):
                 coco_path = None
             else:
-                coco_path = osp.join(self.outputDir, "coco.json")
+                coco_path = osp.join(self.outputDir, "annotations.json")
                 # 这里放在外面判断可能会有coco_path为none，exists报错
                 if not osp.exists(coco_path):
                     coco_path = None

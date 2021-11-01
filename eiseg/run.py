@@ -1,5 +1,8 @@
 import sys
+import os
 import os.path as osp
+import logging
+from datetime import datetime
 
 from qtpy.QtWidgets import QApplication  # 导入PyQt相关模块
 from qtpy import QtCore
@@ -9,10 +12,22 @@ from app import APP_EISeg  # 导入带槽的界面
 
 
 def main():
-    app = QApplication(sys.argv)
-    lang = QtCore.QSettings(
+    settings = QtCore.QSettings(
         osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
-    ).value("language")
+    )
+
+    log_folder = osp.join(pjpath, "log")
+    if not osp.exists(log_folder):
+        os.makedirs(log_folder)
+    # TODO: 删除一周以上的log
+    logging.basicConfig(
+        level=logging.DEBUG,
+        filename=osp.join(log_folder, f"eiseg-{datetime.now()}.log"),
+        format="%(levelname)s - %(asctime)s - %(message)s",
+    )
+
+    app = QApplication(sys.argv)
+    lang = settings.value("language")
     if lang != "中文":
         trans = QtCore.QTranslator(app)
         trans.load(osp.join(pjpath, f"util/translate/{lang}"))
