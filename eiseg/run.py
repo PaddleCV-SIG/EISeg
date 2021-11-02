@@ -21,7 +21,7 @@ def main():
     logDays = settings.value("logDays")
 
     if logFolder is None or len(logFolder) == 0:
-        logFolder = osp.join(pjpath, "log")
+        logFolder = osp.normcase(osp.join(pjpath, "log"))
     if not osp.exists(logFolder):
         os.makedirs(logFolder)
 
