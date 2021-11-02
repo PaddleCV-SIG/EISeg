@@ -19,18 +19,21 @@ def main():
     logFolder = settings.value("logFolder")
     logLevel = settings.value("logLevel")
     logDays = settings.value("logDays")
+
     if logFolder is None or len(logFolder) == 0:
         logFolder = osp.join(pjpath, "log")
-    if logLevel is None or len(logLevel) == 0:
-        logLevel = eval("logging.DEBUG")
-    if logDays is None or len(logDays) == 0:
-        logDays = 7
-    else:
-        logDays = int(logDays)
-
     if not osp.exists(logFolder):
         os.makedirs(logFolder)
 
+    if logLevel:
+        logLevel = eval(logLevel)
+    else:
+        logLevel = eval("logging.DEBUG")
+
+    if logDays:
+        logDays = int(logDays)
+    else:
+        logDays = 7
     # TODO: 删除大于logDays 的 log
 
     logging.basicConfig(
@@ -52,4 +55,4 @@ def main():
     # 加载近期模型
     QApplication.processEvents()
     window.loadRecentModelParam()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

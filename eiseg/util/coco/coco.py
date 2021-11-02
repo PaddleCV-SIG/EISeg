@@ -259,7 +259,7 @@ class COCO:
 
         for rec in self.dataset["annotations"]:
             if rec["id"] == id:
-                rec["segmentation"] = [points]
+                rec["segmentation"] = [segmentation]
                 rec["bbox"] = self.calBB(segmentation)
                 break
 
