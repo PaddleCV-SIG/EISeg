@@ -13,7 +13,6 @@ output/
 temp*
 temp/
 
-
 # C extensions
 *.so
 
