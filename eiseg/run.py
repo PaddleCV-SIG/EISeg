@@ -38,7 +38,7 @@ def main():
 
     logging.basicConfig(
         level=logLevel,
-        filename=osp.join(logFolder, f"eiseg-{datetime.now()}.log"),
+        filename=osp.normcase(osp.join(logFolder, f"eiseg-{datetime.now()}.log")),
         format="%(levelname)s - %(asctime)s - %(filename)s - %(funcName)s - %(message)s",
     )
 
