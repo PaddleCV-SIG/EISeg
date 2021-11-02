@@ -8,6 +8,7 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 import logging
+from datetime import datetime
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem, QDialog
@@ -19,36 +20,27 @@ import matplotlib.pyplot as plt
 
 from eiseg import pjpath, __APPNAME__
 from widget import ShortcutWindow, PolygonAnnotation, ProgressDialog
-
-# from models import ModelsNick
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
 from util import MODELS, COCO, Grids
-from util.remotesensing import *
+from util.remotesensing import *  # TODO: 修改
 from util.medical import *
 from util.grid import *
 from plugin.medical import med
+
+log = logging.getLogger(__name__ + ".main")
 
 # DEBUG:
 np.set_printoptions(threshold=sys.maxsize)
 warnings.filterwarnings("ignore")
 
-log_folder = osp.join(pjpath, "log")
-if not osp.exists(log_folder):
-    os.mkdir(log_folder)
-logging.basicConfig(
-    level=logging.CRITICAL,
-    filename=osp.join(log_folder, "eiseg.log"),
-    format="%(levelname)s - %(asctime)s - %(message)s",
-)
-
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
-    IDILE, ANNING, EDITING = 0, 1, 2
     # IDILE：网络，权重，图像三者任一没有加载
     # EDITING：多边形编辑，可以交互式，但是多边形内部不能点
     # ANNING：交互式标注，只能交互式，不能编辑多边形，多边形不接hover
+    IDILE, ANNING, EDITING = 0, 1, 2
 
     # 宫格标注背景颜色
     GRID_COLOR = {
@@ -1502,24 +1494,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
                 if not polygon.coco_id:
                     print("adding: ", polygon.labelIndex)
-                    annId = self.coco.addAnnotation(
-                        imgId, polygon.labelIndex, points, polygon.bbox.to_array()
-                    )
+                    annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
                     polygon.coco_id = annId
                 else:
-                    self.coco.updateAnnotation(
-                        polygon.coco_id, imgId, points, polygon.bbox.to_array()
-                    )
+                    self.coco.updateAnnotation(polygon.coco_id, imgId, points)
             for lab in self.controller.labelList:
                 if self.coco.hasCat(lab.idx):
-                    print("+_+_+_+_+", lab.name)
                     self.coco.updateCategory(lab.idx, lab.name, lab.color)
                 else:
                     self.coco.addCategory(lab.idx, lab.name, lab.color)
             saveDir = (
                 self.outputDir if self.outputDir is not None else osp.dirname(savePath)
             )
-            cocoPath = osp.join(saveDir, "coco.json")
+            cocoPath = osp.join(saveDir, "annotations.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 
         self.setClean()
@@ -1736,7 +1723,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if not self.outputDir or not osp.exists(self.outputDir):
                 coco_path = None
             else:
-                coco_path = osp.join(self.outputDir, "coco.json")
+                coco_path = osp.join(self.outputDir, "annotations.json")
                 # 这里放在外面判断可能会有coco_path为none，exists报错
                 if not osp.exists(coco_path):
                     coco_path = None
@@ -1908,8 +1895,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # test
         for i in range(len(self.grids.masksGrid)):
             for j in range(len(self.grids.masksGrid[i])):
-                print(self.grids.masksGrid[i][j].shape, 
-                      np.unique(self.grids.masksGrid[i][j]))
+                print(
+                    self.grids.masksGrid[i][j].shape,
+                    np.unique(self.grids.masksGrid[i][j]),
+                )
 
     def turnGrid(self, delta):
         # 切换下一个宫格
