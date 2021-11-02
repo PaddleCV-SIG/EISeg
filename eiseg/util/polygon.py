@@ -30,7 +30,7 @@ def get_polygon(label, sample="Dynamic"):
                 epsilon = 0
             # print("epsilon:", epsilon)
             # TODO: 待优化
-            out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
+            out = cv2.approxPolyDP(out, epsilon, True)  # 自然图像简化
             # TODO & BUG: 建筑简化待优化
             # out = boundary_regularization(contour, img_shape, epsilon)  # 建筑物边界简化
             # 自定义边界简化
