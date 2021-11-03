@@ -6,9 +6,8 @@ from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__
-from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
+from eiseg.widget.create import create_dock, create_button, create_slider, create_text
 from models import MODELS
-from util import MODELS
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
@@ -22,16 +21,16 @@ class Ui_EISeg(object):
         self.tr = partial(QtCore.QCoreApplication.translate, "APP_EISeg")
 
     def setupUi(self, MainWindow):
-        log.info("Setting up UI")
-        ## -- 主窗体设置 --
+        log.debug("Setting up UI")
+        # -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
         MainWindow.setWindowTitle(__APPNAME__)
         CentralWidget = QtWidgets.QWidget(MainWindow)
         CentralWidget.setObjectName("CentralWidget")
         MainWindow.setCentralWidget(CentralWidget)
-        ## -----
-        ## -- 工具栏 --
+
+        # -- 顶部工具栏 --
         toolBar = QtWidgets.QToolBar(self)
         sizePolicy = QtWidgets.QSizePolicy(
             QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum
@@ -46,8 +45,8 @@ class Ui_EISeg(object):
         toolBar.setObjectName("toolBar")
         self.toolBar = toolBar
         MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
-        ## -----
-        ## -- 状态栏 --
+
+        # -- 底部状态栏 --
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         self.statusbar.setStyleSheet("QStatusBar::item {border: none;}")
@@ -55,8 +54,8 @@ class Ui_EISeg(object):
         self.statusbar.addPermanentWidget(
             self.show_logo(osp.join(pjpath, "resource/Paddle.png"))
         )
-        ## -----
-        ## -- 图形区域 --
+
+        # -- 中央图形区域 --
         ImageRegion = QtWidgets.QHBoxLayout(CentralWidget)
         ImageRegion.setObjectName("ImageRegion")
         # 滑动区域
@@ -80,17 +79,16 @@ class Ui_EISeg(object):
         self.note_style = "#canvas{border-image:url(" + note_path + ") repeat}"
         self.canvas.setStyleSheet(self.note_style)
         self.scrollArea.setWidget(self.canvas)
-        ## -----
-        ## -- 工作区 --
-        p_create_dock = partial(self.creat_dock, MainWindow)
+
+        ## -- 面板 --
+        p_create_dock = partial(self.create_dock, MainWindow)
         p_create_button = partial(self.create_button, CentralWidget)
+
         # 模型加载
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         ModelRegion = QtWidgets.QVBoxLayout()
         ModelRegion.setObjectName("ModelRegion")
-        # labShowSet = self.create_text(CentralWidget, "labShowSet", "模型选择")
-        # ModelRegion.addWidget(labShowSet)
         combo = QtWidgets.QComboBox(self)
         combo.addItems([self.tr(m.name) for m in MODELS])
         self.comboModelSelect = combo
@@ -117,17 +115,10 @@ class Ui_EISeg(object):
         self.listFiles = QtWidgets.QListWidget(CentralWidget)
         self.listFiles.setObjectName("ListFiles")
         ListRegion.addWidget(self.listFiles)
-        # 保存
-        self.btnSave = p_create_button(
-            "btnSave",
-            self.tr("保存"),
-            osp.join(pjpath, "resource/Save.png"),
-            "",
-        )
-        ListRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ListRegion)
         self.DataDock = p_create_dock("DataDock", self.tr("数据列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DataDock)
+
         # 标签列表
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
@@ -181,6 +172,14 @@ class Ui_EISeg(object):
         )
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
+        # 保存
+        self.btnSave = p_create_button(
+            "btnSave",
+            self.tr("保存"),
+            osp.join(pjpath, "resource/Save.png"),
+            "",
+        )
+        ShowSetRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ShowSetRegion)
         self.SegSettingDock = p_create_dock("SegSettingDock", self.tr("分割设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.SegSettingDock)
@@ -285,7 +284,7 @@ class Ui_EISeg(object):
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        log.info("Set up UI finished")
+        log.debug("Set up UI finished")
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):
@@ -296,8 +295,8 @@ class Ui_EISeg(object):
         return create_button(parent, btn_name, btn_text, ico_path, curt)
 
     ## 创建dock
-    def creat_dock(self, parent, name, text, layout):
-        return creat_dock(parent, name, text, layout)
+    def create_dock(self, parent, name, text, layout):
+        return create_dock(parent, name, text, layout)
 
     ## 显示Logo
     def show_logo(self, logo_path):

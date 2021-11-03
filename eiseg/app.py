@@ -50,8 +50,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         "overlying": QtGui.QColor(51, 52, 227),
     }
 
-    def __init__(self, parent=None):
-        super(APP_EISeg, self).__init__(parent)
+    def __init__(self, *args, **kwargs):
+        super(APP_EISeg, self).__init__(*args, **kwargs)
 
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
@@ -68,8 +68,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "json": False,  # TODO: 去掉这个json
             "coco": True,
             "cutout": True,
-        }  # 标签是否保存成这几个格式
-        self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
+        }  # 标签是否保存这几个格式
+        self.image = None  # 可以先加载图片后加载模型，只用于暂存图片
         self.controller = InteractiveController(
             predictor_params={
                 # 'brs_mode': 'f-BRS-B',
@@ -90,10 +90,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.outputDir = None  # 标签保存路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
-        self.currIdx = 0  # 标注一个文件夹下多张图片时当前图片下标
+        self.currIdx = 0  # 标注一个文件夹下多张图片时当前图片下标 # TODO: 3D数据和宫格
         self.isDirty = False  # 是否需要保存
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        self.coco = COCO()
+        if self.save_status["coco"]:  # TODO: 在toggle的时候创建和删除
+            self.coco = COCO()
         self.colorMap = util.colorMap
         if self.settings.value("cutout_background"):
             self.cutoutBackground = [
@@ -111,7 +112,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.midx = 0  # 医疗切片索引
 
         # 面板
-        self.display_dockwidget = [True, True, True, True, False, False, False]
         self.dock_widgets = [
             self.ModelDock,
             self.DataDock,
@@ -121,6 +121,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.MIDock,
             self.GridDock,
         ]
+        self.display_dockwidget = [True, True, True, True, False, False, False]
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
         self.recentModels = self.settings.value(
             "recent_models", QVariant([]), type=list
