@@ -132,15 +132,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 支持的图像格式
         rs_ext = [".tif", ".tiff"]
+        img_ext = []
+        for fmt in QtGui.QImageReader.supportedImageFormats():
+            fmt = ".{}".format(fmt.data().decode())
+            if fmt not in rs_ext:
+                img_ext.append(fmt)
         self.formats = [
-            [
-                ".{}".format(fmt.data().decode())
-                for fmt in QtGui.QImageReader.supportedImageFormats()
-                if fmt not in rs_ext
-            ],  # 自然图像
+            img_ext,  # 自然图像
             [".dcm"],  # 医学影像
             rs_ext,  # 遥感影像单独放一下 # RE: 这块是个临时的，formats里一行一个场景就行，到时候各个插件都一个class，每个插件弄一个检测是不是自己格式的method
         ]
+        print(self.formats)
 
         # 初始化action
         self.initActions()
@@ -1427,6 +1429,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 pathHead, _ = osp.splitext(savePath)
                 tifPath = pathHead + "_mask.tif"
                 save_tif(mask_output, self.geoinfo, tifPath)
+                # TODO：保存shp
+                shpPath = pathHead + ".shp"
+                ## -- test --
+                polygons = self.scene.polygon_items
+                labels = []
+                for polygon in polygons:
+                    l = self.controller.labelList[polygon.labelIndex - 1]
+                    label = {
+                        "name": l.name,
+                        "points": []
+                    }
+                    for p in polygon.scnenePoints:
+                        label["points"].append(p)
+                    labels.append(label)
+                ## ----------
+                geocode_list = bound2wkt(labels, self.geoinfo["geotrans"])
+                # print(geocode_list)
+                print(save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
                 self.geoinfo = None
             else:
                 ext = osp.splitext(savePath)[1]
