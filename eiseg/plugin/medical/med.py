@@ -12,7 +12,7 @@ def check_sitk():
         return False
 
 
-if check_sitk:
+if check_sitk():
     import SimpleITK as sitk
 
 
