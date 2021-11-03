@@ -1267,6 +1267,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.setClean()
         else:
             self.turnGrid(delta)
+        self.geoinfo = None
 
     def imageListClicked(self):
         if not self.controller:
@@ -1425,32 +1426,31 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
-            if self.rsSave.isChecked() and self.geoinfo is not None:
+            if self.geoinfo is not None:
                 pathHead, _ = osp.splitext(savePath)
-                tifPath = pathHead + "_mask.tif"
-                save_tif(mask_output, self.geoinfo, tifPath)
-                # TODO：保存shp
-                shpPath = pathHead + ".shp"
-                ## -- test --
-                polygons = self.scene.polygon_items
-                labels = []
-                for polygon in polygons:
-                    l = self.controller.labelList[polygon.labelIndex - 1]
-                    label = {
-                        "name": l.name,
-                        "points": []
-                    }
-                    for p in polygon.scnenePoints:
-                        label["points"].append(p)
-                    labels.append(label)
-                ## ----------
-                geocode_list = bound2wkt(labels, self.geoinfo["geotrans"])
-                # print(geocode_list)
-                print(save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
-                self.geoinfo = None
-            else:
-                ext = osp.splitext(savePath)[1]
-                cv2.imencode(ext, mask_output)[1].tofile(savePath)
+                print("save tif and shp:", self.rsSave.isChecked(), self.shpSave.isChecked())
+                if self.rsSave.isChecked():
+                    tifPath = pathHead + "_mask.tif"
+                    save_tif(mask_output, self.geoinfo, tifPath)
+                if self.shpSave.isChecked():
+                    shpPath = pathHead + ".shp"
+                    ## -- test --
+                    polygons = self.scene.polygon_items
+                    labels = []
+                    for polygon in polygons:
+                        l = self.controller.labelList[polygon.labelIndex - 1]
+                        label = {
+                            "name": l.name,
+                            "points": []
+                        }
+                        for p in polygon.scnenePoints:
+                            label["points"].append(p)
+                        labels.append(label)
+                    ## ----------
+                    geocode_list = bound2wkt(labels, self.geoinfo["geotrans"])
+                    print(save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
+            ext = osp.splitext(savePath)[1]
+            cv2.imencode(ext, mask_output)[1].tofile(savePath)
             # self.labelPaths.append(savePath)
 
         # 4.2 保存伪彩色
