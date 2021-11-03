@@ -36,9 +36,10 @@ def main():
         logDays = 7
     # TODO: 删除大于logDays 的 log
 
+    t = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     logging.basicConfig(
         level=logLevel,
-        filename=osp.normcase(osp.join(logFolder, f"eiseg-{datetime.now()}.log")),
+        filename=osp.normcase(osp.join(logFolder, f"eiseg-{t}.log")),
         format="%(levelname)s - %(asctime)s - %(filename)s - %(funcName)s - %(message)s",
     )
 
