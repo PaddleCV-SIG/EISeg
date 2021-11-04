@@ -2,12 +2,23 @@ import os.path as osp
 from collections import defaultdict
 import numpy as np
 
-try:
-    from osgeo import gdal, ogr, osr
-except ImportError:
-    import gdal
-    import ogr
-    import osr
+
+def hasPkg(pkg):
+    try:
+        import pkg
+
+        return True
+    except ImportError:
+        return False
+
+
+if hasPkg("gdal"):
+    try:
+        from osgeo import gdal, ogr, osr
+    except ImportError:
+        import gdal
+        import ogr
+        import osr
 
 
 def convert_coord(point, g):
@@ -55,7 +66,7 @@ def bound2wkt(bounds, tform):
         gl["polygon"] = gl["polygon"][:-1] + "))"
         geo_list.append(gl)
     return geo_list
-    
+
 
 def save_shp(shp_path, geocode_list, geo_info):
     # 支持中文路径
@@ -95,8 +106,8 @@ def save_shp(shp_path, geocode_list, geo_info):
     for index, f in enumerate(geocode_list):
         oFeaturePolygon = ogr.Feature(oDefn)
         oFeaturePolygon.SetField("id", index)
-        oFeaturePolygon.SetField("clas", f['clas'])
-        geomPolygon = ogr.CreateGeometryFromWkt(f['polygon'])
+        oFeaturePolygon.SetField("clas", f["clas"])
+        geomPolygon = ogr.CreateGeometryFromWkt(f["polygon"])
         oFeaturePolygon.SetGeometry(geomPolygon)
         oLayer.CreateFeature(oFeaturePolygon)
     # 创建完成后，关闭进程
@@ -107,6 +118,7 @@ def save_shp(shp_path, geocode_list, geo_info):
 # test
 if __name__ == "__main__":
     from rstools import open_tif
+
     tif_path = r"C:\Users\Geoyee\Pictures\Saved Pictures\cq2.tif"
     img, geo_info = open_tif(tif_path)
     print(geo_info["proj"].split('"')[1].replace(" ", ""))
