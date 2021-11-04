@@ -1,16 +1,19 @@
-from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 import os.path as osp
 from functools import partial
+import logging
 
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__
+from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 # from models import ModelsNick
 # from util import MODELS
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
+
+log = logging.getLogger(__name__ + ".ui")
 
 
 class Ui_EISeg(object):
@@ -98,7 +101,7 @@ class Ui_EISeg(object):
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         self.cheWithMask = QtWidgets.QCheckBox(self)
-        self.cheWithMask.setText("with_mask")
+        self.cheWithMask.setText("开启辅助蒙版")
         self.cheWithMask.setChecked(True)
         ModelRegion.addWidget(self.cheWithMask)  # with_mask
         horizontalLayout.addLayout(ModelRegion)
@@ -180,7 +183,113 @@ class Ui_EISeg(object):
         horizontalLayout.addLayout(ShowSetRegion)
         self.ShowSetDock = p_create_dock("ShowSetDock", self.tr("分割设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
+        ## 专业功能区工作区
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        bandRegion = QtWidgets.QVBoxLayout()
+        bandRegion.setObjectName("bandRegion")
+        bandSelection = create_text(CentralWidget, "bandSelection", self.tr("波段设置"))
+        bandRegion.addWidget(bandSelection)
+        text_list = ["R", "G", "B"]
+        self.bandCombos = []
+        for txt in text_list:
+            lab = create_text(CentralWidget, "band" + txt, txt)
+            combo = QtWidgets.QComboBox()
+            combo.addItems(["band_1"])
+            self.bandCombos.append(combo)
+            hbandLayout = QtWidgets.QHBoxLayout()
+            hbandLayout.setObjectName("hbandLayout")
+            hbandLayout.addWidget(lab)
+            hbandLayout.addWidget(combo)
+            hbandLayout.setStretch(1, 4)
+            bandRegion.addLayout(hbandLayout)
+        resultSave = create_text(CentralWidget, "resultSave", self.tr("保存设置"))
+        bandRegion.addWidget(resultSave)
+        self.rsSave = QtWidgets.QCheckBox(self.tr("额外保存为GTiff"))
+        self.rsSave.setObjectName("rsSave")
+        bandRegion.addWidget(self.rsSave)
+        self.shpSave = QtWidgets.QCheckBox(self.tr("额外保存为ESRI Shapefile"))
+        self.shpSave.setObjectName("shpSave")
+        bandRegion.addWidget(self.shpSave)
+        horizontalLayout.addLayout(bandRegion)
+        self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
+        ## 医学影像设置
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        MIRegion = QtWidgets.QVBoxLayout()
+        MIRegion.setObjectName("MIRegion")
+        # mi_text = create_text(CentralWidget, "sliceSelection", self.tr("切片选择"))
+        # MIRegion.addWidget(mi_text)
+        self.sldMISlide, slideRegion = p_create_slider(
+            "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
+        )
+        self.sldMISlide.setMinimum(1)
+        wwLabel = QtWidgets.QLabel("窗宽")
+        self.textWw = QtWidgets.QLineEdit()
+        self.textWw.setText("200")
+        self.textWw.setValidator(QtGui.QIntValidator())
+        self.textWw.setMaxLength(4)
+
+        wcLabel = QtWidgets.QLabel("窗位")
+        self.textWc = QtWidgets.QLineEdit()
+        self.textWc.setText("0")
+        self.textWc.setValidator(QtGui.QIntValidator())
+        self.textWc.setMaxLength(4)
+
+        MIRegion.addLayout(slideRegion)
+        MIRegion.addWidget(self.sldMISlide)
+        MIRegion.addWidget(wwLabel)
+        MIRegion.addWidget(self.textWw)
+        MIRegion.addWidget(wcLabel)
+        MIRegion.addWidget(self.textWc)
+        horizontalLayout.addLayout(MIRegion)
+        self.MIDock = p_create_dock("MIDock", self.tr("医疗设置"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
+        ## 宫格区域
+        widget = QtWidgets.QWidget()
+        horizontalLayout = QtWidgets.QHBoxLayout(widget)
+        GridRegion = QtWidgets.QVBoxLayout()
+        GridRegion.setObjectName("GridRegion")
+        self.btnInitGrid = p_create_button(
+            "btnInitGrid",
+            self.tr("创建宫格"),
+            osp.join(pjpath, "resource/N2.png"),
+            "",
+        )
+        self.btnFinishedGrid = p_create_button(
+            "btnFinishedGrid",
+            self.tr("完成宫格"),
+            osp.join(pjpath, "resource/Save.png"),
+            "",
+        )
+        hbandLayout = QtWidgets.QHBoxLayout()
+        hbandLayout.setObjectName("hbandLayout")
+        hbandLayout.addWidget(self.btnInitGrid)
+        hbandLayout.addWidget(self.btnFinishedGrid)
+        GridRegion.addLayout(hbandLayout)  # 创建宫格
+        self.gridTable = QtWidgets.QTableWidget(CentralWidget)
+        self.gridTable.horizontalHeader().hide()
+        self.gridTable.verticalHeader().hide()
+        # 铺满
+        self.gridTable.horizontalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch
+        )
+        self.gridTable.verticalHeader().setSectionResizeMode(
+            QtWidgets.QHeaderView.Stretch
+        )
+        self.gridTable.setObjectName("gridTable")
+        self.gridTable.clearContents()
+        self.gridTable.setColumnCount(1)
+        self.gridTable.setRowCount(1)
+        GridRegion.addWidget(self.gridTable)
+        horizontalLayout.addLayout(GridRegion)
+        self.GridDock = p_create_dock("GridDock", self.tr("宫格切换"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.GridDock)
+        ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+        log.debug("Set up UI finished")
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):
