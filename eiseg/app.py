@@ -142,11 +142,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             [".dcm"],  # 医学影像
             rs_ext,  # 遥感影像单独放一下 # RE: 这块是个临时的，formats里一行一个场景就行，到时候各个插件都一个class，每个插件弄一个检测是不是自己格式的method
         ]
-<<<<<<< HEAD
         # print(self.formats)
-=======
-        print(self.formats)
->>>>>>> 773e77eb85ead30b33a5aa7e0943bc7595802e4e
 
         # 初始化action
         self.initActions()
@@ -501,7 +497,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&调试日志"),
             self.toggleLogging,
             "toggle_logging",
-            "",
+            "Log",
             tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
             checkable=True,
         )
