@@ -161,11 +161,11 @@ class InteractiveController:
     def clearLabel(self):
         self.labelList.clear()
 
-    def readLabel(self, path):
-        self.labelList.readLabel(path)
+    def importLabel(self, path):
+        self.labelList.importLabel(path)
 
-    def saveLabel(self, path):
-        self.labelList.saveLabel(path)
+    def exportLabel(self, path):
+        self.labelList.exportLabel(path)
 
     # 点击操作
     def addClick(self, x: int, y: int, is_positive: bool):

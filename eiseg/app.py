@@ -703,6 +703,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setModelParam(self, paramPath):
         res = self.changeParam(paramPath)
         if res:
+            self.statusbar.showMessage(self.tr("加载模型成功"), 10000)
             return True
         return False
 
@@ -740,6 +741,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def chooseMode(self):
         self.predictor_params["predictor_params"]["with_mask"] = self.cheWithMask.isChecked()
         self.controller.reset_predictor(predictor_params=self.predictor_params)
+        if self.cheWithMask.isChecked():
+            self.statusbar.showMessage(self.tr("蒙版辅助已打开"), 10000)
+        else:
+            self.statusbar.showMessage(self.tr("蒙版辅助已关闭"), 10000)
         print("with_prev_mask:", self.controller.predictor.with_prev_mask)
 
     def loadRecentModelParam(self):
@@ -990,22 +995,23 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePaths.append(filePath)
         return True
 
-    def openFolder(self):
-        # 1. 选择文件夹
-        recentPath = self.settings.value("recent_files", [])
-        if len(recentPath) == 0:
-            recentPath = "."
-        else:
-            recentPath = osp.dirname(recentPath[-1])
-        self.inputDir = QtWidgets.QFileDialog.getExistingDirectory(
-            self,
-            self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
-            recentPath,
-            QtWidgets.QFileDialog.ShowDirsOnly
-            | QtWidgets.QFileDialog.DontResolveSymlinks,
-        )
-        if len(self.inputDir) == 0:
-            return
+    def openFolder(self, inputDir: str = None):
+        # 1. 如果没传文件夹，弹框让用户选
+        if not isinstance(inputDir, str):
+            recentPath = self.settings.value("recent_files", [])
+            if len(recentPath) == 0:
+                recentPath = "."
+            else:
+                recentPath = osp.dirname(recentPath[-1])
+            inputDir = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
+                recentPath,
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks,
+            )
+            if not osp.exists(inputDir):
+                return
 
         # 2. 关闭当前图片，清空文件列表
         self.saveImage(close=True)
@@ -1014,17 +1020,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 3. 扫描文件夹下所有图片
         # 3.1 获取所有文件名
-        imagePaths = os.listdir(self.inputDir)
-        exts = QtGui.QImageReader.supportedImageFormats()
-        imagePaths = [n for n in imagePaths if n.split(".")[-1] in exts]
+        imagePaths = os.listdir(inputDir)
+        exts = tuple(f for fmts in self.formats for f in fmts)
+        imagePaths = [n for n in imagePaths if n.lower().endswith(exts)]  # 修复大写后缀名
+        imagePaths.sort()
         if len(imagePaths) == 0:
             return
         # 3.2 设置默认输出路径为文件夹下的 label 文件夹
-        opd = osp.join(self.inputDir, "label")
+        opd = osp.join(inputDir, "label")
         self.outputDir = opd
         if not osp.exists(opd):
             os.makedirs(opd)
-        # 3.3 有重名标签都保留原来拓展名
+        # 3.3 有重名图片，标签保留原来拓展名
         names = []
         for name in imagePaths:
             name = osp.splitext(name)[0]
@@ -1032,11 +1039,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 names.append(name)
             else:
                 self.toggleOrigExt(True)
-        imagePaths = [osp.join(self.inputDir, n) for n in imagePaths]
+                break
+        imagePaths = [osp.join(inputDir, n) for n in imagePaths]
         for p in imagePaths:
-            if p not in self.imagePaths:
-                self.imagePaths.append(p)
-                self.listFiles.addItem(p.replace("\\", "/"))
+            p = osp.normcase(p)
+            self.imagePaths.append(p)
+            self.listFiles.addItem(p)
 
         # 3.4 加载已有的标注
         if self.outputDir is not None and osp.exists(self.outputDir):
@@ -1044,6 +1052,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.imagePaths) != 0:
             self.currIdx = 0
             self.turnImg(0)
+        self.inputDir = inputDir
 
     def loadImage(self, path):
         # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
