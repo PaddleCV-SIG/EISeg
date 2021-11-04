@@ -1,6 +1,6 @@
 # EISeg
 
-[![Python 3.6](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/)[![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE)[![Downloads](https://pepy.tech/badge/eiseg)](https://pepy.tech/project/eiseg)
+[![Python 3.6](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE) [![Downloads](https://pepy.tech/badge/eiseg)](https://pepy.tech/project/eiseg)
 <!-- [![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/PaddleCV-SIG/iseg/releases) -->
 
 [English](README.md) | 简体中文
