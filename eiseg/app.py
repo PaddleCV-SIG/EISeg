@@ -48,7 +48,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def __init__(self, parent=None):
         super(APP_EISeg, self).__init__(parent)
 
-        print(osp.join(pjpath, "config/setting.ini"))
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
@@ -745,7 +744,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.statusbar.showMessage(self.tr("掩膜以启用"), 10000)
         else:
             self.statusbar.showMessage(self.tr("掩膜已关闭"), 10000)
-        print("with_prev_mask:", self.controller.predictor.with_prev_mask)
 
     def loadRecentModelParam(self):
         if len(self.recentModels) == 0:
@@ -1084,7 +1082,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
             image = med.dcm_reader(path)
             self.controller.rawImage = self.image = image
-            print("wwwc", self.ww, self.wc)
             image = med.windowlize(image, self.ww, self.wc)
 
         if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
@@ -1154,7 +1151,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                         break
             if not labelPath:
                 return
-            print("load label", imgPath, labelPath)
 
             labels = json.loads(open(labelPath, "r").read())
 
@@ -1178,7 +1174,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2. 读取coco格式标签
         if self.save_status["coco"]:
             imgId = self.coco.imgNameToId.get(osp.basename(imgPath), None)
-            print("imgId:  ", imgId)
             if imgId is None:
                 return
             anns = self.coco.imgToAnns[imgId]
@@ -1207,9 +1202,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.grids.gridInit is False:
             # 1. 检查是否有图可翻，保存标签
             self.currIdx += delta
-            print("Turn img", self.currIdx, delta, len(self.imagePaths))
             if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
-                print("------", self.currIdx, len(self.imagePaths))
                 self.currIdx -= delta
                 if delta == 1:
                     self.statusbar.showMessage(self.tr(f"没有后一张图片"))
@@ -1247,7 +1240,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for points in curr_polygon:
             if len(points) < 3:
                 continue
-            print("the id is ", self.controller.labelList[self.currLabelIdx].idx)
             poly = PolygonAnnotation(
                 self.controller.labelList[self.currLabelIdx].idx,
                 self.controller.image.shape,
@@ -1264,7 +1256,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.setDirty()
 
     def finishObject(self):
-        print("status:", self.status)
         if not self.controller or self.image is None:
             return
         current_mask, curr_polygon = self.controller.finishObject()
@@ -1335,7 +1326,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 1. 需要处于标注状态
         if not self.controller or self.controller.image is None:
             return
-        print("img shape", self.controller.image.shape)
         # 2. 完成正在交互式标注的标签
         self.completeLastMask()
         # 3. 确定保存路径
@@ -1385,7 +1375,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["gray_scale"]:
             if self.geoinfo is not None:
                 pathHead, _ = osp.splitext(savePath)
-                print("save tif and shp:", self.rsSave.isChecked(), self.shpSave.isChecked())
                 if self.rsSave.isChecked():
                     tifPath = pathHead + "_mask.tif"
                     rs.save_tif(mask_output, self.geoinfo, tifPath)
@@ -1420,10 +1409,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["pseudo_color"]:
             pseudoPath, ext = osp.splitext(savePath)
             pseudoPath = pseudoPath + "_pseudo" + ext
-            print("pseudoPath", pseudoPath)
             s = self.controller.imgShape
             pseudo = np.zeros([s[1], s[0], 3])
-            print("size", self.controller.imgShape, pseudo.shape)
             # mask = self.controller.result_mask
             mask = mask_output
             for lab in self.controller.labelList:
@@ -1477,7 +1464,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                         points.append(val)
 
                 if not polygon.coco_id:
-                    print("adding: ", polygon.labelIndex)
                     annId = self.coco.addAnnotation(imgId, polygon.labelIndex, points)
                     polygon.coco_id = annId
                 else:
@@ -1534,13 +1520,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             labelPaths = [n for n in labelPaths if n.endswith(".json")]
             labelPaths = [osp.join(outputDir, n) for n in labelPaths]
             self.labelPaths = labelPaths
-            print("json label paths:", self.labelPaths)
 
             # 加载对应的标签列表
             lab_auto_save = osp.join(self.outputDir, "autosave_label.txt")
             if osp.exists(lab_auto_save) == False:
                 lab_auto_save = osp.join(self.outputDir, "label/autosave_label.txt")
-            print("lab_auto_save:", lab_auto_save)
             if osp.exists(lab_auto_save):
                 try:
                     self.importLabelList(lab_auto_save)
@@ -1870,13 +1854,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
         self.grids.masksGrid[row][col] = np.array(self.getMask())
-        # test
-        for i in range(len(self.grids.masksGrid)):
-            for j in range(len(self.grids.masksGrid[i])):
-                print(
-                    self.grids.masksGrid[i][j].shape,
-                    np.unique(self.grids.masksGrid[i][j]),
-                )
 
     def turnGrid(self, delta):
         # 切换下一个宫格
@@ -1985,7 +1962,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 如果设置了保存路径，把标签也保存下
         if self.outputDir is not None and len(self.controller.labelList) != 0:
             self.exportLabelList(osp.join(self.outputDir, "autosave_label.txt"))
-            print("autosave label finished!")
 
     def closeEvent(self, event):
         self.saveLayout()
