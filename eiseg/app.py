@@ -495,7 +495,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&调试日志"),
             self.toggleLogging,
             "toggle_logging",
-            "",
+            "Log",
             tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
             checkable=True,
         )
