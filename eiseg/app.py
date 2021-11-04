@@ -1224,9 +1224,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
             self.setClean()
+            self.geoinfo = None
         else:
             self.turnGrid(delta)
-        self.geoinfo = None
 
     def imageListClicked(self):
         if not self.controller:
@@ -1392,6 +1392,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if self.shpSave.isChecked():
                     shpPath = pathHead + ".shp"
                     ## -- test --
+                    if lab_input is not None:  # 用了grid
+                        in_poly = util.get_polygon(lab_input)
+                        if self.currLabelIdx != -1:
+                            # TODO:标签颜色怎么与原来对应
+                            color = self.controller.labelList[self.currLabelIdx].color
+                            self.createPoly(in_poly, color)
                     polygons = self.scene.polygon_items
                     labels = []
                     for polygon in polygons:

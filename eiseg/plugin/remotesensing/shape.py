@@ -73,12 +73,10 @@ def save_shp(shp_path, geocode_list, geo_info):
     oDS = oDriver.CreateDataSource(shp_path)
     if oDS == None:
         return "创建文件失败：" + shp_path
-    # 创建一个多边形图层，指定坐标系为WGS84
+    # 创建一个多边形图层
     geosrs = osr.SpatialReference()
-    # TODO：测试
-    gcs = geo_info.split('"')[1].replace(" ", "")
-    print(gcs)
-    geosrs.SetWellKnownGeogCS(gcs)
+    # TODO：geo_info格式不统一，怎么解析，需要多看一点数据，目前默认使用WGS84
+    geosrs.SetWellKnownGeogCS("WGS84")  # (geo_info)
     ogr_type = ogr.wkbPolygon
     shpe_name = osp.splitext(osp.split(shp_path)[-1])[0]
     oLayer = oDS.CreateLayer(shpe_name, geosrs, ogr_type)
@@ -109,7 +107,7 @@ def save_shp(shp_path, geocode_list, geo_info):
 # test
 if __name__ == "__main__":
     from rstools import open_tif
-    tif_path = r"E:\PdCVSIG\github\images\rs_img\gf2.tif"
+    tif_path = r"C:\Users\Geoyee\Pictures\Saved Pictures\cq2.tif"
     img, geo_info = open_tif(tif_path)
     print(geo_info["proj"].split('"')[1].replace(" ", ""))
     # shp_path = r"E:\PdCVSIG\github\images\test.shp"
