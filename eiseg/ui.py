@@ -101,7 +101,7 @@ class Ui_EISeg(object):
         )
         ModelRegion.addWidget(self.btnParamsSelect)  # 模型选择
         self.cheWithMask = QtWidgets.QCheckBox(self)
-        self.cheWithMask.setText("开启辅助蒙版")
+        self.cheWithMask.setText("使用掩膜")
         self.cheWithMask.setChecked(True)
         ModelRegion.addWidget(self.cheWithMask)  # with_mask
         horizontalLayout.addLayout(ModelRegion)

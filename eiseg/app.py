@@ -3,7 +3,7 @@ import os.path as osp
 from functools import partial
 import sys
 import json
-from distutils.util import strtobool
+from distutils.util import *
 import imghdr
 import webbrowser
 import logging
@@ -24,7 +24,7 @@ from ui import Ui_EISeg
 import util
 # from util import MODELS, COCO
 from util import COCO
-from plugin.remotesensing import *
+import plugin.remotesensing as rs
 from plugin.medical import med
 from plugin.n2grid import Grids
 
@@ -742,9 +742,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.predictor_params["predictor_params"]["with_mask"] = self.cheWithMask.isChecked()
         self.controller.reset_predictor(predictor_params=self.predictor_params)
         if self.cheWithMask.isChecked():
-            self.statusbar.showMessage(self.tr("蒙版辅助已打开"), 10000)
+            self.statusbar.showMessage(self.tr("掩膜以启用"), 10000)
         else:
-            self.statusbar.showMessage(self.tr("蒙版辅助已关闭"), 10000)
+            self.statusbar.showMessage(self.tr("掩膜已关闭"), 10000)
         print("with_prev_mask:", self.controller.predictor.with_prev_mask)
 
     def loadRecentModelParam(self):
@@ -974,6 +974,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             filters = ""
             for fmts, p in zip(self.formats, prompts):
                 filters += f"{p} ({' '.join(['*' + f for f in fmts])}) ;; "
+            filters = filters[:-3]
             recentPath = self.settings.value("recent_files", [])
             if len(recentPath) == 0:
                 recentPath = "."
@@ -1096,17 +1097,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if res == QMessageBox.Cancel:
                     return False
                 self.toggleWidget(4)
-            self.grids.rawimg, self.geoinfo = open_tif(path)
+            self.grids.rawimg, self.geoinfo = rs.open_tif(path)
             try:
-                image = selec_band(self.grids.rawimg, self.rsRGB)
+                image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             except IndexError:
                 self.rsRGB = [0, 0, 0]
-                image = selec_band(self.grids.rawimg, self.rsRGB)
+                image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
             self.updateSlideSld(True)
 
         self.grids.detimg = image
-        thumbnail, resize = get_thumbnail(image)  # 图像太大就显示缩略图
+        thumbnail, resize = rs.get_thumbnail(image)  # 图像太大就显示缩略图
         if resize:
             self.warn(self.tr("图像过大"), self.tr("图像过大，已压缩显示，若想高品质标注请使用宫格标注功能！"))
             # 打开宫格功能
@@ -1387,7 +1388,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 print("save tif and shp:", self.rsSave.isChecked(), self.shpSave.isChecked())
                 if self.rsSave.isChecked():
                     tifPath = pathHead + "_mask.tif"
-                    save_tif(mask_output, self.geoinfo, tifPath)
+                    rs.save_tif(mask_output, self.geoinfo, tifPath)
                 if self.shpSave.isChecked():
                     shpPath = pathHead + ".shp"
                     ## -- test --
@@ -1403,8 +1404,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                             label["points"].append(p)
                         labels.append(label)
                     ## ----------
-                    geocode_list = bound2wkt(labels, self.geoinfo["geotrans"])
-                    print(save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
+                    geocode_list = rs.bound2wkt(labels, self.geoinfo["geotrans"])
+                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
             ext = osp.splitext(savePath)[1]
             cv2.imencode(ext, mask_output)[1].tofile(savePath)
             # self.labelPaths.append(savePath)
@@ -1703,7 +1704,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toggleWidget(self, index):
         # TODO: 输入从数字改成名字
         if index == 4:
-            if check_gdal() == False:
+            if rs.check_gdal() == False:
                 self.warn(
                     self.tr("无法导入GDAL"),
                     self.tr("请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！"),
@@ -1712,7 +1713,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.statusbar.showMessage(self.tr("打开失败，未检出GDAL"))
                 return
         if index == 5:
-            if check_sitk() == False:
+            if med.check_sitk() == False:
                 self.warn(
                     self.tr("无法导入SimpleITK"),
                     self.tr("请检查环境中是否存在SimpleITK，若不存在则无法使用医疗工具！"),
@@ -1727,17 +1728,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
-        image = selec_band(self.grids.rawimg, self.rsRGB)
+        image = rs.selec_band(self.grids.rawimg, self.rsRGB)
         self.test_show(image)
 
     def miSlideSet(self):
-        image = slice_img(self.grids.rawimg, self.midx)
+        image = rs.slice_img(self.grids.rawimg, self.midx)
         self.test_show(image)
 
     def test_show(self, image):
         self.grids.detimg = image
         try:
-            thumbnail, _ = get_thumbnail(image)
+            thumbnail, _ = rs.get_thumbnail(image)
             self.image = thumbnail
             self.controller.image = thumbnail
             self.updateImage()
@@ -2032,4 +2033,4 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = med.windowlize(
             self.controller.rawImage, self.ww, self.wc
         )
-        # self.updateImage()
+        self.updateImage()
