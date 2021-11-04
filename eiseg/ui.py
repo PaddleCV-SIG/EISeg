@@ -181,8 +181,8 @@ class Ui_EISeg(object):
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
         horizontalLayout.addLayout(ShowSetRegion)
-        self.ShowSetDock = p_create_dock("ShowSetDock", self.tr("分割设置"), widget)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.ShowSetDock)
+        self.SegSettingDock = p_create_dock("SegSettingDock", self.tr("分割设置"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.SegSettingDock)
         ## 专业功能区工作区
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)

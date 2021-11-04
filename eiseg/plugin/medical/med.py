@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-from eiseg.util.remotesensing import sample_norm
+from eiseg.plugin.remotesensing import sample_norm
 
 
 def check_sitk():
