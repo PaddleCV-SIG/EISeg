@@ -75,10 +75,14 @@ def save_shp(shp_path, geocode_list, geo_info):
         return "创建文件失败：" + shp_path
     # 创建一个多边形图层，指定坐标系为WGS84
     geosrs = osr.SpatialReference()
+<<<<<<< HEAD
     # TODO：测试
     gcs = geo_info.split('"')[1].replace(" ", "")
     print(gcs)
     geosrs.SetWellKnownGeogCS(gcs)
+=======
+    geosrs.SetWellKnownGeogCS("WGS84")
+>>>>>>> 773e77eb85ead30b33a5aa7e0943bc7595802e4e
     ogr_type = ogr.wkbPolygon
     shpe_name = osp.splitext(osp.split(shp_path)[-1])[0]
     oLayer = oDS.CreateLayer(shpe_name, geosrs, ogr_type)
@@ -111,6 +115,7 @@ if __name__ == "__main__":
     from rstools import open_tif
     tif_path = r"E:\PdCVSIG\github\images\rs_img\gf2.tif"
     img, geo_info = open_tif(tif_path)
+<<<<<<< HEAD
     print(geo_info["proj"].split('"')[1].replace(" ", ""))
     # shp_path = r"E:\PdCVSIG\github\images\test.shp"
     # geocode_list = [
@@ -118,3 +123,12 @@ if __name__ == "__main__":
     #     {"clas": "build2", "polygon": "Polygon ((6 3,9 2,9 4,6 3))"},
     #     ]
     # save_shp(shp_path, geocode_list, geo_info["proj"])
+=======
+    print(geo_info)
+    shp_path = r"E:\PdCVSIG\github\images\test.shp"
+    geocode_list = [
+        {"clas": "build1", "polygon": "Polygon ((1 1,5 1,5 5,1 5,1 1))"},
+        {"clas": "build2", "polygon": "Polygon ((6 3,9 2,9 4,6 3))"},
+        ]
+    save_shp(shp_path, geocode_list, geo_info["proj"])
+>>>>>>> 773e77eb85ead30b33a5aa7e0943bc7595802e4e
