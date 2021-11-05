@@ -30,11 +30,13 @@ class EISegModel:
             config.enable_use_gpu(500, 0)
             config.switch_ir_optim()
             config.enable_memory_optim()
-            config.enable_tensorrt_engine(
-                workspace_size=1 << 30, 
-                precision_mode=paddle_infer.PrecisionType.Float32,
-                max_batch_size=1, min_subgraph_size=5, 
-                use_static=False, use_calib_mode=False)
+            use_tensoret = False  # TODO: 目前Linux和windows下使用TensorRT报错
+            if use_tensoret:
+                config.enable_tensorrt_engine(
+                    workspace_size=1 << 30, 
+                    precision_mode=paddle_infer.PrecisionType.Float32,
+                    max_batch_size=1, min_subgraph_size=5, 
+                    use_static=False, use_calib_mode=False)
         self.model = paddle_infer.create_predictor(config)
         print("加载模型成功")
 
