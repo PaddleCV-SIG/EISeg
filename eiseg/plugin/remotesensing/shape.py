@@ -3,22 +3,13 @@ from collections import defaultdict
 import numpy as np
 
 
-def hasPkg(pkg):
-    try:
-        import pkg
-
-        return True
-    except ImportError:
-        return False
-
-
-if hasPkg("gdal"):
-    try:
-        from osgeo import gdal, ogr, osr
-    except ImportError:
-        import gdal
-        import ogr
-        import osr
+# 之前那样导不进来
+try:
+    from osgeo import gdal, ogr, osr
+except ImportError:
+    import gdal
+    import ogr
+    import osr
 
 
 def convert_coord(point, g):
@@ -33,27 +24,6 @@ def convert_coord(point, g):
 
 
 def bound2wkt(bounds, tform):
-    # names = []
-    # for bd in bounds:
-    #     if bd["name"] not in names:
-    #         names.append(bd["name"])
-    # geo_list = [defaultdict()] * len(names)
-    # for i in range(len(geo_list)):
-    #     geo_list[i]["clas"] = names[i]
-    #     geo_list[i]["polygon"] = "Polygon ("
-    # for bd in bounds:
-    #     for geod in geo_list:
-    #         if bd["name"] == geod["clas"]:
-    #             p = bd["points"]
-    #             geod["polygon"] += "(("
-    #             for i in range(len(p)):
-    #                 x, y = convert_coord(p[i], tform)
-    #                 geod["polygon"] += (str(x) + " " + str(y)) + ","
-    #             x, y = convert_coord(p[0], tform)
-    #             geod["polygon"] += (str(x) + " " + str(y)) + ")),"
-    # for geod in geo_list:
-    #     geod["polygon"] = geod["polygon"][:-1] + ")"
-    # return geo_list
     geo_list = []
     for bd in bounds:
         gl = defaultdict()
@@ -119,9 +89,9 @@ def save_shp(shp_path, geocode_list, geo_info):
 if __name__ == "__main__":
     from rstools import open_tif
 
-    tif_path = r"C:\Users\Geoyee\Pictures\Saved Pictures\cq2.tif"
+    tif_path = r"C:\Users\Geoyee\Desktop\jpg1.tif"
     img, geo_info = open_tif(tif_path)
-    print(geo_info["proj"].split('"')[1].replace(" ", ""))
+    print("proj:", geo_info["proj"])
     # shp_path = r"E:\PdCVSIG\github\images\test.shp"
     # geocode_list = [
     #     {"clas": "build1", "polygon": "Polygon ((1 1,5 1,5 5,1 5,1 1))"},

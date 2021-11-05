@@ -34,9 +34,9 @@ def selec_band(tifarr, rgb):
 
 # DEBUG：test
 def sample_norm(image, NUMS=65536):
-    stretched_r = stretch(image[:, :, 0], NUMS)
-    stretched_g = stretch(image[:, :, 1], NUMS)
-    stretched_b = stretch(image[:, :, 2], NUMS)
+    stretched_r = __stretch(image[:, :, 0], NUMS)
+    stretched_g = __stretch(image[:, :, 1], NUMS)
+    stretched_b = __stretch(image[:, :, 2], NUMS)
     stretched_img = cv2.merge([
         stretched_r / float(NUMS), 
         stretched_g / float(NUMS), 
@@ -45,7 +45,7 @@ def sample_norm(image, NUMS=65536):
 
 
 # 计算直方图
-def histogram(ima, NUMS):
+def __histogram(ima, NUMS):
     bins = list(range(0, NUMS))
     flat = ima.flat
     n = np.searchsorted(np.sort(flat), bins)
@@ -55,8 +55,8 @@ def histogram(ima, NUMS):
 
 
 # 直方图均衡化
-def stretch(ima, NUMS):
-    hist = histogram(ima, NUMS)
+def __stretch(ima, NUMS):
+    hist = __histogram(ima, NUMS)
     lut = []
     for bt in range(0, len(hist), NUMS):
         # 步长尺寸
@@ -70,6 +70,7 @@ def stretch(ima, NUMS):
         return ima
 
 
+# 计算缩略图
 def get_thumbnail(image, range=2000, max_size=1000):
     h, w = image.shape[:2]
     resize = False

@@ -12,6 +12,7 @@ def check_gdal():
 import numpy as np
 import cv2
 
+
 IPT_GDAL = check_gdal()
 if IPT_GDAL:
     try:
@@ -26,12 +27,12 @@ def open_tif(geoimg_path):
     '''
     if IPT_GDAL == True:
         geoimg = gdal.Open(geoimg_path)
-        return _tif2arr(geoimg), get_geoinfo(geoimg)
+        return __tif2arr(geoimg), get_geoinfo(geoimg)
     else:
         raise ImportError('can\'t import gdal!')
 
 
-def _tif2arr(geoimg):
+def __tif2arr(geoimg):
     if IPT_GDAL == True:
         tifarr = geoimg.ReadAsArray()
         if len(tifarr.shape) == 3:
