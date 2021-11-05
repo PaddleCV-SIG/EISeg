@@ -11,10 +11,12 @@ here = osp.dirname(osp.abspath(__file__))
 
 class EISegModel:
     @abstractmethod
-    def __init__(self,
-                 model_path="eiseg/static_hrnet18_ocr64_cocolvis.pdmodel",
-                 param_path="eiseg/static_hrnet18_ocr64_cocolvis.pdiparams",
-                 use_gpu=False):
+    def __init__(
+        self,
+        model_path="eiseg/static_hrnet18_ocr64_cocolvis.pdmodel",
+        param_path="eiseg/static_hrnet18_ocr64_cocolvis.pdiparams",
+        use_gpu=False,
+    ):
         model_path, param_path = self.check_param(model_path, param_path)
         try:
             config = paddle_infer.Config(model_path, param_path)
@@ -22,6 +24,7 @@ class EISegModel:
             ValueError(" 模型和参数不匹配，请检查模型和参数是否加载错误")
         if not use_gpu:
             config.enable_mkldnn()
+            # TODO: fluid要废弃了，研究判断方式
             if paddle.fluid.core.supports_bfloat16():
                 config.enable_mkldnn_bfloat16()
             config.switch_ir_optim(True)
@@ -33,10 +36,13 @@ class EISegModel:
             use_tensoret = False  # TODO: 目前Linux和windows下使用TensorRT报错
             if use_tensoret:
                 config.enable_tensorrt_engine(
-                    workspace_size=1 << 30, 
+                    workspace_size=1 << 30,
                     precision_mode=paddle_infer.PrecisionType.Float32,
-                    max_batch_size=1, min_subgraph_size=5, 
-                    use_static=False, use_calib_mode=False)
+                    max_batch_size=1,
+                    min_subgraph_size=5,
+                    use_static=False,
+                    use_calib_mode=False,
+                )
         self.model = paddle_infer.create_predictor(config)
         print("加载模型成功")
 

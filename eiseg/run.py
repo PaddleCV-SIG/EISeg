@@ -42,7 +42,6 @@ def main():
         filename=osp.normcase(osp.join(logFolder, f"eiseg-{t}.log")),
         format="%(levelname)s - %(asctime)s - %(filename)s - %(funcName)s - %(message)s",
     )
-    ## -- --- --
 
     app = QApplication(sys.argv)
     lang = settings.value("language")

@@ -95,7 +95,7 @@ class InteractiveController:
                 else:
                     use_gpu = False
             try:
-                log.info(f"use_gpu {use_gpu}")
+                log.info(f"User paddle compiled with gpu: use_gpu {use_gpu}")
                 self.model = EISegModel(model_path, param_path, use_gpu)
             except KeyError as e:
                 return False, str(e)
