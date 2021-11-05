@@ -1028,10 +1028,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(imagePaths) == 0:
             return
         # 3.2 设置默认输出路径为文件夹下的 label 文件夹
-        opd = osp.join(inputDir, "label")
-        self.outputDir = opd
-        if not osp.exists(opd):
-            os.makedirs(opd)
+        self.outputDir = osp.join(inputDir, "label")
+        if not osp.exists(self.outputDir):
+            os.makedirs(self.outputDir)
         # 3.3 有重名图片，标签保留原来拓展名
         names = []
         for name in imagePaths:
@@ -1081,10 +1080,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if res == QMessageBox.Cancel:
                     return False
                 self.toggleWidget(5)
-
+            if not self.display_dockwidget[5]:
+                return
             image = med.dcm_reader(path)
+            # TODO: 添加多层支持
+            if image.shape[-1] != 1:
+                self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
+                return
+
             self.controller.rawImage = self.image = image
-            image = med.windowlize(image, self.ww, self.wc)
+            # image = med.windowlize(image, self.ww, self.wc)
 
         if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
             if not self.RSDock.isVisible():
@@ -1871,8 +1876,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.changeGrid(r, c)
 
     def saveGridLabel(self):
-        if self.grids.gridInit is False or \
-           self.grids.detimg is None:
+        if self.grids.gridInit is False or self.grids.detimg is None:
             return
         try:
             self.saveGrid()  # 先保存当前

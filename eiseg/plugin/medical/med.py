@@ -1,6 +1,11 @@
+import logging
+
 import numpy as np
 import cv2
-from eiseg.plugin.remotesensing import sample_norm
+
+# from eiseg.plugin.remotesensing import sample_norm
+
+log = logging.getLogger(__name__ + ".med_plugin")
 
 
 def check_sitk():
@@ -17,10 +22,15 @@ if check_sitk():
 
 
 def dcm_reader(path):
+    log.debug(f"opening medical image {path}")
     reader = sitk.ImageSeriesReader()
     reader.SetFileNames([path])
     image = reader.Execute()
     img = sitk.GetArrayFromImage(image)
+    log.debug(f"scan shape is {img.shape}")
+    if len(img.shape) == 4:
+        img = img[0]
+    # WHC
     img = np.transpose(img, [1, 2, 0])
     return img.astype(np.int32)
 
@@ -33,7 +43,9 @@ def windowlize(scan, ww, wc):
     res = np.clip(res, wl, wh)
     res = (res - wl) / ww * 255
     res = res.astype(np.uint8)
-    res = cv2.cvtColor(res, cv2.COLOR_GRAY2BGR)
+    print("++", res.shape)
+    for idx in range(res.shape[-1]):
+        res[:, :, idx] = cv2.cvtColor(res[:, :, idx], cv2.COLOR_GRAY2BGR)
 
     return res
 

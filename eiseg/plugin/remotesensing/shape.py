@@ -2,14 +2,14 @@ import os.path as osp
 from collections import defaultdict
 import numpy as np
 
-
-# 之前那样导不进来
-try:
-    from osgeo import gdal, ogr, osr
-except ImportError:
-    import gdal
-    import ogr
-    import osr
+#
+# # 之前那样导不进来
+# try:
+#     from osgeo import gdal, ogr, osr
+# except ImportError:
+#     import gdal
+#     import ogr
+#     import osr
 
 
 def convert_coord(point, g):
