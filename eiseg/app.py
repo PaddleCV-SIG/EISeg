@@ -17,12 +17,10 @@ import cv2
 import numpy as np
 
 from eiseg import pjpath, __APPNAME__
-# from models import ModelsNick
 from widget import ShortcutWindow, PolygonAnnotation
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
-# from util import MODELS, COCO
 from util import COCO
 import plugin.remotesensing as rs
 from plugin.medical import med
@@ -66,15 +64,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         }  # 是否保存这几个格式
 
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
-        self.predictor_params={
+        self.predictor_params = {
             "brs_mode": "NoBRS",
             "with_flip": False,
             "zoom_in_params": {
                 "skip_clicks": -1,
                 "target_size": (400, 400),
-                "expansion_ratio": 1.4
+                "expansion_ratio": 1.4,
             },
-            "predictor_params": {"net_clicks_limit": None, "max_size": 800, "with_mask": True}
+            "predictor_params": {
+                "net_clicks_limit": None,
+                "max_size": 800,
+                "with_mask": True,
+            },
         }
         self.controller = InteractiveController(
             # self.updateImage,
@@ -499,7 +501,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         toggle_logging.setChecked(bool(self.settings.value("logging", False)))
-        
+
         self.actions = util.struct()
         for name in dir():
             if name not in start:
@@ -691,9 +693,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 f"{osp.basename(m['param_path'])}",
                 self,
             )
-            action.triggered.connect(
-                partial(self.setModelParam, m["param_path"])
-            )
+            action.triggered.connect(partial(self.setModelParam, m["param_path"]))
             menu.addAction(action)
         if len(self.recentModels) == 0:
             menu.addAction(self.tr("无近期模型记录"))
@@ -738,10 +738,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return False
 
     def chooseMode(self):
-        self.predictor_params["predictor_params"]["with_mask"] = self.cheWithMask.isChecked()
+        self.predictor_params["predictor_params"][
+            "with_mask"
+        ] = self.cheWithMask.isChecked()
         self.controller.reset_predictor(predictor_params=self.predictor_params)
         if self.cheWithMask.isChecked():
-            self.statusbar.showMessage(self.tr("掩膜以启用"), 10000)
+            self.statusbar.showMessage(self.tr("掩膜已启用"), 10000)
         else:
             self.statusbar.showMessage(self.tr("掩膜已关闭"), 10000)
 
@@ -1391,10 +1393,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     labels = []
                     for polygon in polygons:
                         l = self.controller.labelList[polygon.labelIndex - 1]
-                        label = {
-                            "name": l.name,
-                            "points": []
-                        }
+                        label = {"name": l.name, "points": []}
                         for p in polygon.scnenePoints:
                             label["points"].append(p)
                         labels.append(label)
@@ -1738,7 +1737,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeWorkerShow(self, index):
         self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
         self.toggleDockWidgets()
-
 
     def toggleDockWidgets(self, is_init=False):
         if is_init == True:

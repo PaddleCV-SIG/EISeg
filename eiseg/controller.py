@@ -1,17 +1,22 @@
 import os.path as osp
 import time
 import json
+import logging
+
 import cv2
 import numpy as np
 from skimage.measure import label
+import paddle
 
 from inference import clicker
 from inference.predictor import get_predictor
 import util
 from util.vis import draw_with_blend_and_clicks
-# from util import MODELS, LabelList
-from models import EISegModel  # ModelsNick
+from models import EISegModel
 from util import LabelList
+
+
+log = logging.getLogger(__name__ + ".main")
 
 
 class InteractiveController:
@@ -62,15 +67,17 @@ class InteractiveController:
             return
         self.lccFilter = do_filter
 
-    def setModel(self,
-                 param_path=None,
-                 use_gpu=False):
+    def setModel(self, param_path=None, use_gpu=None):
         """设置推理其模型.
 
         Parameters
         ----------
         params_path : str
             模型路径
+
+        use_gpu : bool
+            None:检测，根据paddle版本判断
+            bool:按照指定是否开启GPU
 
         Returns
         -------
@@ -81,9 +88,14 @@ class InteractiveController:
         if param_path is not None:
             model_path = param_path.replace(".pdiparams", ".pdmodel")
             if not osp.exists(model_path):
-                raise Exception(f"未找到{model_path}文件")
+                raise Exception(f"未在 {model_path} 找到模型文件")
+            if use_gpu is None:
+                if paddle.is_compiled_with_cuda():
+                    use_gpu = True
+                else:
+                    use_gpu = False
             try:
-                # self.model = MODELS[modelName]()
+                log.info(f"use_gpu {use_gpu}")
                 self.model = EISegModel(model_path, param_path, use_gpu)
             except KeyError as e:
                 return False, str(e)
@@ -191,9 +203,7 @@ class InteractiveController:
         if not self.inImage(x, y):
             return False, "点击越界"
         if not self.modelSet:
-            return False, "模型未设置"
-        # if not self.paramSet:
-        #     return False, "参数未设置"
+            return False, "未加载模型"
         if not self.imageSet:
             return False, "图像未设置"
 
@@ -357,7 +367,6 @@ class InteractiveController:
     def inImage(self, x: int, y: int):
         s = self.image.shape
         if x < 0 or y < 0 or x >= s[1] or y >= s[0]:
-            print("点击越界")
             return False
         return True
 
@@ -397,10 +406,6 @@ class InteractiveController:
     @property
     def imgShape(self):
         return self.image.shape[1::-1]
-
-    # @property
-    # def paramSet(self):
-    #     return self.model.paramSet
 
     @property
     def modelSet(self):

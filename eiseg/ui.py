@@ -7,8 +7,6 @@ from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__
 from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
-# from models import ModelsNick
-# from util import MODELS
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
@@ -134,7 +132,9 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         LabelRegion = QtWidgets.QVBoxLayout()
         LabelRegion.setObjectName("LabelRegion")
-        self.labelListTable = TableWidget(CentralWidget)  # QtWidgets.QTableWidget(CentralWidget)
+        self.labelListTable = TableWidget(
+            CentralWidget
+        )  # QtWidgets.QTableWidget(CentralWidget)
         self.labelListTable.horizontalHeader().hide()
         # 铺满
         self.labelListTable.horizontalHeader().setSectionResizeMode(
