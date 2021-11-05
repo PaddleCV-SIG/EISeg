@@ -8,15 +8,13 @@ import numpy as np
 from skimage.measure import label
 import paddle
 
+from eiseg import logger
 from inference import clicker
 from inference.predictor import get_predictor
 import util
 from util.vis import draw_with_blend_and_clicks
 from models import EISegModel
 from util import LabelList
-
-
-log = logging.getLogger(__name__ + ".main")
 
 
 class InteractiveController:
@@ -54,6 +52,7 @@ class InteractiveController:
         self._result_mask = None
         self.labelList = LabelList()
         self.lccFilter = False
+        self.log = logging.getLogger(__name__)
 
     def filterLargestCC(self, do_filter: bool):
         """设置是否只保留推理结果中的最大联通块
@@ -94,11 +93,13 @@ class InteractiveController:
                     use_gpu = True
                 else:
                     use_gpu = False
+            logger.info(f"User paddle compiled with gpu: use_gpu {use_gpu}")
+            tic = time.time()
             try:
-                log.info(f"User paddle compiled with gpu: use_gpu {use_gpu}")
                 self.model = EISegModel(model_path, param_path, use_gpu)
             except KeyError as e:
                 return False, str(e)
+            logger.info(f"Load model {model_path} took {time.time()-tic}")
             return True, "模型设置成功"
 
     # def setParam(self, paramPath: str):

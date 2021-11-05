@@ -1,17 +1,16 @@
 import os.path as osp
 from functools import partial
-import logging
 
 from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
-from eiseg import pjpath, __APPNAME__
+from eiseg import pjpath, __APPNAME__, logger
 from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
 from widget.table import TableWidget
 
-log = logging.getLogger(__name__ + ".ui")
+# log = logging.getLogger(__name__ + ".ui")
 
 
 class Ui_EISeg(object):
@@ -289,7 +288,7 @@ class Ui_EISeg(object):
         ## -----
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
-        log.debug("Set up UI finished")
+        # log.debug("Set up UI finished")
 
     ## 创建文本
     def create_text(self, parent, text_name=None, text_text=None):

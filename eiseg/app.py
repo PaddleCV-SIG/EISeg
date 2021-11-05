@@ -492,15 +492,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Shortcut",
             tr("编辑软件快捷键"),
         )
-        toggle_logging = action(
-            tr("&调试日志"),
-            self.toggleLogging,
-            "toggle_logging",
-            "Log",
-            tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
-            checkable=True,
-        )
-        toggle_logging.setChecked(bool(self.settings.value("logging", False)))
+        # toggle_logging = action(
+        #     tr("&调试日志"),
+        #     self.toggleLogging,
+        #     "toggle_logging",
+        #     "Log",
+        #     tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
+        #     checkable=True,
+        # )
+        # toggle_logging.setChecked(bool(self.settings.value("logging", False)))
 
         self.actions = util.struct()
         for name in dir():
@@ -573,7 +573,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 quick_start,
                 report_bug,
                 edit_shortcuts,
-                toggle_logging,
+                # toggle_logging,
             ),
             toolBar=(
                 finish_object,
@@ -1989,15 +1989,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.saveImage(True)
         self.canvas.setStyleSheet(self.note_style)
 
-    def toggleLogging(self):
-        logOn = bool(self.settings.value("logging", False))
-        logOn = not logOn
-        self.actions.toggle_logging.setChecked(logOn)
-        self.settings.setValue("logging", logOn)
-        if logOn:
-            logging.getLogger().setLevel(logging.DEBUG)
-        else:
-            logging.getLogger().setLevel(logging.CRITICAL)
+    # def toggleLogging(self):
+    #     logOn = bool(self.settings.value("logging", False))
+    #     logOn = not logOn
+    #     self.actions.toggle_logging.setChecked(logOn)
+    #     self.settings.setValue("logging", logOn)
+    #     if logOn:
+    #         logging.getLogger().setLevel(logging.DEBUG)
+    #     else:
+    #         logging.getLogger().setLevel(logging.CRITICAL)
 
     def toBeImplemented(self):
         self.statusbar.showMessage(self.tr("功能尚在开发"))

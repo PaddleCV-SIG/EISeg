@@ -1,11 +1,11 @@
-import logging
+# import logging
 
 import numpy as np
 import cv2
 
 # from eiseg.plugin.remotesensing import sample_norm
 
-log = logging.getLogger(__name__ + ".med_plugin")
+# log = logging.getLogger(__name__ + ".med_plugin")
 
 
 def check_sitk():
