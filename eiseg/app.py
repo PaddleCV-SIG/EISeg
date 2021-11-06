@@ -1804,7 +1804,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.image is None:
             self.warn(self.tr("图像未加载"), self.tr("尚未加载图像，请先加载图像！"))
             return
-        grid_row_count, grid_col_count = self.grids.createGrids(self.image)
+        gdt = self.grids.detimg if self.grids.detimg is not None else self.image
+        grid_row_count, grid_col_count = self.grids.createGrids(gdt)
         self.gridTable.setRowCount(grid_row_count)
         self.gridTable.setColumnCount(grid_col_count)
         for r in range(grid_row_count):
