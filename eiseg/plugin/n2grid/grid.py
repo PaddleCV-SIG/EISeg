@@ -23,7 +23,8 @@ class Grids:
         self.currIdx = None  # (current row, current col, current idx)
 
     def createGrids(self, img):
-        self.detimg = img.copy()
+        if self.detimg is None:
+            self.detimg = img.copy()
         # 计算宫格横纵向格数
         imgSize = np.array(img.shape[:2])
         gridCount = np.ceil((imgSize + self.overlap) / self.gridSize)
