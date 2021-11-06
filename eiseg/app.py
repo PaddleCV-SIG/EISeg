@@ -3,21 +3,19 @@ import os.path as osp
 from functools import partial
 import sys
 import json
-from distutils.util import *
+from distutils.util import strtobool
 import imghdr
 import webbrowser
-import logging
 from datetime import datetime
-from eiseg.plugin.remotesensing.imgtools import get_thumbnail
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import Qt, QByteArray, QVariant
+from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication
 import cv2
 import numpy as np
 
-from eiseg import pjpath, __APPNAME__
+from eiseg import pjpath, __APPNAME__, logger
 from widget import ShortcutWindow, PolygonAnnotation
 from controller import InteractiveController
 from ui import Ui_EISeg
@@ -26,8 +24,6 @@ from util import COCO
 import plugin.remotesensing as rs
 from plugin.medical import med
 from plugin.n2grid import Grids
-
-log = logging.getLogger(__name__ + ".main")
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -55,15 +51,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setupUi(self)
 
         # app变量
-        self.anning = False
-        self.save_status = {
-            "gray_scale": True,
-            "pseudo_color": True,
-            "json": False,
-            "coco": True,
-            "cutout": True,
-        }  # 是否保存这几个格式
-
+        self.anning = False  # self.status替代
+        self.isDirty = False  # 是否需要保存
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.predictor_params = {
             "brs_mode": "NoBRS",
@@ -80,19 +69,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             },
         }
         self.controller = InteractiveController(
-            # self.updateImage,
             predictor_params=self.predictor_params,
             prob_thresh=self.segThresh,
         )
         # self.controller.labelList = util.LabelList()  # 标签列表
+        self.save_status = {
+            "gray_scale": True,
+            "pseudo_color": True,
+            "json": False,
+            "coco": True,
+            "cutout": True,
+        }  # 是否保存这几个格式
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
-        self.isDirty = False  # 是否需要保存
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        self.coco = COCO()
+        # self.coco = COCO()  # TODO: 开启coco保存才创建
         self.colorMap = util.colorMap
+
         if self.settings.value("cutout_background"):
             self.cutoutBackground = [
                 int(c) for c in self.settings.value("cutout_background")
@@ -101,34 +96,35 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.cutoutBackground += tuple([255])
         else:
             self.cutoutBackground = [0, 0, 128, 255]
-        self.grids = Grids()  # 宫格
-        # 遥感参数
-        self.rsRGB = [0, 0, 0]  # 遥感RGB索引
-        self.geoinfo = None
-        self.midx = 0  # 医疗切片索引
-        # worker
-        # 面板
-        self.dock_widgets = [
-            self.ModelDock,
-            self.DataDock,
-            self.LabelDock,
-            self.SegSettingDock,
-            self.RSDock,
-            self.MIDock,
-            self.GridDock,
-        ]
-        self.display_dockwidget = [True, True, True, True, False, False, False]
-        self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
+
+        # widget
+        self.dockWidgets = {
+            "model": self.ModelDock,
+            "data": self.DataDock,
+            "label": self.LabelDock,
+            "seg": self.SegSettingDock,
+            "rs": self.RSDock,
+            "med": self.MedDock,
+            "grid": self.GridDock,
+        }
+        # self.display_dockwidget = [True, True, True, True, False, False, False]
+        self.dockStatus = self.settings.value(
+            "dock_status", QVariant([]), type=list
+        )  # 所有widget是否展示
+        if len(self.dockStatus) != len(self.dockWidgets):
+            self.dockStatus = [True] * 4 + [False] * (len(self.dockWidgets) - 4)
+            self.settings.setValue("dock_status", self.dockStatus)
+        else:
+            self.dockStatus = [strtobool(s) for s in self.dockStatus]
+
+        self.layoutStatus = self.settings.value("layout_status", QByteArray())  # 界面元素位置
+
         self.recentModels = self.settings.value(
             "recent_models", QVariant([]), type=list
         )
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
-        self.dockStatus = self.settings.value("dock_status", QVariant([]), type=list)
-        self.saveStatus = self.settings.value("save_status", QVariant([]), type=list)
-        self.layoutStatus = self.settings.value("layout_status", QByteArray())
-        self.mattingColor = self.settings.value(
-            "matting_color", QVariant([]), type=list
-        )
+
+        self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
 
         # 支持的图像格式
         rs_ext = [".tif", ".tiff"]
@@ -143,11 +139,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             rs_ext,  # 遥感影像
         ]
 
+        # 宫格
+        self.grids = Grids()
+
+        # 遥感参数
+        self.rsRGB = [0, 0, 0]  # 遥感RGB索引
+        self.geoinfo = None
+
+        # 医疗参数
+        self.midx = 0  # 医疗切片索引
+
         # 初始化action
         self.initActions()
 
         # 更新近期记录
-        self.toggleDockWidgets(True)
+        self.toggleWidget("all", warn=False)
         self.updateModelMenu()
         self.updateRecentFile()
         self.loadLayout()
@@ -165,7 +171,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         ## 按钮点击
         self.btnSave.clicked.connect(self.exportLabel)  # 保存
         self.listFiles.itemDoubleClicked.connect(self.imageListClicked)  # 标签列表点击
-        # self.comboModelSelect.currentIndexChanged.connect(self.changeModel)  # 模型选择
+
         self.btnAddClass.clicked.connect(self.addLabel)
         self.btnParamsSelect.clicked.connect(self.changeParam)  # 模型参数选择
         self.cheWithMask.stateChanged.connect(self.chooseMode)  # with_mask
@@ -174,7 +180,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
-        self.sldMISlide.valueChanged.connect(self.slideChanged)
+        # self.sldMISlide.valueChanged.connect(self.slideChanged)
         self.textWw.returnPressed.connect(self.wwChanged)
         self.textWc.returnPressed.connect(self.wcChanged)
 
@@ -493,15 +499,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "Shortcut",
             tr("编辑软件快捷键"),
         )
-        # toggle_logging = action(
-        #     tr("&调试日志"),
-        #     self.toggleLogging,
-        #     "toggle_logging",
-        #     "Log",
-        #     tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
-        #     checkable=True,
-        # )
-        # toggle_logging.setChecked(bool(self.settings.value("logging", False)))
+        toggle_logging = action(
+            tr("&调试日志"),
+            self.toggleLogging,
+            "toggle_logging",
+            "Log",
+            tr("用于观察软件执行过程和进行debug。我们不会自动收集任何日志，可能会希望您在反馈问题时间打开此功能，帮助我们定位问题。"),
+            checkable=True,
+        )
+        toggle_logging.setChecked(bool(self.settings.value("log", False)))
 
         self.actions = util.struct()
         for name in dir():
@@ -574,7 +580,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 quick_start,
                 report_bug,
                 edit_shortcuts,
-                # toggle_logging,
+                toggle_logging,
             ),
             toolBar=(
                 finish_object,
@@ -728,9 +734,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if success:
             model_dict = {"param_path": param_path}
             if model_dict not in self.recentModels:
-                self.recentModels.append(model_dict)
+                self.recentModels.insert(0, model_dict)
                 if len(self.recentModels) > 10:
-                    del self.recentModels[0]
+                    del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
             return True
@@ -752,11 +758,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.recentModels) == 0:
             self.statusbar.showMessage(self.tr("没有最近使用模型信息，请加载模型"), 10000)
             return
-        m = self.recentModels[-1]
+        m = self.recentModels[0]
         param_path = m["param_path"]
         self.setModelParam(param_path)
 
     # 标签列表
+    # TODO: widget用subclass实现
     def importLabelList(self, filePath=None):
         if filePath is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
@@ -770,6 +777,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(filePath):
             return
         self.controller.importLabel(filePath)
+        logger.info(f"Loaded label list: {self.controller.labelList.labelList}")
         # print("Loaded label list:", self.controller.labelList.labelList)
         self.refreshLabelList()
 
@@ -914,6 +922,28 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         except:
             pass
 
+    # 多边形标注
+    def createPoly(self, curr_polygon, color):
+        if curr_polygon is None:
+            return
+        for points in curr_polygon:
+            if len(points) < 3:
+                continue
+            poly = PolygonAnnotation(
+                self.controller.labelList[self.currLabelIdx].idx,
+                self.controller.image.shape,
+                self.delPolygon,
+                color,
+                color,
+                self.opacity,
+            )
+            poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
+            self.scene.addItem(poly)
+            self.scene.polygon_items.append(poly)
+            for p in points:
+                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+            self.setDirty()
+
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
             if polygon.hasFocus():
@@ -992,6 +1022,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         filePath = osp.normcase(filePath)
         if not self.loadImage(filePath):
             return False
+
         # 3. 添加记录
         self.listFiles.addItems([filePath])
         self.imagePaths.append(filePath)
@@ -1058,21 +1089,28 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadImage(self, path):
         # TODO：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
         # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
+
+        # 1. 拒绝None和不存在的路径，关闭当前图像
         if not path:
             return
         path = osp.normcase(path)
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像
-        self.eximgsInit()  # 清除  # TODO: 将grid的部分整合到saveImage里
+        self.eximgsInit()  # TODO: 将grid的部分整合到saveImage里
+
+        # 2. 判断图像类型，打开
+        # TODO: 加用户指定类型的功能
 
         # 直接if会报错，因为打开遥感图像后多波段不存在，现在把遥感图像的单独抽出来了
+        # 自然图像
         if path.endswith(tuple(self.formats[0])):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
 
+        # 医学影像
         if path.endswith(tuple(self.formats[1])):
-            if not self.MIDock.isVisible():
+            if not self.dockStatus[5]:
                 res = self.warn(
                     self.tr("未启用医疗组件"),
                     self.tr("加载医疗影像需启用医疗组件，是否立即启用？"),
@@ -1081,27 +1119,30 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if res == QMessageBox.Cancel:
                     return False
                 self.toggleWidget(5)
-            if not self.display_dockwidget[5]:
-                return
-            image = med.dcm_reader(path)
-            # TODO: 添加多层支持
+                if not self.dockStatus[5]:
+                    return False
+            image = med.dcm_reader(path)  # TODO: 添加多层支持
+
             if image.shape[-1] != 1:
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
-                return
+                return False
 
             self.controller.rawImage = self.image = image
-            # image = med.windowlize(image, self.ww, self.wc)
+            image = med.windowlize(image, self.ww, self.wc)
 
+        # 遥感图像
         if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
-            if not self.RSDock.isVisible():
+            if not self.dockStatus[4]:
                 res = self.warn(
-                    self.tr("未打开遥感工具"),
+                    self.tr("未打开遥感组件"),
                     self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Cancel:
                     return False
                 self.toggleWidget(4)
+                if not self.dockStatus[4]:
+                    return False
             self.grids.rawimg, self.geoinfo = rs.open_tif(path)
             try:
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
@@ -1112,14 +1153,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.updateSlideSld(True)
 
         self.grids.detimg = image
+
         thumbnail, resize = rs.get_thumbnail(image)  # 图像太大就显示缩略图
         if resize:
             self.warn(self.tr("图像过大"), self.tr("图像过大，已压缩显示，若想高品质标注请使用宫格标注功能！"))
             # 打开宫格功能
-            if self.dock_widgets[-1].isVisible() is False:
+            if self.dockWidgets["grid"].isVisible() is False:
+                # TODO: 改成self.dockStatus
                 self.menus.showMenu[-1].setChecked(True)
-                self.display_dockwidget[-1] = True
-                self.dock_widgets[-1].show()
+                # self.display_dockwidget[-1] = True
+                self.dockWidgets["grid"].show()
             self.image = thumbnail
             self.controller.setImage(thumbnail)
         else:
@@ -1241,27 +1284,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delta = toRow - self.currIdx
         self.grids.gridInit = False
         self.turnImg(delta)
-
-    def createPoly(self, curr_polygon, color):
-        if curr_polygon is None:
-            return
-        for points in curr_polygon:
-            if len(points) < 3:
-                continue
-            poly = PolygonAnnotation(
-                self.controller.labelList[self.currLabelIdx].idx,
-                self.controller.image.shape,
-                self.delPolygon,
-                color,
-                color,
-                self.opacity,
-            )
-            poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
-            self.scene.addItem(poly)
-            self.scene.polygon_items.append(poly)
-            for p in points:
-                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-            self.setDirty()
 
     def finishObject(self):
         if not self.controller or self.image is None:
@@ -1517,7 +1539,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2. 加载标签
         # 2.1 如果保存coco格式，加载coco标签
         if self.save_status["coco"]:
-            self.loadCoco()
+            defaultPath = osp.join(self.outputDir, "annotations.json")
+            if osp.exists(defaultPath):
+                self.initCoco(defaultPath)
 
         # 2.2 如果保存json格式，获取所有json文件名
         if self.save_status["json"]:
@@ -1558,13 +1582,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.prob_thresh = self.segThresh
         self.updateImage()
 
-    def slideChanged(self):
-        self.sldMISlide.textLab.setText(str(self.slideMi))
-        if not self.controller or self.controller.image is None:
-            return
-        self.midx = int(self.slideMi) - 1
-        self.miSlideSet()
-        self.updateImage()
+    # def slideChanged(self):
+    #     self.sldMISlide.textLab.setText(str(self.slideMi))
+    #     if not self.controller or self.controller.image is None:
+    #         return
+    #     self.midx = int(self.slideMi) - 1
+    #     self.miSlideSet()
+    #     self.updateImage()
 
     def undoClick(self):
         if self.image is None:
@@ -1653,6 +1677,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
         self.scene.scale = self.canvas.zoom_all
 
+    def keyReleaseEvent(self, event):
+        # print(event.key(), Qt.Key_Control)
+        # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
+        # TODO:过大的图还是有一点延迟
+        if not self.controller or self.controller.image is None:
+            return
+        if event.key() == Qt.Key_Control:
+            self.updateImage()
+
     def queueEvent(self, function):
         QtCore.QTimer.singleShot(0, function)
 
@@ -1674,7 +1707,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toggleSave(self, type):
         self.save_status[type] = not self.save_status[type]
         if type == "coco" and self.save_status["coco"]:
-            self.loadCoco()
+            self.initCoco()
         if type == "coco":
             self.save_status["json"] = not self.save_status["coco"]
             self.actions.save_json.setChecked(self.save_status["json"])
@@ -1682,43 +1715,79 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.save_status["coco"] = not self.save_status["json"]
             self.actions.save_coco.setChecked(self.save_status["coco"])
 
-    def loadCoco(self, coco_path=None):
+    def initCoco(self, coco_path: str = None):
         if not coco_path:
             if not self.outputDir or not osp.exists(self.outputDir):
                 coco_path = None
             else:
-                coco_path = osp.join(self.outputDir, "coco.json")
-                # 这里放在外面判断可能会有coco_path为none，exists报错
-                if not osp.exists(coco_path):
-                    coco_path = None
+                coco_path = osp.join(self.outputDir, "annotations.json")
+        else:
+            if not osp.exists(coco_path):
+                coco_path = None
         self.coco = COCO(coco_path)
         if self.clearLabelList():
             self.controller.labelList = util.LabelList(self.coco.dataset["categories"])
             self.refreshLabelList()
 
-    def toggleWidget(self, index):
+    def toggleWidget(self, index=None, warn=True):
         # TODO: 输入从数字改成名字
-        if index == 4:
-            if rs.check_gdal() == False:
+
+        # 1. 改变
+        if isinstance(index, int):
+            self.dockStatus[index] = not self.dockStatus[index]
+
+        # 2. 判断widget是否可以开启
+        # 2.1 遥感
+        if self.dockStatus[4] and not rs.check_gdal():
+            if warn:
                 self.warn(
                     self.tr("无法导入GDAL"),
-                    self.tr("请检查环境中是否存在GDAL，若不存在则无法使用遥感工具！"),
+                    self.tr("使用遥感工具需要安装GDAL！"),
                     QMessageBox.Yes,
                 )
-                self.statusbar.showMessage(self.tr("打开失败，未检出GDAL"))
-                return
-        if index == 5:
-            if med.check_sitk() == False:
+            self.statusbar.showMessage(self.tr("打开遥感工具失败，请安装GDAL库"))
+            self.dockStatus[4] = False
+
+        # 2.2 医疗
+        if self.dockStatus[5] and not med.has_sitk():
+            if warn:
                 self.warn(
                     self.tr("无法导入SimpleITK"),
-                    self.tr("请检查环境中是否存在SimpleITK，若不存在则无法使用医疗工具！"),
+                    self.tr("使用医疗工具需要安装SimpleITK！"),
                     QMessageBox.Yes,
                 )
-                self.statusbar.showMessage(self.tr("打开失败，未检出SimpleITK"))
-                return
-        self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
-        self.toggleDockWidgets()
+            self.statusbar.showMessage(self.tr("打开医疗工具失败，请安装SimpleITK"))
+            self.dockStatus[5] = False
+        widgets = list(self.dockWidgets.values())
+
+        for idx, s in enumerate(self.dockStatus):
+            self.menus.showMenu[idx].setChecked(s)
+            if s:
+                widgets[idx].show()
+            else:
+                widgets[idx].hide()
+
+        self.settings.setValue("dock_status", self.dockStatus)
+        # self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
+        # self.toggleDockWidgets()
         self.saveLayout()
+
+    # def toggleDockWidgets(self, is_init=False):
+    #     if is_init == True:
+    #         if self.dockStatus != []:
+    #             if len(self.dockStatus) != len(self.menus.showMenu):
+    #                 self.settings.remove("dock_status")
+    #             else:
+    #                 self.display_dockwidget = [strtobool(w) for w in self.dockStatus]
+    #         for i in range(len(self.menus.showMenu)):
+    #             self.menus.showMenu[i].setChecked(bool(self.display_dockwidget[i]))
+    #     else:
+    #         self.settings.setValue("dock_status", self.display_dockwidget)
+    #     for t, w in zip(self.display_dockwidget, self.dockWidgets.values()):
+    #         if t == True:
+    #             w.show()
+    #         else:
+    #             w.hide()
 
     def rsBandSet(self, idx):
         for i in range(len(self.bandCombos)):
@@ -1726,9 +1795,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = rs.selec_band(self.grids.rawimg, self.rsRGB)
         self.test_show(image)
 
-    def miSlideSet(self):
-        image = rs.slice_img(self.grids.rawimg, self.midx)
-        self.test_show(image)
+    # def miSlideSet(self):
+    #     image = rs.slice_img(self.grids.rawimg, self.midx)
+    #     self.test_show(image)
 
     def test_show(self, image):
         self.grids.detimg = image
@@ -1740,26 +1809,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         except:
             pass
 
-    def changeWorkerShow(self, index):
-        self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
-        self.toggleDockWidgets()
-
-    def toggleDockWidgets(self, is_init=False):
-        if is_init == True:
-            if self.dockStatus != []:
-                if len(self.dockStatus) != len(self.menus.showMenu):
-                    self.settings.remove("dock_status")
-                else:
-                    self.display_dockwidget = [strtobool(w) for w in self.dockStatus]
-            for i in range(len(self.menus.showMenu)):
-                self.menus.showMenu[i].setChecked(bool(self.display_dockwidget[i]))
-        else:
-            self.settings.setValue("dock_status", self.display_dockwidget)
-        for t, w in zip(self.display_dockwidget, self.dock_widgets):
-            if t == True:
-                w.show()
-            else:
-                w.hide()
+    # def changeWorkerShow(self, index):
+    #     self.display_dockwidget[index] = bool(self.display_dockwidget[index] - 1)
+    #     self.toggleDockWidgets()
 
     def updateBandList(self, clean=False):
         if clean:
@@ -1787,12 +1839,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         for bandCombo in self.bandCombos:
             bandCombo.currentIndexChanged.connect(self.rsBandSet)  # 设置波段
 
-    def updateSlideSld(self, clean=False):
-        if clean:
-            self.sldMISlide.setMaximum(1)
-            return
-        C = self.grids.rawimg.shape[-1] if len(self.grids.rawimg.shape) == 3 else 1
-        self.sldMISlide.setMaximum(C)
+    # def updateSlideSld(self, clean=False):
+    #     if clean:
+    #         self.sldMISlide.setMaximum(1)
+    #         return
+    #     C = self.grids.rawimg.shape[-1] if len(self.grids.rawimg.shape) == 3 else 1
+    #     self.sldMISlide.setMaximum(C)
 
     def toggleLargestCC(self, on):
         try:
@@ -1919,17 +1971,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def segThresh(self):
         return self.sldThresh.value() / 100
 
-    @property
-    def slideMi(self):
-        return self.sldMISlide.value()
-
-    @property
-    def ww(self):
-        return int(self.textWw.text())
-
-    @property
-    def wc(self):
-        return int(self.textWc.text())
+    # @property
+    # def slideMi(self):
+    #     return self.sldMISlide.value()
 
     def warnException(self, e):
         e = str(e)
@@ -1955,9 +1999,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return self.ANNING
         return self.EDITING
 
-    # 加载界面
+    # 界面布局
     def loadLayout(self):
         self.restoreState(self.layoutStatus)
+        # TODO: 这里检查环境，判断是不是开医疗和遥感widget
 
     def saveLayout(self):
         # 保存界面
@@ -1965,23 +2010,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings.setValue(
             "save_status", [(k, self.save_status[k]) for k in self.save_status.keys()]
         )
-        # 如果设置了保存路径，把标签也保存下
-        if self.outputDir is not None and len(self.controller.labelList) != 0:
-            self.exportLabelList(osp.join(self.outputDir, "autosave_label.txt"))
+        # # 如果设置了保存路径，把标签也保存下
+        # if self.outputDir is not None and len(self.controller.labelList) != 0:
+        #     self.exportLabelList(osp.join(self.outputDir, "autosave_label.txt"))
 
     def closeEvent(self, event):
         self.saveLayout()
-        # 关闭主窗体退出程序，子窗体也关闭
-        sys.exit(0)
-
-    def keyReleaseEvent(self, event):
-        # print(event.key(), Qt.Key_Control)
-        # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
-        # TODO:过大的图还是有一点延迟
-        if not self.controller or self.controller.image is None:
-            return
-        if event.key() == Qt.Key_Control:
-            self.updateImage()
+        QCoreApplication.quit()
+        # sys.exit(0)
 
     def reportBug(self):
         webbrowser.open("https://github.com/PaddleCV-SIG/EISeg/issues/new/choose")
@@ -1991,15 +2027,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.saveImage(True)
         self.canvas.setStyleSheet(self.note_style)
 
-    # def toggleLogging(self):
-    #     logOn = bool(self.settings.value("logging", False))
-    #     logOn = not logOn
-    #     self.actions.toggle_logging.setChecked(logOn)
-    #     self.settings.setValue("logging", logOn)
-    #     if logOn:
-    #         logging.getLogger().setLevel(logging.DEBUG)
-    #     else:
-    #         logging.getLogger().setLevel(logging.CRITICAL)
+    def toggleLogging(self, s):
+        print("+_+", s)
+        if s:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.CRITICAL)
+        self.settings.setValue("log", s)
 
     def toBeImplemented(self):
         self.statusbar.showMessage(self.tr("功能尚在开发"))
@@ -2022,3 +2056,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.rawImage, self.ww, self.wc
         )
         self.updateImage()
+
+    @property
+    def ww(self):
+        return int(self.textWw.text())
+
+    @property
+    def wc(self):
+        return int(self.textWc.text())

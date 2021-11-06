@@ -44,7 +44,6 @@ class EISegModel:
                     use_calib_mode=False,
                 )
         self.model = paddle_infer.create_predictor(config)
-        print("加载模型成功")
 
     def check_param(self, model_path, param_path):
         if model_path is None or not osp.exists(model_path):
