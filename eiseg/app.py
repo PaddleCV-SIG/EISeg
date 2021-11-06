@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 from functools import partial
@@ -1941,7 +1942,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
             return
-        self.image = get_thumbnail(self.grids.detimg)[0]
+        self.image = rs.get_thumbnail(self.grids.detimg)[0]
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.exportLabel(lab_input=mask)
