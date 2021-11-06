@@ -86,7 +86,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        # self.coco = COCO()  # TODO: 开启coco保存才创建
+        if self.save_status:
+            self.coco = COCO()  # TODO: 开启coco保存才创建
+        else:
+            self.coco = None
         self.colorMap = util.colorMap
 
         if self.settings.value("cutout_background"):
@@ -740,6 +743,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
+            print(res)
             return True
         else:
             self.warnException(res)
@@ -1151,7 +1155,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.rsRGB = [0, 0, 0]
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
-            self.updateSlideSld(True)
+            # self.updateSlideSld(True)
 
         self.grids.detimg = image
 

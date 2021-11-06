@@ -44,8 +44,9 @@ def get_polygon(label, sample="Dynamic"):
             if relas[i][1] != None:  # 有父圈
                 for j in range(len(relas)):
                     if relas[j][0] == relas[i][1]:  # i的父圈就是j（i是j的子圈）
-                        if polygons[i] is not None and polygons[j] is not None:
-                            min_i, min_o = _find_min_point(polygons[i], polygons[j])
+                        if polygons[i] is not None and polygons[j] is not None or \
+                           len(polygons[i]) != 0 and len(polygons[j]) != 0:
+                            min_i, min_o = __find_min_point(polygons[i], polygons[j])
                             # 改变顺序
                             s_pj = polygons[j][: min_o]
                             polygons[j] = polygons[j][min_o:]
@@ -55,11 +56,8 @@ def get_polygon(label, sample="Dynamic"):
                             polygons[i].extend(s_pi)
                             # 连接
                             polygons[j].append(polygons[j][0])  # 外圈闭合
+                            polygons[i].append(polygons[i][0])  # 内圈闭合
                             polygons[j].extend(polygons[i])  # 连接内圈
-                            try:  # TODO:这里为什么会越界
-                                polygons[j].append(polygons[i][0])  # 内圈闭合
-                            except:
-                                pass
                             polygons[i] = None
         polygons = list(filter(None, polygons))  # 清除加到外圈的内圈多边形
         return polygons
@@ -68,7 +66,7 @@ def get_polygon(label, sample="Dynamic"):
         return None
 
 
-def _find_min_point(i_list, o_list):
+def __find_min_point(i_list, o_list):
     min_dis = 1e7
     idx_i = -1
     idx_o = -1
@@ -84,7 +82,7 @@ def _find_min_point(i_list, o_list):
 
 
 # 根据三点坐标计算夹角
-def _cal_ang(p1, p2, p3):
+def __cal_ang(p1, p2, p3):
     eps = 1e-12
     a = math.sqrt((p2[0] - p3[0]) * (p2[0] - p3[0]) + (p2[1] - p3[1]) * (p2[1] - p3[1]))
     b = math.sqrt((p1[0] - p3[0]) * (p1[0] - p3[0]) + (p1[1] - p3[1]) * (p1[1] - p3[1]))
@@ -94,7 +92,7 @@ def _cal_ang(p1, p2, p3):
 
 
 # 计算两点距离
-def _cal_dist(p1, p2):
+def __cal_dist(p1, p2):
     return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
 
@@ -108,7 +106,7 @@ def approx_poly_DP(contour, min_dist=10, ang_err=5):
         try:
             last = (i - 1) if (i != 0) else (len(cs) - 1)
             next = (i + 1) if (i != len(cs) - 1) else 0
-            ang_i = _cal_ang(cs[last], cs[i], cs[next])
+            ang_i = __cal_ang(cs[last], cs[i], cs[next])
             if abs(ang_i) > (180 - ang_err):
                 del cs[i]
             else:
@@ -120,16 +118,16 @@ def approx_poly_DP(contour, min_dist=10, ang_err=5):
     while i < len(cs):
         try:
             j = (i + 1) if (i != len(cs) - 1) else 0
-            if _cal_dist(cs[i], cs[j]) < min_dist:
+            if __cal_dist(cs[i], cs[j]) < min_dist:
                 last = (i - 1) if (i != 0) else (len(cs) - 1)
                 next = (j + 1) if (j != len(cs) - 1) else 0
-                ang_i = _cal_ang(cs[last], cs[i], cs[next])
-                ang_j = _cal_ang(cs[last], cs[j], cs[next])
+                ang_i = __cal_ang(cs[last], cs[i], cs[next])
+                ang_j = __cal_ang(cs[last], cs[j], cs[next])
                 # print(ang_i, ang_j)  # 角度值为-180到+180
                 if abs(ang_i - ang_j) < ang_err:
                     # 删除距离两点小的
-                    dist_i = _cal_dist(cs[last], cs[i]) + _cal_dist(cs[i], cs[next])
-                    dist_j = _cal_dist(cs[last], cs[j]) + _cal_dist(cs[j], cs[next])
+                    dist_i = __cal_dist(cs[last], cs[i]) + __cal_dist(cs[i], cs[next])
+                    dist_j = __cal_dist(cs[last], cs[j]) + __cal_dist(cs[j], cs[next])
                     if dist_j < dist_i:
                         del cs[j]
                     else:
