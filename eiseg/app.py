@@ -8,6 +8,7 @@ import imghdr
 import webbrowser
 import logging
 from datetime import datetime
+from eiseg.plugin.remotesensing.imgtools import get_thumbnail
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -968,8 +969,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePaths.append(file_path)
 
     def openImage(self, filePath: str = None):
-        # BUG: 打开图像的时候filepath是false不是none
-        if not isinstance(filePath, str):
+        # 在triggered.connect中使用不管默认filePath为什么返回值都为False
+        if not isinstance(filePath, str) or filePath is False:
             prompts = ["图片", "医学影像", "遥感影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
@@ -1055,7 +1056,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.inputDir = inputDir
 
     def loadImage(self, path):
-        # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
+        # TODO：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
         # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
         if not path:
             return
@@ -1888,7 +1889,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
             return
-        self.image = self.grids.detimg
+        self.image = get_thumbnail(self.grids.detimg)[0]
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.exportLabel(lab_input=mask)
@@ -1896,15 +1897,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         # TODO：不显示了，图像太大造成卡顿
         # # 显示多边形
-        # curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-        # # BUG：标签颜色怎么与原来对应（仍需处理）
+        # curr_polygon = util.get_polygon(get_thumbnail(mask)[0].astype(np.uint8) * 255)
+        # # TODO：标签颜色怎么与原来对应（仍需处理）
         # color = self.controller.labelList[self.currLabelIdx].color
         # self.createPoly(curr_polygon, color)
         # for p in self.scene.polygon_items:
         #     p.setAnning(isAnning=False)
-        # # 刷新
-        # self.grids.currIdx = None
-        # self.updateImage(True)
+        # 刷新
+        self.grids.currIdx = None
+        self.updateImage(True)
 
     @property
     def opacity(self):
