@@ -17,8 +17,10 @@ IPT_GDAL = check_gdal()
 if IPT_GDAL:
     try:
         import gdal
+        import osr
+        import ogr
     except:
-        from osgeo import gdal
+        from osgeo import gdal, osr, ogr
 
 
 def open_tif(geoimg_path):

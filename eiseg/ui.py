@@ -218,8 +218,6 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         MIRegion = QtWidgets.QVBoxLayout()
         MIRegion.setObjectName("MIRegion")
-        # mi_text = create_text(CentralWidget, "sliceSelection", self.tr("切片选择"))
-        # MIRegion.addWidget(mi_text)
         self.sldMISlide, slideRegion = p_create_slider(
             "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
         )

@@ -4,36 +4,43 @@ import operator
 from functools import reduce
 
 
-# def twoPercentLinear(image, max_out=255, min_out=0):
-#     b, g, r = cv2.split(image)
-#     def gray_process(gray, maxout = max_out, minout = min_out):
-#         high_value = np.percentile(gray, 98)  # 取得98%直方图处对应灰度
-#         low_value = np.percentile(gray, 2)
-#         truncated_gray = np.clip(gray, a_min=low_value, a_max=high_value) 
-#         processed_gray = ((truncated_gray - low_value)/(high_value - low_value)) * (maxout - minout)#线性拉伸嘛
-#         return processed_gray
-#     r_p = gray_process(r)
-#     g_p = gray_process(g)
-#     b_p = gray_process(b)
-#     result = cv2.merge((b_p, g_p, r_p))
-#     return np.uint8(result)
+def two_percentLinear(image, max_out=255, min_out=0):
+    b, g, r = cv2.split(image)
+    def gray_process(gray, maxout = max_out, minout = min_out):
+        high_value = np.percentile(gray, 98)  # 取得98%直方图处对应灰度
+        low_value = np.percentile(gray, 2)
+        truncated_gray = np.clip(gray, a_min=low_value, a_max=high_value) 
+        processed_gray = ((truncated_gray - low_value) / (high_value - low_value)) * (maxout - minout)  # 线性拉伸嘛
+        return processed_gray
+    r_p = gray_process(r)
+    g_p = gray_process(g)
+    b_p = gray_process(b)
+    result = cv2.merge((b_p, g_p, r_p))
+    return np.uint8(result)
 
 
 def selec_band(tifarr, rgb):
+    img_type = str(tifarr.dtype)
     C = tifarr.shape[-1] if len(tifarr.shape) == 3 else 1
     if C == 1:
-        return sample_norm(cv2.merge([np.uint16(tifarr)] * 3))
+        res_img = cv2.merge([np.uint16(tifarr)] * 3)
+        if img_type == "uint32":
+            res_img = sample_norm(res_img)
+        return two_percentLinear(res_img)
     elif C == 2:
         return None
     else:
-        return sample_norm(
-            cv2.merge([np.uint16(tifarr[:, :, rgb[0]]),
-                       np.uint16(tifarr[:, :, rgb[1]]),
-                       np.uint16(tifarr[:, :, rgb[2]])]))
-
+        res_img = cv2.merge([np.uint16(tifarr[:, :, rgb[0]]),
+                             np.uint16(tifarr[:, :, rgb[1]]),
+                             np.uint16(tifarr[:, :, rgb[2]])])
+        if img_type == "uint32":
+            res_img = sample_norm(res_img)
+        return two_percentLinear(res_img)
 
 # DEBUG：test
 def sample_norm(image, NUMS=65536):
+    if NUMS == 256:
+        return np.uint8(image)
     stretched_r = __stretch(image[:, :, 0], NUMS)
     stretched_g = __stretch(image[:, :, 1], NUMS)
     stretched_b = __stretch(image[:, :, 2], NUMS)
@@ -42,16 +49,6 @@ def sample_norm(image, NUMS=65536):
         stretched_g / float(NUMS), 
         stretched_b / float(NUMS)])
     return np.uint8(stretched_img * 255)
-
-
-# 计算直方图
-def __histogram(ima, NUMS):
-    bins = list(range(0, NUMS))
-    flat = ima.flat
-    n = np.searchsorted(np.sort(flat), bins)
-    n = np.concatenate([n, [len(flat)]])
-    hist = n[1:] - n[:-1]
-    return hist
 
 
 # 直方图均衡化
@@ -68,6 +65,16 @@ def __stretch(ima, NUMS):
             n += hist[i + bt]
         np.take(lut, ima, out=ima)
         return ima
+
+
+# 计算直方图
+def __histogram(ima, NUMS):
+    bins = list(range(0, NUMS))
+    flat = ima.flat
+    n = np.searchsorted(np.sort(flat), bins)
+    n = np.concatenate([n, [len(flat)]])
+    hist = n[1:] - n[:-1]
+    return hist
 
 
 # 计算缩略图
