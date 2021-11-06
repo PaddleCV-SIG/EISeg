@@ -115,14 +115,8 @@ class Ui_EISeg(object):
         self.listFiles = QtWidgets.QListWidget(CentralWidget)
         self.listFiles.setObjectName("ListFiles")
         ListRegion.addWidget(self.listFiles)
-        # 保存
-        self.btnSave = p_create_button(
-            "btnSave",
-            self.tr("保存"),
-            osp.join(pjpath, "resource/Save.png"),
-            "Ctrl+S",
-        )
-        ListRegion.addWidget(self.btnSave)
+
+        # ListRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ListRegion)
         self.DataDock = p_create_dock("DataDock", self.tr("数据列表"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.DataDock)
@@ -179,6 +173,14 @@ class Ui_EISeg(object):
         )
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
+        # 保存
+        self.btnSave = p_create_button(
+            "btnSave",
+            self.tr("保存"),
+            osp.join(pjpath, "resource/Save.png"),
+            "Ctrl+S",
+        )
+        ShowSetRegion.addWidget(self.btnSave)
         horizontalLayout.addLayout(ShowSetRegion)
         self.SegSettingDock = p_create_dock("SegSettingDock", self.tr("分割设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.SegSettingDock)
@@ -213,6 +215,7 @@ class Ui_EISeg(object):
         horizontalLayout.addLayout(bandRegion)
         self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
+
         ## 医学影像设置
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
@@ -220,10 +223,10 @@ class Ui_EISeg(object):
         MIRegion.setObjectName("MIRegion")
         # mi_text = create_text(CentralWidget, "sliceSelection", self.tr("切片选择"))
         # MIRegion.addWidget(mi_text)
-        self.sldMISlide, slideRegion = p_create_slider(
-            "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
-        )
-        self.sldMISlide.setMinimum(1)
+        # self.sldMISlide, slideRegion = p_create_slider(
+        #     "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
+        # )
+        # self.sldMISlide.setMinimum(1)
         wwLabel = QtWidgets.QLabel("窗宽")
         self.textWw = QtWidgets.QLineEdit()
         self.textWw.setText("200")
@@ -236,15 +239,15 @@ class Ui_EISeg(object):
         self.textWc.setValidator(QtGui.QIntValidator())
         self.textWc.setMaxLength(4)
 
-        MIRegion.addLayout(slideRegion)
-        MIRegion.addWidget(self.sldMISlide)
+        # MIRegion.addLayout(slideRegion)
+        # MIRegion.addWidget(self.sldMISlide)
         MIRegion.addWidget(wwLabel)
         MIRegion.addWidget(self.textWw)
         MIRegion.addWidget(wcLabel)
         MIRegion.addWidget(self.textWc)
         horizontalLayout.addLayout(MIRegion)
-        self.MIDock = p_create_dock("MIDock", self.tr("医疗设置"), widget)
-        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MIDock)
+        self.MedDock = p_create_dock("MedDock", self.tr("医疗设置"), widget)
+        MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MedDock)
         ## 宫格区域
         widget = QtWidgets.QWidget()
         horizontalLayout = QtWidgets.QHBoxLayout(widget)

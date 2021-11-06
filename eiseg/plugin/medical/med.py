@@ -1,23 +1,19 @@
-# import logging
-
 import numpy as np
 import cv2
 
-# from eiseg.plugin.remotesensing import sample_norm
-
-# log = logging.getLogger(__name__ + ".med_plugin")
+from eiseg import logger
 
 
-def check_sitk():
+def has_sitk():
     try:
-        import SimpleITK as sitk
+        import SimpleITK
 
         return True
     except ImportError:
         return False
 
 
-if check_sitk():
+if has_sitk():
     import SimpleITK as sitk
 
 
