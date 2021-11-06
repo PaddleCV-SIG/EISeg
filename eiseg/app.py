@@ -12,7 +12,7 @@ import logging
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import Qt, QByteArray, QVariant
+from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication
 import cv2
 import numpy as np
 
@@ -117,7 +117,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.settings.setValue("dock_status", self.dockStatus)
         else:
             self.dockStatus = [strtobool(s) for s in self.dockStatus]
-        print("++++dockstatus", self.dockStatus)
 
         self.layoutStatus = self.settings.value("layout_status", QByteArray())  # 界面元素位置
 
@@ -125,7 +124,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "recent_models", QVariant([]), type=list
         )
         self.recentFiles = self.settings.value("recent_files", QVariant([]), type=list)
-        # self.saveStatus = self.settings.value("save_status", QVariant([]), type=list)
 
         self.config = util.parse_configs(osp.join(pjpath, "config/config.yaml"))
 
@@ -766,6 +764,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setModelParam(param_path)
 
     # 标签列表
+    # TODO: widget用subclass实现
     def importLabelList(self, filePath=None):
         if filePath is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
@@ -923,6 +922,28 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.labelList[row].name = name
         except:
             pass
+
+    # 多边形标注
+    def createPoly(self, curr_polygon, color):
+        if curr_polygon is None:
+            return
+        for points in curr_polygon:
+            if len(points) < 3:
+                continue
+            poly = PolygonAnnotation(
+                self.controller.labelList[self.currLabelIdx].idx,
+                self.controller.image.shape,
+                self.delPolygon,
+                color,
+                color,
+                self.opacity,
+            )
+            poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
+            self.scene.addItem(poly)
+            self.scene.polygon_items.append(poly)
+            for p in points:
+                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+            self.setDirty()
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -1264,27 +1285,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         delta = toRow - self.currIdx
         self.grids.gridInit = False
         self.turnImg(delta)
-
-    def createPoly(self, curr_polygon, color):
-        if curr_polygon is None:
-            return
-        for points in curr_polygon:
-            if len(points) < 3:
-                continue
-            poly = PolygonAnnotation(
-                self.controller.labelList[self.currLabelIdx].idx,
-                self.controller.image.shape,
-                self.delPolygon,
-                color,
-                color,
-                self.opacity,
-            )
-            poly.labelIndex = self.controller.labelList[self.currLabelIdx].idx
-            self.scene.addItem(poly)
-            self.scene.polygon_items.append(poly)
-            for p in points:
-                poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-            self.setDirty()
 
     def finishObject(self):
         if not self.controller or self.image is None:
@@ -1678,6 +1678,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.canvas.scale(self.canvas.zoom_all, self.canvas.zoom_all)
         self.scene.scale = self.canvas.zoom_all
 
+    def keyReleaseEvent(self, event):
+        # print(event.key(), Qt.Key_Control)
+        # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
+        # TODO:过大的图还是有一点延迟
+        if not self.controller or self.controller.image is None:
+            return
+        if event.key() == Qt.Key_Control:
+            self.updateImage()
+
     def queueEvent(self, function):
         QtCore.QTimer.singleShot(0, function)
 
@@ -1741,7 +1750,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.dockStatus[4] = False
 
         # 2.2 医疗
-        print("++++", med.has_sitk())
         if self.dockStatus[5] and not med.has_sitk():
             if warn:
                 self.warn(
@@ -1788,9 +1796,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         image = rs.selec_band(self.grids.rawimg, self.rsRGB)
         self.test_show(image)
 
-    def miSlideSet(self):
-        image = rs.slice_img(self.grids.rawimg, self.midx)
-        self.test_show(image)
+    # def miSlideSet(self):
+    #     image = rs.slice_img(self.grids.rawimg, self.midx)
+    #     self.test_show(image)
 
     def test_show(self, image):
         self.grids.detimg = image
@@ -1968,14 +1976,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     # def slideMi(self):
     #     return self.sldMISlide.value()
 
-    @property
-    def ww(self):
-        return int(self.textWw.text())
-
-    @property
-    def wc(self):
-        return int(self.textWc.text())
-
     def warnException(self, e):
         e = str(e)
         title = e.split("。")[0]
@@ -2000,7 +2000,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return self.ANNING
         return self.EDITING
 
-    # 加载界面
+    # 界面布局
     def loadLayout(self):
         self.restoreState(self.layoutStatus)
         # TODO: 这里检查环境，判断是不是开医疗和遥感widget
@@ -2017,17 +2017,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def closeEvent(self, event):
         self.saveLayout()
-        # 关闭主窗体退出程序，子窗体也关闭
-        sys.exit(0)
-
-    def keyReleaseEvent(self, event):
-        # print(event.key(), Qt.Key_Control)
-        # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
-        # TODO:过大的图还是有一点延迟
-        if not self.controller or self.controller.image is None:
-            return
-        if event.key() == Qt.Key_Control:
-            self.updateImage()
+        QCoreApplication.quit()
+        # sys.exit(0)
 
     def reportBug(self):
         webbrowser.open("https://github.com/PaddleCV-SIG/EISeg/issues/new/choose")
@@ -2066,3 +2057,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.controller.rawImage, self.ww, self.wc
         )
         self.updateImage()
+
+    @property
+    def ww(self):
+        return int(self.textWw.text())
+
+    @property
+    def wc(self):
+        return int(self.textWc.text())

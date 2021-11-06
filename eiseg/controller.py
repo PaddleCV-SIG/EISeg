@@ -102,28 +102,6 @@ class InteractiveController:
             logger.info(f"Load model {model_path} took {time.time()-tic}")
             return True, "模型设置成功"
 
-    # def setParam(self, paramPath: str):
-    #     """设置模型使用的推理参数
-
-    #     Parameters
-    #     ----------
-    #     paramPath : str
-    #         推理参数路径
-
-    #     Returns
-    #     -------
-    #     bool, str
-    #         是否设置成功, 失败原因
-
-    #     """
-    #     if not self.modelSet:
-    #         return False, "模型未设置，请先设置模型"
-    #     try:
-    #         self.model.load_param(paramPath)
-    #     except Exception as e:
-    #         return False, str(e)
-    #     return True, "权重设置成功"
-
     def setImage(self, image: np.array):
         """设置当前标注的图片
 
