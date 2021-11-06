@@ -66,4 +66,4 @@ def main():
     # 加载近期模型
     QApplication.processEvents()
     window.loadRecentModelParam()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

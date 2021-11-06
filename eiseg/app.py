@@ -86,7 +86,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        self.coco = COCO()  # TODO: 开启coco保存才创建
+        # self.coco = COCO()  # TODO: 开启coco保存才创建
         self.colorMap = util.colorMap
 
         if self.settings.value("cutout_background"):
@@ -113,7 +113,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "dock_status", QVariant([]), type=list
         )  # 所有widget是否展示
         if len(self.dockStatus) != len(self.dockWidgets):
-            self.dockStatus = [True] * 4 + [False] * len(self.dockWidgets - 4)
+            self.dockStatus = [True] * 4 + [False] * (len(self.dockWidgets) - 4)
             self.settings.setValue("dock_status", self.dockStatus)
         else:
             self.dockStatus = [strtobool(s) for s in self.dockStatus]
@@ -737,9 +737,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if success:
             model_dict = {"param_path": param_path}
             if model_dict not in self.recentModels:
-                self.recentModels.append(model_dict)
+                self.recentModels.insert(0, model_dict)
                 if len(self.recentModels) > 10:
-                    del self.recentModels[0]
+                    del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
             return True
@@ -761,7 +761,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if len(self.recentModels) == 0:
             self.statusbar.showMessage(self.tr("没有最近使用模型信息，请加载模型"), 10000)
             return
-        m = self.recentModels[-1]
+        m = self.recentModels[0]
         param_path = m["param_path"]
         self.setModelParam(param_path)
 
@@ -1540,7 +1540,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 2. 加载标签
         # 2.1 如果保存coco格式，加载coco标签
         if self.save_status["coco"]:
-            self.loadCoco()
+            defaultPath = osp.join(self.outputDir, "annotations.json")
+            if osp.exists(defaultPath):
+                self.initCoco(defaultPath)
 
         # 2.2 如果保存json格式，获取所有json文件名
         if self.save_status["json"]:
@@ -1697,7 +1699,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def toggleSave(self, type):
         self.save_status[type] = not self.save_status[type]
         if type == "coco" and self.save_status["coco"]:
-            self.loadCoco()
+            self.initCoco()
         if type == "coco":
             self.save_status["json"] = not self.save_status["coco"]
             self.actions.save_json.setChecked(self.save_status["json"])
@@ -1705,15 +1707,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.save_status["coco"] = not self.save_status["json"]
             self.actions.save_coco.setChecked(self.save_status["coco"])
 
-    def loadCoco(self, coco_path=None):
+    def initCoco(self, coco_path: str = None):
         if not coco_path:
             if not self.outputDir or not osp.exists(self.outputDir):
                 coco_path = None
             else:
-                coco_path = osp.join(self.outputDir, "coco.json")
-                # 这里放在外面判断可能会有coco_path为none，exists报错
-                if not osp.exists(coco_path):
-                    coco_path = None
+                coco_path = osp.join(self.outputDir, "annotations.json")
+        else:
+            if not osp.exists(coco_path):
+                coco_path = None
         self.coco = COCO(coco_path)
         if self.clearLabelList():
             self.controller.labelList = util.LabelList(self.coco.dataset["categories"])
