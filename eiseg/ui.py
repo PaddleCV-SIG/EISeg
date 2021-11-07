@@ -2,6 +2,7 @@ import os.path as osp
 from functools import partial
 
 from qtpy import QtCore, QtGui, QtWidgets
+from qtpy.QtGui import QIcon
 from qtpy.QtCore import Qt
 
 from eiseg import pjpath, __APPNAME__, __VERSION__, logger
@@ -23,6 +24,7 @@ class Ui_EISeg(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
         MainWindow.setWindowTitle(__APPNAME__ + " " + __VERSION__)
+        MainWindow.setWindowIcon(QIcon())  # TODO: 默认图标需要换一个吗，貌似不能不显示图标
         CentralWidget = QtWidgets.QWidget(MainWindow)
         CentralWidget.setObjectName("CentralWidget")
         MainWindow.setCentralWidget(CentralWidget)
