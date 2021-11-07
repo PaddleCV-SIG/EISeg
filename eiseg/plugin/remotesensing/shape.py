@@ -25,7 +25,7 @@ def convert_coord(point, g):
     return nwp.T[0, :2]
 
 
-def bound2wkt(bounds, tform):
+def __bound2wkt(bounds, tform, ct):
     geo_list = []
     for bd in bounds:
         gl = defaultdict()
@@ -33,8 +33,9 @@ def bound2wkt(bounds, tform):
         gl["polygon"] = "Polygon (("
         p = bd["points"]
         for i in range(len(p)):
-            x, y = convert_coord(p[i], tform)
-            gl["polygon"] += (str(x) + " " + str(y)) + ","
+            x, y = convert_coord(p[i], tform)  # 仿射变换
+            lon, lat = ct.TransformPoint(x, y)[: 2]  # 转换到经纬度坐标
+            gl["polygon"] += (str(lat) + " " + str(lon)) + ","
         gl["polygon"] = gl["polygon"][:-1] + "))"
         geo_list.append(gl)
     return geo_list
@@ -58,9 +59,11 @@ def save_shp(shp_path, geocode_list, geo_info):
         if oDS == None:
             return "创建文件失败：" + shp_path
         # 创建一个多边形图层
-        geosrs = osr.SpatialReference()
-        # TODO：geo_info格式不统一，怎么解析，需要多看一点数据，目前默认使用WGS84
-        geosrs.SetWellKnownGeogCS("WGS84")  # (geo_info)
+        prosrs = osr.SpatialReference()
+        prosrs.ImportFromWkt(geo_info["proj"])
+        geosrs = prosrs.CloneGeogCS()
+        ct = osr.CoordinateTransformation(prosrs, geosrs)
+        geocode_list = __bound2wkt(geocode_list, geo_info["geotrans"], ct)
         ogr_type = ogr.wkbPolygon
         shpe_name = osp.splitext(osp.split(shp_path)[-1])[0]
         oLayer = oDS.CreateLayer(shpe_name, geosrs, ogr_type)

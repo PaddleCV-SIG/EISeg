@@ -1427,16 +1427,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                             color = self.controller.labelList[self.currLabelIdx].color
                             self.createPoly(in_poly, color)
                     polygons = self.scene.polygon_items
-                    labels = []
+                    geocode_list = []
                     for polygon in polygons:
                         l = self.controller.labelList[polygon.labelIndex - 1]
                         label = {"name": l.name, "points": []}
                         for p in polygon.scnenePoints:
                             label["points"].append(p)
-                        labels.append(label)
+                        geocode_list.append(label)
                     ## ----------
-                    geocode_list = rs.bound2wkt(labels, self.geoinfo["geotrans"])
-                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
+                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo))
             ext = osp.splitext(savePath)[1]
             cv2.imencode(ext, mask_output)[1].tofile(savePath)
             # self.labelPaths.append(savePath)

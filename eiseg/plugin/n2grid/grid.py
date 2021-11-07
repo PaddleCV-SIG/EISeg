@@ -51,7 +51,7 @@ class Grids:
         gridIdx = np.array([row, col])
         ul = gridIdx * (self.gridSize - self.overlap)
         lr = ul + self.gridSize
-        print("ul, lr", ul, lr)
+        # print("ul, lr", ul, lr)
         img = self.detimg[ul[0]: lr[0], ul[1]: lr[1]]
         mask = self.masksGrid[row][col]
         self.currIdx = (row, col)
