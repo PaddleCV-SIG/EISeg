@@ -28,9 +28,9 @@ def get_polygon(label, sample="Dynamic"):
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
-            # TODO: 待优化
             out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
             # 自定义边界简化
+            # 有可能简化没有了，造成下面的索引超出界限
             out = approx_poly_DP(out)
             # 给出关系
             rela = (idx,  # own
@@ -44,26 +44,30 @@ def get_polygon(label, sample="Dynamic"):
             if relas[i][1] != None:  # 有父圈
                 for j in range(len(relas)):
                     if relas[j][0] == relas[i][1]:  # i的父圈就是j（i是j的子圈）
-                        if polygons[i] is not None and polygons[j] is not None or \
-                           len(polygons[i]) != 0 and len(polygons[j]) != 0:
+                        if polygons[i] is not None and polygons[j] is not None:
                             min_i, min_o = __find_min_point(polygons[i], polygons[j])
                             # 改变顺序
-                            s_pj = polygons[j][: min_o]
-                            polygons[j] = polygons[j][min_o:]
-                            polygons[j].extend(s_pj)
-                            s_pi = polygons[i][: min_i]
-                            polygons[i] = polygons[i][min_i:]
-                            polygons[i].extend(s_pi)
+                            polygons[i] = __change_list(polygons[i], min_i)
+                            polygons[j] = __change_list(polygons[j], min_o)
                             # 连接
-                            polygons[j].append(polygons[j][0])  # 外圈闭合
-                            polygons[i].append(polygons[i][0])  # 内圈闭合
-                            polygons[j].extend(polygons[i])  # 连接内圈
+                            if min_i != -1 and len(polygons[i]) > 0:
+                                polygons[j].extend(polygons[i])  # 连接内圈
                             polygons[i] = None
         polygons = list(filter(None, polygons))  # 清除加到外圈的内圈多边形
         return polygons
     else:
         print("没有标签范围，无法生成边界")
         return None
+
+
+def __change_list(polygons, idx):
+    if idx == -1:
+        return polygons
+    s_p = polygons[: idx]
+    polygons = polygons[idx:]
+    polygons.extend(s_p)
+    polygons.append(polygons[0])  # 闭合圈
+    return polygons
 
 
 def __find_min_point(i_list, o_list):
