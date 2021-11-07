@@ -713,7 +713,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setModelParam(self, paramPath):
         res = self.changeParam(paramPath)
         if res:
-            self.statusbar.showMessage(self.tr("加载模型成功"), 10000)
             return True
         return False
 
@@ -743,6 +742,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
+            self.statusbar.showMessage(osp.basename(param_path) + self.tr(" 模型加载成功"), 10000)
             print(res)
             return True
         else:
@@ -1106,7 +1106,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像
-        self.edtGeoinfo.setText("无")
+        self.edtGeoinfo.setText(self.tr("无"))
         self.eximgsInit()  # TODO: 将grid的部分整合到saveImage里
 
         # 2. 判断图像类型，打开

@@ -15,7 +15,7 @@ class EISegModel:
         self,
         model_path="eiseg/static_hrnet18_ocr64_cocolvis.pdmodel",
         param_path="eiseg/static_hrnet18_ocr64_cocolvis.pdiparams",
-        use_gpu=False,
+        use_gpu=False
     ):
         model_path, param_path = self.check_param(model_path, param_path)
         try:
