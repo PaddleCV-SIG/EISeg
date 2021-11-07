@@ -1001,6 +1001,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def openRecentImage(self, file_path):
         self.queueEvent(partial(self.loadImage, file_path))
         self.listFiles.addItems([file_path.replace("\\", "/")])
+        self.currIdx = self.listFiles.count() - 1
+        self.listFiles.setCurrentRow(self.currIdx)  # 移动位置
         self.imagePaths.append(file_path)
 
     def openImage(self, filePath: str = None):
@@ -1030,6 +1032,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 3. 添加记录
         self.listFiles.addItems([filePath])
+        self.currIdx = self.listFiles.count() - 1
+        self.listFiles.setCurrentRow(self.currIdx)  # 移动位置
         self.imagePaths.append(filePath)
         return True
 

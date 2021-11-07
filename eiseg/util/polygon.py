@@ -30,7 +30,10 @@ def get_polygon(label, sample="Dynamic"):
             # print("epsilon:", epsilon)
             out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
             # 自定义边界简化
-            # 有可能简化没有了，造成下面的索引超出界限
+            '''
+                TODO: 内圈太简单有可能简化没有了，造成下面的索引超出界限，
+                      目前会筛选掉这些空内圈避免错误
+            '''
             out = approx_poly_DP(out)
             # 给出关系
             rela = (idx,  # own
