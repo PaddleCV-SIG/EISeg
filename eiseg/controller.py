@@ -97,6 +97,7 @@ class InteractiveController:
             tic = time.time()
             try:
                 self.model = EISegModel(model_path, param_path, use_gpu)
+                self.reset_predictor()  # 即刻生效
             except KeyError as e:
                 return False, str(e)
             logger.info(f"Load model {model_path} took {time.time()-tic}")
