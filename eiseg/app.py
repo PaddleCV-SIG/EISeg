@@ -1106,6 +1106,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像
+        self.edtGeoinfo.setText("无")
         self.eximgsInit()  # TODO: 将grid的部分整合到saveImage里
 
         # 2. 判断图像类型，打开
@@ -1153,6 +1154,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[4]:
                     return False
             self.grids.rawimg, self.geoinfo = rs.open_tif(path)
+            self.edtGeoinfo.setText(rs.show_geoinfo(self.geoinfo, self.grids.rawimg.dtype.name))
             try:
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             except IndexError:

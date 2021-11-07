@@ -63,7 +63,7 @@ def save_shp(shp_path, geocode_list, geo_info):
         prosrs.ImportFromWkt(geo_info["proj"])
         geosrs = prosrs.CloneGeogCS()
         ct = osr.CoordinateTransformation(prosrs, geosrs)
-        geocode_list = __bound2wkt(geocode_list, geo_info["geotrans"], ct)
+        geocode_list = __bound2wkt(geocode_list, geo_info["geotf"], ct)
         ogr_type = ogr.wkbPolygon
         shpe_name = osp.splitext(osp.split(shp_path)[-1])[0]
         oLayer = oDS.CreateLayer(shpe_name, geosrs, ogr_type)

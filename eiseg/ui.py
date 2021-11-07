@@ -215,6 +215,12 @@ class Ui_EISeg(object):
         self.shpSave.setObjectName("shpSave")
         bandRegion.addWidget(self.shpSave)
         horizontalLayout.addLayout(bandRegion)
+        showGeoInfo = create_text(CentralWidget, "showGeoInfo", self.tr("地理信息"))
+        bandRegion.addWidget(showGeoInfo)
+        self.edtGeoinfo = QtWidgets.QTextEdit(self.tr("无"))
+        self.edtGeoinfo.setObjectName("edtGeoinfo")
+        self.edtGeoinfo.setReadOnly(True)
+        bandRegion.addWidget(self.edtGeoinfo)
         self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
 
