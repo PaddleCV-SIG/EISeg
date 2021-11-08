@@ -112,9 +112,10 @@ class InteractiveController:
             当前标注的图片
 
         """
-        self.image = image
-        self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
-        self.resetLastObject()
+        if self.model is not None:
+            self.image = image
+            self._result_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            self.resetLastObject()
 
     # 标签操作
     def setLabelList(self, labelList: json):

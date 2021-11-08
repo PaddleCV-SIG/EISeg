@@ -1126,6 +1126,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # TODO：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
         # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
 
+        if self.controller.model is None:
+            self.warn("未检测到模型", "请先加载模型参数")
+            return
         # 1. 拒绝None和不存在的路径，关闭当前图像
         if not path:
             return
@@ -1192,7 +1195,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.rsRGB = [0, 0, 0]
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
-            self.updateSlideSld(True)
+            # self.updateSlideSld(True)
 
         # 如果没找到图片的reader
         if image is None:
@@ -2063,7 +2066,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.canvas.setStyleSheet(self.note_style)
 
     def toggleLogging(self, s):
-        print("+_+", s)
         if s:
             logger.setLevel(logging.DEBUG)
         else:
