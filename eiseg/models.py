@@ -13,8 +13,8 @@ class EISegModel:
     @abstractmethod
     def __init__(
         self,
-        model_path="eiseg/static_hrnet18_ocr64_cocolvis.pdmodel",
-        param_path="eiseg/static_hrnet18_ocr64_cocolvis.pdiparams",
+        model_path,
+        param_path,
         use_gpu=False
     ):
         model_path, param_path = self.check_param(model_path, param_path)
@@ -25,24 +25,27 @@ class EISegModel:
         if not use_gpu:
             config.enable_mkldnn()
             # TODO: fluid要废弃了，研究判断方式
-            if paddle.fluid.core.supports_bfloat16():
-                config.enable_mkldnn_bfloat16()
+            # if paddle.fluid.core.supports_bfloat16():
+            #     config.enable_mkldnn_bfloat16()
             config.switch_ir_optim(True)
             config.set_cpu_math_library_num_threads(10)
         else:
             config.enable_use_gpu(500, 0)
+            config.delete_pass("conv_elementwise_add_act_fuse_pass")
+            config.delete_pass("conv_elementwise_add2_act_fuse_pass")
+            config.delete_pass("conv_elementwise_add_fuse_pass")
             config.switch_ir_optim()
             config.enable_memory_optim()
-            use_tensoret = False  # TODO: 目前Linux和windows下使用TensorRT报错
-            if use_tensoret:
-                config.enable_tensorrt_engine(
-                    workspace_size=1 << 30,
-                    precision_mode=paddle_infer.PrecisionType.Float32,
-                    max_batch_size=1,
-                    min_subgraph_size=5,
-                    use_static=False,
-                    use_calib_mode=False,
-                )
+            # use_tensoret = False  # TODO: 目前Linux和windows下使用TensorRT报错
+            # if use_tensoret:
+            #     config.enable_tensorrt_engine(
+            #         workspace_size=1 << 30,
+            #         precision_mode=paddle_infer.PrecisionType.Float32,
+            #         max_batch_size=1,
+            #         min_subgraph_size=5,
+            #         use_static=False,
+            #         use_calib_mode=False,
+            #     )
         self.model = paddle_infer.create_predictor(config)
 
     def check_param(self, model_path, param_path):
