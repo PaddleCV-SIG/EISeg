@@ -18,12 +18,12 @@ if has_sitk():
 
 
 def dcm_reader(path):
-    log.debug(f"opening medical image {path}")
+    logger.debug(f"opening medical image {path}")
     reader = sitk.ImageSeriesReader()
     reader.SetFileNames([path])
     image = reader.Execute()
     img = sitk.GetArrayFromImage(image)
-    log.debug(f"scan shape is {img.shape}")
+    logger.debug(f"scan shape is {img.shape}")
     if len(img.shape) == 4:
         img = img[0]
     # WHC
@@ -39,9 +39,10 @@ def windowlize(scan, ww, wc):
     res = np.clip(res, wl, wh)
     res = (res - wl) / ww * 255
     res = res.astype(np.uint8)
-    print("++", res.shape)
-    for idx in range(res.shape[-1]):
-        res[:, :, idx] = cv2.cvtColor(res[:, :, idx], cv2.COLOR_GRAY2BGR)
+    # print("++", res.shape)
+    # for idx in range(res.shape[-1]):
+    # TODO: 支持3d或者改调用
+    res = cv2.cvtColor(res, cv2.COLOR_GRAY2BGR)
 
     return res
 

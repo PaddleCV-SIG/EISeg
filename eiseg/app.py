@@ -103,8 +103,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        if self.save_status:
-            self.coco = COCO()  # TODO: 开启coco保存才创建
+        if self.save_status["coco"]:
+            self.coco = COCO()
         else:
             self.coco = None
         self.colorMap = util.colorMap
@@ -767,7 +767,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
-            self.statusbar.showMessage(osp.basename(param_path) + self.tr(" 模型加载成功"), 10000)
+            self.statusbar.showMessage(
+                osp.basename(param_path) + self.tr(" 模型加载成功"), 10000
+            )
             print(res)
             return True
         else:
@@ -1136,15 +1138,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 2. 判断图像类型，打开
         # TODO: 加用户指定类型的功能
+        image = None
 
         # 直接if会报错，因为打开遥感图像后多波段不存在，现在把遥感图像的单独抽出来了
         # 自然图像
-        if path.endswith(tuple(self.formats[0])):
+        if path.lower().endswith(tuple(self.formats[0])):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
 
         # 医学影像
-        if path.endswith(tuple(self.formats[1])):
+        if path.lower().endswith(tuple(self.formats[1])):
             if not self.dockStatus[5]:
                 res = self.warn(
                     self.tr("未启用医疗组件"),
@@ -1157,7 +1160,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[5]:
                     return False
             image = med.dcm_reader(path)  # TODO: 添加多层支持
-
             if image.shape[-1] != 1:
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
                 return False
@@ -1166,7 +1168,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             image = med.windowlize(image, self.ww, self.wc)
 
         # 遥感图像
-        if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
+        if path.lower().endswith(
+            tuple(self.formats[2])
+        ):  # imghdr.what(path) == "tiff":
             if not self.dockStatus[4]:
                 res = self.warn(
                     self.tr("未打开遥感组件"),
@@ -1179,14 +1183,21 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[4]:
                     return False
             self.grids.rawimg, self.geoinfo = rs.open_tif(path)
-            self.edtGeoinfo.setText(rs.show_geoinfo(self.geoinfo, self.grids.rawimg.dtype.name))
+            self.edtGeoinfo.setText(
+                rs.show_geoinfo(self.geoinfo, self.grids.rawimg.dtype.name)
+            )
             try:
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             except IndexError:
                 self.rsRGB = [0, 0, 0]
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
-            # self.updateSlideSld(True)
+            self.updateSlideSld(True)
+
+        # 如果没找到图片的reader
+        if image is None:
+            self.warn("打开图像失败", f"未找到{path}文件对应的读取程序")
+            return
 
         self.grids.detimg = image
 
