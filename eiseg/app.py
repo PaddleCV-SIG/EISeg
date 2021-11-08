@@ -1067,6 +1067,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         imagePaths = os.listdir(inputDir)
         exts = tuple(f for fmts in self.formats for f in fmts)
         imagePaths = [n for n in imagePaths if n.lower().endswith(exts)]  # 修复大写后缀名
+        imagePaths = [n for n in imagePaths if not n[0] == "."]  # 修复大写后缀名
         imagePaths.sort()
         if len(imagePaths) == 0:
             return
