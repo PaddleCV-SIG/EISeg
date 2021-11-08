@@ -1670,9 +1670,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not c.modelSet:
             self.warn(self.tr("未选择模型", self.tr("尚未选择模型，请先在右上角选择模型")))
             return
-        # if not c.paramSet:
-        #     self.warn(self.tr("未设置参数"), self.tr("尚未设置参数，请先在右上角设置参数"))
-        #     return
 
         if self.status == self.IDILE:
             return
