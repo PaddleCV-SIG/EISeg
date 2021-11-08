@@ -81,6 +81,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "coco": True,
             "cutout": True,
         }  # 是否保存这几个格式
+        self.coco = COCO()
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
@@ -1102,15 +1103,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 2. 判断图像类型，打开
         # TODO: 加用户指定类型的功能
+        image = None
 
         # 直接if会报错，因为打开遥感图像后多波段不存在，现在把遥感图像的单独抽出来了
         # 自然图像
-        if path.endswith(tuple(self.formats[0])):
+        if path.lower().endswith(tuple(self.formats[0])):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
 
         # 医学影像
-        if path.endswith(tuple(self.formats[1])):
+        if path.lower().endswith(tuple(self.formats[1])):
             if not self.dockStatus[5]:
                 res = self.warn(
                     self.tr("未启用医疗组件"),
@@ -1123,7 +1125,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[5]:
                     return False
             image = med.dcm_reader(path)  # TODO: 添加多层支持
-
             if image.shape[-1] != 1:
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
                 return False
@@ -1132,7 +1133,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             image = med.windowlize(image, self.ww, self.wc)
 
         # 遥感图像
-        if path.endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
+        if path.lower().endswith(
+            tuple(self.formats[2])
+        ):  # imghdr.what(path) == "tiff":
             if not self.dockStatus[4]:
                 res = self.warn(
                     self.tr("未打开遥感组件"),
@@ -1152,7 +1155,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
             self.updateSlideSld(True)
-
+        if image is None:
+            self.warn("打开图像失败", f"未找到{path}文件对应的读取程序")
+            return
         self.grids.detimg = image
 
         thumbnail, resize = rs.get_thumbnail(image)  # 图像太大就显示缩略图
