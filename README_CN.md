@@ -151,9 +151,27 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
 
 EISeg目前已添加对遥感图像和医学影像分割的支持。使用相关功能需要安装额外依赖。
 
-分割遥感图像请安装
+- 分割遥感图像请安装GDAL
 
-分割医学影像请安装SimpleITK
+1. Windows
+
+下载GDAL的二进制扩展包[whl](https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal)，通过pip进行安装
+
+```shell
+cd PackageFolder
+pip install GDAL-xxx-xxx.whl
+```
+
+2. Linux
+
+使用apt-get进行安装或参考[这里](https://blog.csdn.net/u010243261/article/details/62423220)
+
+```shell
+sudo apt-get install python3-gdal
+```
+
+- 分割医学影像请安装SimpleITK
+
 ```shell
 pip install SimpleITK
 ```
