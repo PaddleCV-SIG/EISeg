@@ -30,6 +30,7 @@ from plugin.n2grid import Grids
 # TODO: 使用多线程加载后并不能解决假死，为何
 class ModelThread(QThread):
     _signal = Signal(dict)
+
     def __init__(self, controller, param_path):
         super().__init__()
         self.controller = controller
@@ -37,11 +38,9 @@ class ModelThread(QThread):
 
     def run(self):
         success, res = self.controller.setModel(self.param_path)
-        self._signal.emit({
-            "success": success,
-            "res": res,
-            "param_path": self.param_path
-        })
+        self._signal.emit(
+            {"success": success, "res": res, "param_path": self.param_path}
+        )
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -754,7 +753,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.load_thread = ModelThread(self.controller, param_path)
         self.load_thread._signal.connect(self.__change_model_callback)
         self.load_thread.start()
-            
+
     def __change_model_callback(self, signal_dict: dict):
         success = signal_dict["success"]
         res = signal_dict["res"]
