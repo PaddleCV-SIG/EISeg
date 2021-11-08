@@ -3,7 +3,7 @@ import numpy as np
 
 
 class Grids:
-    def __init__(self, gridSize=(512, 512), overlap=(10, 10)):
+    def __init__(self, gridSize=(512, 512), overlap=(24, 24)):
         # TODO: 这个size如果支持长和宽不同有用吗
         # 可能可以铺满用户屏幕？
         # self.sizePair = namedtuple("sizePair", "h w")
@@ -49,9 +49,9 @@ class Grids:
 
     def getGrid(self, row, col):
         gridIdx = np.array([row, col])
-        ul = gridIdx * self.gridSize - self.overlap
-        ul = ul + self.overlap * (gridIdx == 0)
+        ul = gridIdx * (self.gridSize - self.overlap)
         lr = ul + self.gridSize
+        # print("ul, lr", ul, lr)
         img = self.detimg[ul[0]: lr[0], ul[1]: lr[1]]
         mask = self.masksGrid[row][col]
         self.currIdx = (row, col)

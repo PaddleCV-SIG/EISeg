@@ -11,6 +11,7 @@ def check_gdal():
 
 import numpy as np
 import cv2
+from collections import defaultdict
 
 
 IPT_GDAL = check_gdal()
@@ -50,15 +51,38 @@ def get_geoinfo(geoimg):
     '''
     if IPT_GDAL == True:
         geoinfo = {
+            'count': geoimg.RasterCount,
             'xsize': geoimg.RasterXSize,
             'ysize': geoimg.RasterYSize,
-            'count': geoimg.RasterCount,
             'proj': geoimg.GetProjection(),
-            'geotrans': geoimg.GetGeoTransform()
+            'proj2': geoimg.GetSpatialRef(),
+            'geotf': geoimg.GetGeoTransform()
         }
         return geoinfo
     else:
         raise ImportError('can\'t import gdal!')
+
+
+def show_geoinfo(geo_info, type):
+    return str(
+        "● 波段数：{0}\n● 数据类型：{1}\n● 行数：{2}\n● 列数：{3}\n{4}".format(
+            geo_info["count"], type, geo_info["xsize"], geo_info["ysize"], 
+            __analysis_proj2(geo_info["proj2"].ExportToProj4()))
+    )
+
+
+def __analysis_proj2(proj2):
+    ap_dict = defaultdict(str)
+    dinf = proj2.split("+")
+    for df in dinf:
+        kv = df.strip().split("=")
+        if len(kv) == 2:
+            k, v = kv
+            ap_dict[k] = v
+    return str(
+        "● 投影：{0}\n● 基准：{1}\n● 单位：{2}".format(
+            ap_dict["proj"], ap_dict["datum"], ap_dict["units"])
+    )
 
 
 def save_tif(img, geoinfo, save_path):
@@ -75,7 +99,7 @@ def save_tif(img, geoinfo, save_path):
             geoinfo['count'], 
             datatype)
         dataset.SetProjection(geoinfo['proj'])  # 写入投影
-        dataset.SetGeoTransform(geoinfo['geotrans'])  # 写入仿射变换参数
+        dataset.SetGeoTransform(geoinfo['geotf'])  # 写入仿射变换参数
         C = img.shape[-1] if len(img.shape) == 3 else 1
         if C == 1:
             dataset.GetRasterBand(1).WriteArray(img)

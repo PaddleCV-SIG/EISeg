@@ -1,3 +1,4 @@
+import logging
 import os
 import os.path as osp
 from functools import partial
@@ -7,7 +8,6 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 from datetime import datetime
-import logging
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -81,13 +81,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             "coco": True,
             "cutout": True,
         }  # 是否保存这几个格式
-        self.coco = COCO()
         self.outputDir = None  # 标签保存路径
         self.labelPaths = []  # 所有outputdir中的标签文件路径
         self.imagePaths = []  # 文件夹下所有待标注图片路径
         self.currIdx = 0  # 文件夹标注当前图片下标
         self.origExt = False  # 是否使用图片本身拓展名，防止重名覆盖
-        # self.coco = COCO()  # TODO: 开启coco保存才创建
+        if self.save_status["coco"]:
+            self.coco = COCO()
+        else:
+            self.coco = None
         self.colorMap = util.colorMap
 
         if self.settings.value("cutout_background"):
@@ -711,7 +713,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def setModelParam(self, paramPath):
         res = self.changeParam(paramPath)
         if res:
-            self.statusbar.showMessage(self.tr("加载模型成功"), 10000)
             return True
         return False
 
@@ -741,6 +742,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     del self.recentModels[-1]
                 self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
+            self.statusbar.showMessage(
+                osp.basename(param_path) + self.tr(" 模型加载成功"), 10000
+            )
+            print(res)
             return True
         else:
             self.warnException(res)
@@ -998,11 +1003,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def openRecentImage(self, file_path):
         self.queueEvent(partial(self.loadImage, file_path))
         self.listFiles.addItems([file_path.replace("\\", "/")])
+        self.currIdx = self.listFiles.count() - 1
+        self.listFiles.setCurrentRow(self.currIdx)  # 移动位置
         self.imagePaths.append(file_path)
 
     def openImage(self, filePath: str = None):
-        # BUG: 打开图像的时候filepath是false不是none
-        if not isinstance(filePath, str):
+        # 在triggered.connect中使用不管默认filePath为什么返回值都为False
+        if not isinstance(filePath, str) or filePath is False:
             prompts = ["图片", "医学影像", "遥感影像"]
             filters = ""
             for fmts, p in zip(self.formats, prompts):
@@ -1027,6 +1034,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 3. 添加记录
         self.listFiles.addItems([filePath])
+        self.currIdx = self.listFiles.count() - 1
+        self.listFiles.setCurrentRow(self.currIdx)  # 移动位置
         self.imagePaths.append(filePath)
         return True
 
@@ -1088,8 +1097,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.turnImg(0)
         self.inputDir = inputDir
 
-    def loadImage(self, path: str):
-        # BUG：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
+    def loadImage(self, path):
+        # TODO：无法正确在另一个进程显示繁忙进度条，若图太大会造成界面假死
         # 目前尝试加载的最大遥感图像，大小：910MB，尺寸：16999x9340x3
 
         # 1. 拒绝None和不存在的路径，关闭当前图像
@@ -1099,6 +1108,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像
+        self.edtGeoinfo.setText(self.tr("无"))
         self.eximgsInit()  # TODO: 将grid的部分整合到saveImage里
 
         # 2. 判断图像类型，打开
@@ -1148,6 +1158,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[4]:
                     return False
             self.grids.rawimg, self.geoinfo = rs.open_tif(path)
+            self.edtGeoinfo.setText(
+                rs.show_geoinfo(self.geoinfo, self.grids.rawimg.dtype.name)
+            )
             try:
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             except IndexError:
@@ -1155,9 +1168,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
             self.updateSlideSld(True)
+
+        # 如果没找到图片的reader
         if image is None:
             self.warn("打开图像失败", f"未找到{path}文件对应的读取程序")
             return
+
         self.grids.detimg = image
 
         thumbnail, resize = rs.get_thumbnail(image)  # 图像太大就显示缩略图
@@ -1424,16 +1440,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                             color = self.controller.labelList[self.currLabelIdx].color
                             self.createPoly(in_poly, color)
                     polygons = self.scene.polygon_items
-                    labels = []
+                    geocode_list = []
                     for polygon in polygons:
                         l = self.controller.labelList[polygon.labelIndex - 1]
                         label = {"name": l.name, "points": []}
                         for p in polygon.scnenePoints:
                             label["points"].append(p)
-                        labels.append(label)
+                        geocode_list.append(label)
                     ## ----------
-                    geocode_list = rs.bound2wkt(labels, self.geoinfo["geotrans"])
-                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo["proj"]))
+                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo))
             ext = osp.splitext(savePath)[1]
             cv2.imencode(ext, mask_output)[1].tofile(savePath)
             # self.labelPaths.append(savePath)
@@ -1947,7 +1962,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
             return
-        self.image = self.grids.detimg
+        self.image = rs.get_thumbnail(self.grids.detimg)[0]
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.exportLabel(lab_input=mask)
@@ -1955,15 +1970,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         # TODO：不显示了，图像太大造成卡顿
         # # 显示多边形
-        # curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-        # # BUG：标签颜色怎么与原来对应（仍需处理）
+        # curr_polygon = util.get_polygon(get_thumbnail(mask)[0].astype(np.uint8) * 255)
+        # # TODO：标签颜色怎么与原来对应（仍需处理）
         # color = self.controller.labelList[self.currLabelIdx].color
         # self.createPoly(curr_polygon, color)
         # for p in self.scene.polygon_items:
         #     p.setAnning(isAnning=False)
-        # # 刷新
-        # self.grids.currIdx = None
-        # self.updateImage(True)
+        # 刷新
+        self.grids.currIdx = None
+        self.updateImage(True)
 
     @property
     def opacity(self):

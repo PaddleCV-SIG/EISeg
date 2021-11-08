@@ -2,9 +2,10 @@ import os.path as osp
 from functools import partial
 
 from qtpy import QtCore, QtGui, QtWidgets
+from qtpy.QtGui import QIcon
 from qtpy.QtCore import Qt
 
-from eiseg import pjpath, __APPNAME__, logger
+from eiseg import pjpath, __APPNAME__, __VERSION__, logger
 from eiseg.widget.create import creat_dock, create_button, create_slider, create_text
 from widget import AnnotationScene, AnnotationView
 from widget.create import *
@@ -22,7 +23,8 @@ class Ui_EISeg(object):
         ## -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")
         MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
-        MainWindow.setWindowTitle(__APPNAME__)
+        MainWindow.setWindowTitle(__APPNAME__ + " " + __VERSION__)
+        MainWindow.setWindowIcon(QIcon())  # TODO: 默认图标需要换一个吗，貌似不能不显示图标
         CentralWidget = QtWidgets.QWidget(MainWindow)
         CentralWidget.setObjectName("CentralWidget")
         MainWindow.setCentralWidget(CentralWidget)
@@ -213,6 +215,12 @@ class Ui_EISeg(object):
         self.shpSave.setObjectName("shpSave")
         bandRegion.addWidget(self.shpSave)
         horizontalLayout.addLayout(bandRegion)
+        showGeoInfo = create_text(CentralWidget, "showGeoInfo", self.tr("地理信息"))
+        bandRegion.addWidget(showGeoInfo)
+        self.edtGeoinfo = QtWidgets.QTextEdit(self.tr("无"))
+        self.edtGeoinfo.setObjectName("edtGeoinfo")
+        self.edtGeoinfo.setReadOnly(True)
+        bandRegion.addWidget(self.edtGeoinfo)
         self.RSDock = p_create_dock("RSDock", self.tr("遥感设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.RSDock)
 
