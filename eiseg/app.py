@@ -12,7 +12,7 @@ from datetime import datetime
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication
+from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication, QThread, Signal
 import cv2
 import numpy as np
 
@@ -25,6 +25,23 @@ from util import COCO
 import plugin.remotesensing as rs
 from plugin.medical import med
 from plugin.n2grid import Grids
+
+
+# TODO: 使用多线程加载后并不能解决假死，为何
+class ModelThread(QThread):
+    _signal = Signal(dict)
+    def __init__(self, controller, param_path):
+        super().__init__()
+        self.controller = controller
+        self.param_path = param_path
+
+    def run(self):
+        success, res = self.controller.setModel(self.param_path)
+        self._signal.emit({
+            "success": success,
+            "res": res,
+            "param_path": self.param_path
+        })
 
 
 class APP_EISeg(QMainWindow, Ui_EISeg):
@@ -733,7 +750,15 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not param_path:
             return False
 
-        success, res = self.controller.setModel(param_path)
+        # success, res = self.controller.setModel(param_path)
+        self.load_thread = ModelThread(self.controller, param_path)
+        self.load_thread._signal.connect(self.__change_model_callback)
+        self.load_thread.start()
+            
+    def __change_model_callback(self, signal_dict: dict):
+        success = signal_dict["success"]
+        res = signal_dict["res"]
+        param_path = signal_dict["param_path"]
         if success:
             model_dict = {"param_path": param_path}
             if model_dict not in self.recentModels:
@@ -1702,7 +1727,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def keyReleaseEvent(self, event):
         # print(event.key(), Qt.Key_Control)
         # 释放ctrl的时候刷新图像，对应自适应点大小在缩放后刷新
-        # TODO:过大的图还是有一点延迟
         if not self.controller or self.controller.image is None:
             return
         if event.key() == Qt.Key_Control:
@@ -1969,14 +1993,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.exportLabel(lab_input=mask)
         if self.currLabelIdx == -1:
             return
-        # TODO：不显示了，图像太大造成卡顿
-        # # 显示多边形
-        # curr_polygon = util.get_polygon(get_thumbnail(mask)[0].astype(np.uint8) * 255)
-        # # TODO：标签颜色怎么与原来对应（仍需处理）
-        # color = self.controller.labelList[self.currLabelIdx].color
-        # self.createPoly(curr_polygon, color)
-        # for p in self.scene.polygon_items:
-        #     p.setAnning(isAnning=False)
+        # TODO：标签颜色怎么与原来对应（仍需处理）
         # 刷新
         self.grids.currIdx = None
         self.updateImage(True)
