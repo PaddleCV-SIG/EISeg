@@ -173,10 +173,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.initActions()
 
         # 更新近期记录
+        self.loadLayout()  # 放前面
         self.toggleWidget("all", warn=False)
         self.updateModelMenu()
         self.updateRecentFile()
-        self.loadLayout()
 
         # 窗口
         ## 快捷键
