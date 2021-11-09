@@ -1136,7 +1136,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像
-        self.edtGeoinfo.setText(self.tr("无"))
         self.eximgsInit()  # TODO: 将grid的部分整合到saveImage里
 
         # 2. 判断图像类型，打开
@@ -1196,7 +1195,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 image = rs.selec_band(self.grids.rawimg, self.rsRGB)
             self.updateBandList()
             # self.updateSlideSld(True)
-
+        else:
+            self.edtGeoinfo.setText(self.tr("无"))
+        
         # 如果没找到图片的reader
         if image is None:
             self.warn("打开图像失败", f"未找到{path}文件对应的读取程序")
@@ -1315,10 +1316,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.saveImage(True)
 
             # 2. 打开新图
+            self.geoinfo = None
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
             self.setClean()
-            self.geoinfo = None
         else:
             self.turnGrid(delta)
 
