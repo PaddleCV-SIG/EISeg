@@ -54,8 +54,7 @@ conda install gdal
 
 下面是一副来自谷歌地球的重庆部分地区的切片演示：
 
-![](https://user-images.githubusercontent.com/35907364/140917131-3d34ce42-d8bf-4390-b715-be235b6daf4d.gif)
-
+![](https://user-images.githubusercontent.com/35907364/140921859-d927dea5-1fc4-4f6a-b467-3c139dab697e.gif)
 
 ### 2.3 地理数据保存
 
