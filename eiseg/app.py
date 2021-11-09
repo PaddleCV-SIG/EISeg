@@ -2062,9 +2062,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         webbrowser.open("https://github.com/PaddleCV-SIG/EISeg/issues/new/choose")
 
     def quickStart(self):
-        # TODO: 弹出窗口，直接关了图片感觉不太好
-        self.saveImage(True)
-        self.canvas.setStyleSheet(self.note_style)
+        # self.saveImage(True)
+        # self.canvas.setStyleSheet(self.note_style)
+        webbrowser.open("https://github.com/PaddleCV-SIG/EISeg/tree/release/0.4.0")
 
     def toggleLogging(self, s):
         if s:
