@@ -27,7 +27,15 @@ from datetime import datetime
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication, QThread, Signal
+from qtpy.QtCore import (
+    Qt,
+    QByteArray,
+    QVariant,
+    QCoreApplication,
+    QThread,
+    Signal,
+    QSize,
+)
 import cv2
 import numpy as np
 
@@ -781,7 +789,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     del self.recentModels[-1]
             else:  # 如果存在移动位置，确保加载最近模型的正确
                 self.recentModels.remove(model_dict)
-                self.recentModels.insert(0, model_dict)    
+                self.recentModels.insert(0, model_dict)
             self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
             self.statusbar.showMessage(
@@ -1215,7 +1223,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             # self.updateSlideSld(True)
         else:
             self.edtGeoinfo.setText(self.tr("无"))
-        
+
         # 如果没找到图片的reader
         if image is None:
             self.warn("打开图像失败", f"未找到{path}文件对应的读取程序")
@@ -2039,7 +2047,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def warn(self, title, text, buttons=QMessageBox.Yes):
         msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
+        # msg.setIcon(QMessageBox.Warning)
+        # msg.setMinimumSize(QSize(500, 70))
         msg.setWindowTitle(title)
         msg.setText(text)
         msg.setStandardButtons(buttons)
