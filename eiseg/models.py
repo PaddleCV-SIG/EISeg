@@ -1,10 +1,24 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import os.path as osp
 from abc import ABC, abstractmethod
 
-import paddle
+
 import paddle.inference as paddle_infer
-from model.is_hrnet_model import HRNetModel
-from util import MODELS
+
 
 here = osp.dirname(osp.abspath(__file__))
 
@@ -55,43 +69,3 @@ class EISegModel:
             raise Exception(f"权重路径{param_path}不存在。请指定正确的权重路径")
         return model_path, param_path
 
-
-# ModelsNick = {"HRNet18s_OCR48": ["轻量级模型", 0],
-#               "HRNet18_OCR64": ["高精度模型", 1]}
-
-# @MODELS.add_component
-# class HRNet18s_OCR48(EISegModel):
-#     __name__ = "HRNet18s_OCR48"
-
-#     def create_model(self):
-#         self.model = HRNetModel(
-#             width=18,
-#             ocr_width=48,
-#             small=True,
-#             with_aux_output=True,
-#             use_rgb_conv=False,
-#             use_leaky_relu=True,
-#             use_disks=True,
-#             with_prev_mask=True,
-#             norm_radius=5,
-#             cpu_dist_maps=False,
-#         )
-
-
-# @MODELS.add_component
-# class HRNet18_OCR64(EISegModel):
-#     __name__ = "HRNet18_OCR64"
-
-#     def create_model(self):
-#         self.model = HRNetModel(
-#             width=18,
-#             ocr_width=64,
-#             small=False,
-#             with_aux_output=True,
-#             use_leaky_relu=True,
-#             use_rgb_conv=False,
-#             use_disks=True,
-#             norm_radius=5,
-#             with_prev_mask=True,
-#             cpu_dist_maps=False,  # 目前打包cython有些问题，先默认用False
-#         )
