@@ -51,7 +51,10 @@ def __bound2wkt(bounds, tform, ct):
             x, y = convert_coord(p[i], tform)  # 仿射变换
             lon, lat = ct.TransformPoint(x, y)[: 2]  # 转换到经纬度坐标
             gl["polygon"] += (str(lat) + " " + str(lon)) + ","
-        gl["polygon"] = gl["polygon"][:-1] + "))"
+        x, y = convert_coord(p[0], tform)  # 仿射变换
+        lon, lat = ct.TransformPoint(x, y)[: 2]  # 转换到经纬度坐标
+        gl["polygon"] += (str(lat) + " " + str(lon)) + "))"
+        # gl["polygon"] = gl["polygon"][:-1] + "))"
         geo_list.append(gl)
     return geo_list
 

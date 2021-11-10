@@ -111,16 +111,18 @@ def save_tif(img, geoinfo, save_path):
             save_path, 
             geoinfo['xsize'], 
             geoinfo['ysize'], 
-            geoinfo['count'], 
+            1,  # geoinfo['count'],  # 保存tif目前仅用于保存mask，波段为1就OK 
             datatype)
         dataset.SetProjection(geoinfo['proj'])  # 写入投影
         dataset.SetGeoTransform(geoinfo['geotf'])  # 写入仿射变换参数
-        C = img.shape[-1] if len(img.shape) == 3 else 1
-        if C == 1:
-            dataset.GetRasterBand(1).WriteArray(img)
-        else:
-            for i_c in range(C):
-                dataset.GetRasterBand(i_c + 1).WriteArray(img[:, :, i_c])
+        # 同上
+        # C = img.shape[-1] if len(img.shape) == 3 else 1
+        # if C == 1:
+        #     dataset.GetRasterBand(1).WriteArray(img)
+        # else:
+        #     for i_c in range(C):
+        #         dataset.GetRasterBand(i_c + 1).WriteArray(img[:, :, i_c])
+        dataset.GetRasterBand(1).WriteArray(img)
         del dataset  # 删除与tif的连接
     else:
         raise ImportError('can\'t import gdal!')
