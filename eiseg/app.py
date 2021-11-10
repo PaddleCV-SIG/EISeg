@@ -764,7 +764,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.recentModels.insert(0, model_dict)
                 if len(self.recentModels) > 10:
                     del self.recentModels[-1]
-                self.settings.setValue("recent_models", self.recentModels)
+            else:  # 如果存在移动位置，确保加载最近模型的正确
+                self.recentModels.remove(model_dict)
+                self.recentModels.insert(0, model_dict)    
+            self.settings.setValue("recent_models", self.recentModels)
             # self.status = self.ANNING
             self.statusbar.showMessage(
                 osp.basename(param_path) + self.tr(" 模型加载成功"), 10000
