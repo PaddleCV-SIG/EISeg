@@ -49,7 +49,7 @@ conda install gdal
 
 目前EISeg对于大幅遥感图像（目前最大尝试为900M，17000*10000大小三通道图像），支持切片预测后合并，其中切片的重叠区域overlap为24。
 
-<img src="https://user-images.githubusercontent.com/35907364/140916007-86076366-62ce-49ba-b1d9-18239baafc90.png" alt="overlap" style="zoom: 67%;" />
+![140916007-86076366-62ce-49ba-b1d9-18239baafc90](https://user-images.githubusercontent.com/71769312/141139282-854dcb4f-bcab-4ccc-aa3c-577cc52ca385.png)
 
 
 下面是一副来自谷歌地球的重庆部分地区的切片演示：
