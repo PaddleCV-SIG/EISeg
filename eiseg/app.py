@@ -2048,7 +2048,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def warn(self, title, text, buttons=QMessageBox.Yes):
         msg = QMessageBox()
         # msg.setIcon(QMessageBox.Warning)
-        # msg.setMinimumSize(QSize(500, 70))
         msg.setWindowTitle(title)
         msg.setText(text)
         msg.setStandardButtons(buttons)
