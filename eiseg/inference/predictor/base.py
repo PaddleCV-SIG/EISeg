@@ -1,3 +1,23 @@
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This code is based on https://github.com/saic-vul/ritm_interactive_segmentation
+Ths copyright of saic-vul/ritm_interactive_segmentation is as follows:
+MIT License [see LICENSE for details]
+"""
+
+
 import paddle
 import paddle.nn.functional as F
 import numpy as np
@@ -25,10 +45,6 @@ class BasePredictor(object):
         self.with_prev_mask = with_mask
         self.net = model
 
-        # if isinstance(model, tuple):
-        #     self.net, self.click_models = model
-        # else:
-        #     self.net = model
         self.normalization = BatchImageNormalize([.485, .456, .406], [.229, .224, .225])
 
         self.transforms = [zoom_in] if zoom_in is not None else []
@@ -40,12 +56,11 @@ class BasePredictor(object):
         self.dist_maps = DistMaps(norm_radius=5, spatial_scale=1.0,
                                   cpu_mode=False, use_disks=True)
 
-
     def to_tensor(self, x):
         if isinstance(x, np.ndarray):
             if x.ndim == 2:
-                x = x[:,:,None]
-        img = paddle.to_tensor(x.transpose([2,0,1])).astype('float32') / 255
+                x = x[:, :, None]
+        img = paddle.to_tensor(x.transpose([2, 0, 1])).astype('float32') / 255
         return img
 
     def set_input_image(self, image):
@@ -63,12 +78,6 @@ class BasePredictor(object):
     def get_prediction(self, clicker, prev_mask=None):
         clicks_list = clicker.get_clicks()
 
-        if self.click_models is not None:
-            model_indx = min(clicker.click_indx_offset + len(clicks_list), len(self.click_models)) - 1
-            if model_indx != self.model_indx:
-                self.model_indx = model_indx
-                self.net = self.click_models[model_indx]
-
         input_image = self.original_image
         if prev_mask is None:
             if not self.with_prev_mask:
@@ -77,7 +86,6 @@ class BasePredictor(object):
             else:
                 prev_mask = self.prev_prediction
 
-        #if hasattr(self.net, 'with_prev_mask') and self.net.with_prev_mask:
         input_image = paddle.concat([input_image, prev_mask], axis=1)
 
         image_nd, clicks_lists, is_image_changed = self.apply_transforms(
@@ -92,7 +100,7 @@ class BasePredictor(object):
         if pred_edges is not None:
             pred_edge = paddle.to_tensor(pred_edges)
             edge_prediction = F.interpolate(pred_edge, mode='bilinear', align_corners=True,
-                                   size=image_nd.shape[2:])
+                                            size=image_nd.shape[2:])
 
         for t in reversed(self.transforms):
             if pred_edges is not None:
@@ -102,7 +110,6 @@ class BasePredictor(object):
 
         if self.zoom_in is not None and self.zoom_in.check_possible_recalculation():
             return self.get_prediction(clicker)
-
 
         self.prev_prediction = prediction
         return prediction.numpy()[0, 0]
@@ -124,8 +131,6 @@ class BasePredictor(object):
         return coord_features
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
-        import time
-        start = time.time()
         input_names = self.net.get_input_names()
         self.input_handle_1 = self.net.get_input_handle(input_names[0])
         self.input_handle_2 = self.net.get_input_handle(input_names[1])
@@ -136,17 +141,11 @@ class BasePredictor(object):
         image = image.numpy().astype('float32')
         coord_features = coord_features.numpy().astype('float32')
 
-
-        #self.input_handle.reshape([image.shape], [coord_features.shape])
         self.input_handle_1.copy_from_cpu(image)
         self.input_handle_2.copy_from_cpu(coord_features)
 
-        print('predict preprocess', time.time() - start)
-        start = time.time()
         self.net.run()
-        print('predict run', time.time() - start)
 
-        start = time.time()
         output_names = self.net.get_output_names()
 
         output_handle = self.net.get_output_handle(output_names[0])
@@ -157,13 +156,6 @@ class BasePredictor(object):
             return output_data, edge_data
         else:
             return output_data, None
-
-        #
-        #
-        # output_data = output_handle.copy_to_cpu()
-        #
-        # print('predict postprocess', time.time() - start)
-        # return output_data
 
     def _get_transform_states(self):
         return [x.get_state() for x in self.transforms]
@@ -208,6 +200,7 @@ class BasePredictor(object):
     def set_states(self, states):
         self._set_transform_states(states['transform_states'])
         self.prev_prediction = states['prev_prediction']
+
 
 def split_points_by_order(tpoints, groups):
     points = tpoints.numpy()
