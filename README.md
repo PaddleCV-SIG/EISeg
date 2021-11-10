@@ -150,7 +150,7 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
 
     EISeg目前已添加对遥感图像和医学影像分割的支持，使用相关功能需要安装额外依赖。
 
-    - 分割遥感图像请安装GDAL，相关安装及介绍具体详见[遥感标注垂类建设](docs/RS.md)。
+    - 分割遥感图像请安装GDAL，相关安装及介绍具体详见[遥感标注垂类建设](docs/remote_sensing.md)。
 
     - 分割医学影像请安装SimpleITK，相关安装及介绍具体详见[医疗标注垂类建设](docs/medical.md)。
 
