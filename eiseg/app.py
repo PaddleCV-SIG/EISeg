@@ -1489,11 +1489,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     shpPath = pathHead + ".shp"
                     ## -- test --
                     if lab_input is not None:  # 用了grid
-                        in_poly = util.get_polygon(lab_input)
-                        if self.currLabelIdx != -1:
-                            # TODO:标签颜色怎么与原来对应
-                            color = self.controller.labelList[self.currLabelIdx].color
-                            self.createPoly(in_poly, color)
+                        self.mask2poly(lab_input)
                     polygons = self.scene.polygon_items
                     geocode_list = []
                     for polygon in polygons:
@@ -1968,22 +1964,38 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.gridTable.item(row, col).setBackground(self.GRID_COLOR["current"])
         else:
             self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-            curr_polygon = util.get_polygon(mask.astype(np.uint8) * 255)
-            if self.currLabelIdx != -1:
-                # TODO:标签颜色怎么与原来对应
-                color = self.controller.labelList[self.currLabelIdx].color
-                self.createPoly(curr_polygon, color)
-                for p in self.scene.polygon_items:
-                    p.setAnning(isAnning=False)
+            self.mask2poly(mask)
         # 刷新
         self.updateImage(True)
+
+    def mask2poly(self, mask):
+        labs = np.unique(mask)[1:]
+        colors = []
+        for i in range(len(labs)):
+            idx = int(labs[i]) - 1
+            if idx < len(self.controller.labelList):
+                c = self.controller.labelList[idx].color
+            else:
+                if self.currLabelIdx != -1:
+                    c = self.controller.labelList[self.currLabelIdx].color
+                else:
+                    c = None
+            colors.append(c)
+        for l, c in zip(labs, colors):
+            if c is not None:
+                curr_polygon = util.get_polygon((mask == l).astype(np.uint8) * 255)
+                self.createPoly(curr_polygon, c)
+                for p in self.scene.polygon_items:
+                    p.setAnning(isAnning=False)
 
     def saveGrid(self):
         row, col = self.grids.currIdx
         if self.grids.currIdx is None:
             return
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-        self.grids.masksGrid[row][col] = np.array(self.getMask())
+        if len(np.unique(self.grids.masksGrid[row][col])) == 1:
+            self.grids.masksGrid[row][col] = np.array(self.getMask())
+        print("[{0}-{1}] mask unique: {2}".format(row, col, np.unique(self.grids.masksGrid[row][col])))
 
     def turnGrid(self, delta):
         # 切换下一个宫格
@@ -2017,9 +2029,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
         self.exportLabel(lab_input=mask)
-        if self.currLabelIdx == -1:
-            return
-        # TODO：标签颜色怎么与原来对应（仍需处理）
         # 刷新
         self.grids.currIdx = None
         self.updateImage(True)
