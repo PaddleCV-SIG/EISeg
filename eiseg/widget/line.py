@@ -33,7 +33,7 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemClipsToShape, True)
         self.setAcceptHoverEvents(True)
-        self.setBoundingRegionGranularity(1)
+        self.setBoundingRegionGranularity(0.5)
         self.updateWidth()
 
     def setColor(self, color):
@@ -41,13 +41,9 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.color = color
 
     def setAnning(self, anning=True):
-        print("setanning", anning)
-        if anning:
-            self.anning = True
-            self.setEnabled(True)
-        else:
-            self.anning = False
-            self.setEnabled(False)
+        self.anning = anning
+        self.setEnabled(anning)
+        self.updateWidth()
 
     @property
     def width(self):

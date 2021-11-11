@@ -17,7 +17,7 @@ from qtpy import QtWidgets, QtGui, QtCore
 
 # BUG: item 不能移出图片的范围，需要限制起来
 class GripItem(QtWidgets.QGraphicsPathItem):
-    maxSize = 2
+    maxSize = 1.5
     minSize = 0.8
 
     def __init__(self, annotation_item, index, color):
@@ -62,7 +62,6 @@ class GripItem(QtWidgets.QGraphicsPathItem):
 
     def updateSize(self, size=2):
         size = self.size
-        print("size", size)
         self.circle = QtGui.QPainterPath()
         self.circle.addEllipse(QtCore.QRectF(-size, -size, size * 2, size * 2))
         self.square = QtGui.QPainterPath()
@@ -93,9 +92,11 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         return super(GripItem, self).itemChange(change, value)
 
     def shape(self):
-        s = super(GripItem, self).shape().boundingRect().x() * 3
         path = QtGui.QPainterPath()
-        path.addRect(QtCore.QRectF(-s, -s, 2 * s, 2 * s))
+        p = self.mapFromScene(self.pos())
+        x, y = p.x(), p.y()
+        s = self.size
+        path.addEllipse(p, s + GripItem.minSize, s + GripItem.minSize)
         return path
 
     def mouseDoubleClickEvent(self, ev):
