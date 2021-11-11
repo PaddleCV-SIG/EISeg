@@ -60,7 +60,7 @@ class ModelThread(QThread):
         self.param_path = param_path
 
     def run(self):
-        success, res = self.controller.setModel(self.param_path)
+        success, res = self.controller.setModel(self.param_path, False)
         self._signal.emit(
             {"success": success, "res": res, "param_path": self.param_path}
         )
@@ -945,8 +945,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.controller:
             self.controller.label_list = self.controller.labelList
         for p in self.scene.polygon_items:
-            color = self.controller.labelList.getLabelById(p.labelIndex).color
-            p.setColor(color, color)
+            idlab = self.controller.labelList.getLabelById(p.labelIndex)
+            if idlab is not None:
+                color = idlab.color
+                p.setColor(color, color)
         self.labelListClicked(row, 0)
 
     @property
@@ -1043,7 +1045,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         len_lab = self.labelListTable.rowCount()
         for i in range(len_lab - 1, -1, -1):
             idx = int(self.labelListTable.item(len_lab - i - 1, 0).text())
-            color = self.controller.labelList.getLabelById(idx).color
             for poly in self.scene.polygon_items:
                 if poly.labelIndex == idx:
                     pts = np.int32([np.array(poly.scnenePoints)])
@@ -1311,20 +1312,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for idx in range(0, len(xys), 2):
                     points.append([xys[idx], xys[idx + 1]])
                 labelIdx = ann["category_id"]
-                color = self.controller.labelList.getLabelById(labelIdx).color
-                poly = PolygonAnnotation(
-                    ann["category_id"],
-                    self.controller.image.shape,
-                    self.delPolygon,
-                    color,
-                    color,
-                    self.opacity,
-                    ann["id"],
-                )
-                self.scene.addItem(poly)
-                self.scene.polygon_items.append(poly)
-                for p in points:
-                    poly.addPointLast(QtCore.QPointF(p[0], p[1]))
+                idlab = self.controller.labelList.getLabelById(labelIdx)
+                if idlab is not None:
+                    color = idlab.color
+                    poly = PolygonAnnotation(
+                        ann["category_id"],
+                        self.controller.image.shape,
+                        self.delPolygon,
+                        color,
+                        color,
+                        self.opacity,
+                        ann["id"],
+                    )
+                    self.scene.addItem(poly)
+                    self.scene.polygon_items.append(poly)
+                    for p in points:
+                        poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
     def turnImg(self, delta):
         if self.grids.gridInit is False:
