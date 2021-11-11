@@ -91,6 +91,10 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, False)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, False)
             self.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
+            for line in self.m_lines:
+                line.setAnning(False)
+            for grip in self.m_items:
+                grip.setAnning(False)
         else:
             self.setAcceptHoverEvents(True)
             self.anning = False
@@ -104,6 +108,10 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
             self.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
             self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
             self.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+            for line in self.m_lines:
+                line.setAnning(True)
+            for grip in self.m_items:
+                grip.setAnning(True)
 
     def addPointMiddle(self, lineIdx, point):
         gripItem = GripItem(self, lineIdx + 1, self.borderColor)
@@ -130,6 +138,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         lineItem.setLine(line)
         self.m_lines.insert(lineIdx + 1, lineItem)
         self.scene().addItem(lineItem)
+        lineItem.updateWidth()
 
     def addPointLast(self, p):
         grip = GripItem(self, len(self), self.borderColor)
