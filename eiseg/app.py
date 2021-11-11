@@ -992,6 +992,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.controller.labelList[self.currLabelIdx].idx,
                 self.controller.image.shape,
                 self.delPolygon,
+                self.setDirty,
                 color,
                 color,
                 self.opacity,
@@ -1001,7 +1002,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.scene.polygon_items.append(poly)
             for p in points:
                 poly.addPointLast(QtCore.QPointF(p[0], p[1]))
-            self.setDirty()
+            self.setDirty(True)
 
     def delActivePolygon(self):
         for idx, polygon in enumerate(self.scene.polygon_items):
@@ -1022,7 +1023,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     polygon.coco_id,
                     self.coco.imgNameToId[osp.basename(self.imagePath)],
                 )
-        self.setDirty()
+        self.setDirty(True)
 
     def delAllPolygon(self):
         for p in self.scene.polygon_items[::-1]:  # 删除所有多边形
@@ -1291,6 +1292,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     labelIdx,
                     self.controller.image.shape,
                     self.delPolygon,
+                    self.setDirty,
                     color,
                     color,
                     self.opacity,
@@ -1319,6 +1321,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                         ann["category_id"],
                         self.controller.image.shape,
                         self.delPolygon,
+                        self.setDirty,
                         color,
                         color,
                         self.opacity,
@@ -1348,7 +1351,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.geoinfo = None
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
-            self.setClean()
+            self.setDirty(False)
         else:
             self.turnGrid(delta)
 
@@ -1400,7 +1403,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if res == QMessageBox.Yes:
             self.finishObject()
-            self.setDirty()
+            self.setDirty(False)
             return True
         return False
 
@@ -1420,7 +1423,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     )
                     if res == QMessageBox.Yes:
                         self.exportLabel()
-                self.setClean()
+                self.setDirty(False)
             if close:
                 # 3. 清空多边形标注，删掉图片
                 for p in self.scene.polygon_items[::-1]:
@@ -1581,7 +1584,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             cocoPath = osp.join(saveDir, "annotations.json")
             open(cocoPath, "w", encoding="utf-8").write(json.dumps(self.coco.dataset))
 
-        self.setClean()
+        self.setDirty(False)
         self.statusbar.showMessage(self.tr("标签成功保存至") + " " + savePath, 5000)
 
     def eximgsInit(self):
@@ -1590,11 +1593,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 清零
         self.grids.clear()
 
-    def setClean(self):
-        self.isDirty = False
-
-    def setDirty(self):
-        self.isDirty = True
+    def setDirty(self, isDirty):
+        self.isDirty = isDirty
 
     def changeOutputDir(self, outputDir=None):
         # 1. 弹框选择标签路径
@@ -1673,14 +1673,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.undoClick()
         self.updateImage()
         if not self.controller.is_incomplete_mask:
-            self.setClean()
+            self.setDirty(False)
 
     def clearAll(self):
         if not self.controller or self.controller.image is None:
             return
         self.controller.resetLastObject()
         self.updateImage()
-        self.setClean()
+        self.setDirty(False)
 
     def redoClick(self):
         if self.image is None:
@@ -1998,7 +1998,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
         if len(np.unique(self.grids.masksGrid[row][col])) == 1:
             self.grids.masksGrid[row][col] = np.array(self.getMask())
-        print("[{0}-{1}] mask unique: {2}".format(row, col, np.unique(self.grids.masksGrid[row][col])))
+        print(
+            "[{0}-{1}] mask unique: {2}".format(
+                row, col, np.unique(self.grids.masksGrid[row][col])
+            )
+        )
 
     def turnGrid(self, delta):
         # 切换下一个宫格
