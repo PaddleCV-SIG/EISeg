@@ -2096,6 +2096,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         #     self.exportLabelList(osp.join(self.outputDir, "autosave_label.txt"))
 
     def closeEvent(self, event):
+        self.saveImage()
         self.saveLayout()
         QCoreApplication.quit()
         # sys.exit(0)
