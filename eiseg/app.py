@@ -2115,20 +2115,26 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def wwChanged(self):
         if not self.controller or self.image is None:
             return
-        self.textWw.selectAll()
-        self.controller.image = med.windowlize(
-            self.controller.rawImage, self.ww, self.wc
-        )
-        self.updateImage()
+        try:  # 那种jpg什么格式的医疗图像调整窗宽等会造成崩溃
+            self.textWw.selectAll()
+            self.controller.image = med.windowlize(
+                self.controller.rawImage, self.ww, self.wc
+            )
+            self.updateImage()
+        except:
+            pass
 
     def wcChanged(self):
         if not self.controller or self.image is None:
             return
-        self.textWc.selectAll()
-        self.controller.image = med.windowlize(
-            self.controller.rawImage, self.ww, self.wc
-        )
-        self.updateImage()
+        try:
+            self.textWc.selectAll()
+            self.controller.image = med.windowlize(
+                self.controller.rawImage, self.ww, self.wc
+            )
+            self.updateImage()
+        except:
+            pass
 
     @property
     def ww(self):
