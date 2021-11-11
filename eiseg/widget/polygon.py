@@ -24,6 +24,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         labelIndex,
         shape,
         delPolygon,
+        setDirty,
         insideColor=[255, 0, 0],
         borderColor=[0, 255, 0],
         opacity=0.5,
@@ -37,6 +38,7 @@ class PolygonAnnotation(QtWidgets.QGraphicsPolygonItem):
         self.coco_id = cocoIndex
         self.height, self.width = shape[:2]
         self.delPolygon = delPolygon
+        self.setDirty = setDirty
 
         self.labelIndex = labelIndex
         self.item_hovering = False

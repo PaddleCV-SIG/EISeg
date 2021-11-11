@@ -89,6 +89,7 @@ class GripItem(QtWidgets.QGraphicsPathItem):
     def itemChange(self, change, value):
         if change == QtWidgets.QGraphicsItem.ItemPositionChange and self.isEnabled():
             self.m_annotation_item.movePoint(self.m_index, value)
+            self.m_annotation_item.setDirty(True)
         return super(GripItem, self).itemChange(change, value)
 
     def shape(self):

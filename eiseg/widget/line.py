@@ -31,7 +31,7 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.setZValue(11)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QtWidgets.QGraphicsItem.ItemIsFocusable, True)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemClipsToShape, True)
+        # self.setFlag(QtWidgets.QGraphicsItem.ItemClipsToShape, True)
         self.setAcceptHoverEvents(True)
         self.setBoundingRegionGranularity(0.5)
         self.updateWidth()
@@ -63,7 +63,7 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         print("hover in")
         if self.anning:
             self.polygon_item.line_hovering = True
-            self.setPen(QtGui.QPen(self.color, self.width * 2))
+            self.setPen(QtGui.QPen(self.color, self.width * 1.4))
         super(LineItem, self).hoverEnterEvent(ev)
 
     def hoverLeaveEvent(self, ev):
