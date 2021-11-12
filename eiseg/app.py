@@ -1865,6 +1865,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.rsRGB[i] = self.bandCombos[i].currentIndex()
         image = rs.selec_band(self.grids.rawimg, self.rsRGB)
         self.test_show(image)
+        if self.grids.gridInit:
+            currIdx = self.grids.currIdx
+            print("currIdx:", currIdx)
+            self.initGrid()
+            if currIdx:
+                self.changeGrid(currIdx[0], currIdx[1])
 
     # def miSlideSet(self):
     #     image = rs.slice_img(self.grids.rawimg, self.midx)
@@ -1998,11 +2004,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
         if len(np.unique(self.grids.masksGrid[row][col])) == 1:
             self.grids.masksGrid[row][col] = np.array(self.getMask())
-        print(
-            "[{0}-{1}] mask unique: {2}".format(
-                row, col, np.unique(self.grids.masksGrid[row][col])
-            )
-        )
+        # print(
+        #     "[{0}-{1}] mask unique: {2}".format(
+        #         row, col, np.unique(self.grids.masksGrid[row][col])
+        #     )
+        # )
 
     def turnGrid(self, delta):
         # 切换下一个宫格
@@ -2037,7 +2043,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller._result_mask = mask
         self.exportLabel(lab_input=mask)
         # 刷新
-        self.grids.currIdx = None
+        # self.grids.currIdx = None
+        self.grids.clear()
+        self.delAllPolygon()  # 清理
         self.updateImage(True)
 
     @property
