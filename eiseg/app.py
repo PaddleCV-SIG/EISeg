@@ -1334,6 +1334,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def turnImg(self, delta):
         if self.grids.gridInit is False:
+            self.grids.canClick = True
             # 1. 检查是否有图可翻，保存标签
             self.currIdx += delta
             if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
@@ -1351,9 +1352,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.geoinfo = None
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
-            self.setDirty(False)
         else:
             self.turnGrid(delta)
+        self.setDirty(False)
 
     def imageListClicked(self):
         if not self.controller:
@@ -1691,6 +1692,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.updateImage()
 
     def canvasClick(self, x, y, isLeft):
+        if self.grids.gridInit == False and self.grids.canClick == False:
+            return
         c = self.controller
         if c.image is None:
             return
@@ -1867,7 +1870,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.test_show(image)
         if self.grids.gridInit:
             currIdx = self.grids.currIdx
-            print("currIdx:", currIdx)
+            # print("currIdx:", currIdx)
             self.initGrid()
             if currIdx:
                 self.changeGrid(currIdx[0], currIdx[1])
@@ -2034,7 +2037,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.saveGrid()  # 先保存当前
         except:
             pass
-        self.delAllPolygon()  # 清理
+        # self.delAllPolygon()  # 清理
         mask = self.grids.splicingList()
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
@@ -2045,9 +2048,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.exportLabel(lab_input=mask)
         # 刷新
         # self.grids.currIdx = None
+        self.grids.canClick = False
         self.grids.clear()
         self.delAllPolygon()  # 清理
         self.updateImage(True)
+        self.setDirty(False)
 
     @property
     def opacity(self):
