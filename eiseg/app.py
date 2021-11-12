@@ -23,6 +23,7 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 from datetime import datetime
+from eiseg.plugin.remotesensing.shape import save_shp
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -1194,7 +1195,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
                 return False
 
-            self.controller.rawImage = self.image = image
+            # self.controller.rawImage = self.image = image
+            self.image = image
+            self.grids.rawimg = image
             image = med.windowlize(image, self.ww, self.wc)
 
         # 遥感图像
@@ -1235,6 +1238,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         thumbnail, resize = rs.get_thumbnail(image)  # 图像太大就显示缩略图
         if resize:
+            # , w = image.shape  # 未压缩的大小  # TODO: 保存拉伸缩略图
             self.warn(self.tr("图像过大"), self.tr("图像过大，已压缩显示，若想高品质标注请使用宫格标注功能！"))
             # 打开宫格功能
             if self.dockWidgets["grid"].isVisible() is False:
@@ -1455,26 +1459,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 )
             else:
                 # 3.3 没有指定标签存到哪，或者是另存为：弹框让用户选
-                formats = [
-                    "*.{}".format(fmt.data().decode())
-                    for fmt in QtGui.QImageReader.supportedImageFormats()
-                ]
-                filters = "Label file (%s)" % " ".join(formats)
-                dlg = QtWidgets.QFileDialog(
-                    self,
-                    self.tr("保存标签文件路径"),
-                    osp.dirname(self.imagePath),
-                    filters,
-                )
-                dlg.setDefaultSuffix("png")
-                dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
-                dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
-                dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
-                savePath, _ = dlg.getSaveFileName(
-                    self,
-                    self.tr("选择标签文件保存路径"),
-                    osp.splitext(osp.basename(self.imagePath))[0] + ".png",
-                )
+                savePath = self.chooseSavePath()
         if savePath is None or not osp.exists(osp.dirname(savePath)):
             return
 
@@ -1586,6 +1571,29 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         self.setDirty(False)
         self.statusbar.showMessage(self.tr("标签成功保存至") + " " + savePath, 5000)
+
+    def chooseSavePath(self):
+        formats = [
+                    "*.{}".format(fmt.data().decode())
+                    for fmt in QtGui.QImageReader.supportedImageFormats()
+                ]
+        filters = "Label file (%s)" % " ".join(formats)
+        dlg = QtWidgets.QFileDialog(
+            self,
+            self.tr("保存标签文件路径"),
+            osp.dirname(self.imagePath),
+            filters,
+        )
+        dlg.setDefaultSuffix("png")
+        dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
+        dlg.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, False)
+        savePath, _ = dlg.getSaveFileName(
+            self,
+            self.tr("选择标签文件保存路径"),
+            osp.splitext(osp.basename(self.imagePath))[0] + ".png",
+        )
+        return savePath
 
     def eximgsInit(self):
         self.gridTable.setRowCount(0)
@@ -2029,12 +2037,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def saveGridLabel(self):
         if self.grids.gridInit is False or self.grids.detimg is None:
             return
+        save_path = self.chooseSavePath()
+        if save_path is "":
+            return
         try:
             self.finishObject()
             self.saveGrid()  # 先保存当前
         except:
             pass
-        # self.delAllPolygon()  # 清理
         mask = self.grids.splicingList()
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
@@ -2042,11 +2052,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.image = rs.get_thumbnail(self.grids.detimg)[0]
         self.controller.image = self.grids.detimg
         self.controller._result_mask = mask
-        self.exportLabel(lab_input=mask)
+        self.exportLabel(savePath=save_path, lab_input=mask)
         # 刷新
-        # self.grids.currIdx = None
+        grid_row_count = self.gridTable.rowCount()
+        grid_col_count = self.gridTable.colorCount()
+        for r in range(grid_row_count):
+            for c in range(grid_col_count):
+                try:
+                    self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
+                except:
+                    pass
+        self.grids.currIdx = None
         self.controller.setImage(self.image)
-        self.grids.clear()
         self.delAllPolygon()  # 清理
         self.updateImage(True)
         self.setDirty(False)
