@@ -24,7 +24,6 @@ class Grids:
         # self.sizePair = namedtuple("sizePair", "h w")
         self.gridSize = np.array(gridSize)
         self.overlap = np.array(overlap)
-        self.canClick = True
         # print("_------------", self.gridSize, self.overlap)
         self.clear()
 
@@ -61,7 +60,6 @@ class Grids:
         self.masksGrid = [[np.zeros(self.gridSize) for _ in range(gridCount[1])] for _ in range(gridCount[0])]
         # print(len(self.masksGrid), len(self.masksGrid[0]))
         self.gridInit = True
-        self.canClick = True
         return list(gridCount)
 
     def getGrid(self, row, col):

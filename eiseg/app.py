@@ -1334,7 +1334,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def turnImg(self, delta):
         if self.grids.gridInit is False:
-            self.grids.canClick = True
             # 1. 检查是否有图可翻，保存标签
             self.currIdx += delta
             if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
@@ -1692,8 +1691,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.updateImage()
 
     def canvasClick(self, x, y, isLeft):
-        if self.grids.gridInit == False and self.grids.canClick == False:
-            return
         c = self.controller
         if c.image is None:
             return
@@ -2048,7 +2045,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.exportLabel(lab_input=mask)
         # 刷新
         # self.grids.currIdx = None
-        self.grids.canClick = False
+        self.controller.setImage(self.image)
         self.grids.clear()
         self.delAllPolygon()  # 清理
         self.updateImage(True)
