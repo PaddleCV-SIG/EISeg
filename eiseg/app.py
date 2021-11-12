@@ -2030,6 +2030,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.grids.gridInit is False or self.grids.detimg is None:
             return
         try:
+            self.finishObject()
             self.saveGrid()  # 先保存当前
         except:
             pass
