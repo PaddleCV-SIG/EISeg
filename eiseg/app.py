@@ -2037,14 +2037,23 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def saveGridLabel(self):
         if self.grids.gridInit is False or self.grids.detimg is None:
             return
-        save_path = self.chooseSavePath()
-        if save_path is "":
-            return
+        if self.outputDir is not None:
+            name, ext = osp.splitext(osp.basename(self.imagePath))
+            if not self.origExt:
+                ext = ".png"
+            save_path = osp.join(
+                self.outputDir,
+                name + ext)
+        else:
+            save_path = self.chooseSavePath()
+            if save_path is "":
+                return
         try:
             self.finishObject()
             self.saveGrid()  # 先保存当前
         except:
             pass
+        self.delAllPolygon()  # 清理
         mask = self.grids.splicingList()
         if mask is False:
             self.warn(self.tr("宫格未标注"), self.tr("所有宫格都未标注，请至少标注一块！"))
