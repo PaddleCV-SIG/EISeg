@@ -50,6 +50,12 @@ PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quic
 git clone https://github.com/PaddlePaddle/PaddleSeg.git
 ```
 
+安装所需环境（若需要使用到GDAL和SimpleITK请参考**垂类分割**进行安装）：
+
+```shell
+pip install -r requirements.txt
+```
+
 安装好所需环境后，进入EISeg，可通过直接运行eiseg打开EISeg：
 
 ```shell
