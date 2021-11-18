@@ -23,7 +23,6 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 from datetime import datetime
-from eiseg.plugin.remotesensing.shape import save_shp
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
