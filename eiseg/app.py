@@ -1119,8 +1119,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 3.1 获取所有文件名
         imagePaths = os.listdir(inputDir)
         exts = tuple(f for fmts in self.formats for f in fmts)
-        imagePaths = [n for n in imagePaths if n.lower().endswith(exts)]  # 修复大写后缀名
-        imagePaths = [n for n in imagePaths if not n[0] == "."]  # 修复大写后缀名
+        imagePaths = [n for n in imagePaths if n.lower().endswith(exts)]
+        imagePaths = [n for n in imagePaths if not n[0] == "."]
         imagePaths.sort()
         if len(imagePaths) == 0:
             return
@@ -1469,7 +1469,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         mask_output = self.getMask() if lab_input is None else lab_input
         s = self.rawSize
         if self.rawSize is not None:
-            mask_output = cv2.resize(mask_output, dsize=self.rawSize[::-1], interpolation=cv2.INTER_NEAREST)
+            mask_output = cv2.resize(
+                mask_output, dsize=self.rawSize[::-1], interpolation=cv2.INTER_NEAREST
+            )
 
         # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
@@ -1582,9 +1584,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def chooseSavePath(self):
         formats = [
-                    "*.{}".format(fmt.data().decode())
-                    for fmt in QtGui.QImageReader.supportedImageFormats()
-                ]
+            "*.{}".format(fmt.data().decode())
+            for fmt in QtGui.QImageReader.supportedImageFormats()
+        ]
         filters = "Label file (%s)" % " ".join(formats)
         dlg = QtWidgets.QFileDialog(
             self,
@@ -2017,10 +2019,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 else:
                     for g in curr_polygon:
                         points = [gi.tolist() for gi in g]
-                        geocode_list.append({
-                            "name": self.controller.labelList[idx].name,
-                            "points": points
-                        })
+                        geocode_list.append(
+                            {
+                                "name": self.controller.labelList[idx].name,
+                                "points": points,
+                            }
+                        )
         return geocode_list
 
     def saveGrid(self):
@@ -2059,9 +2063,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             name, ext = osp.splitext(osp.basename(self.imagePath))
             if not self.origExt:
                 ext = ".png"
-            save_path = osp.join(
-                self.outputDir,
-                name + ext)
+            save_path = osp.join(self.outputDir, name + ext)
         else:
             save_path = self.chooseSavePath()
             if save_path == "":
@@ -2180,9 +2182,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         try:  # 那种jpg什么格式的医疗图像调整窗宽等会造成崩溃
             self.textWw.selectAll()
-            self.controller.image = med.windowlize(
-                self.grids.rawimg, self.ww, self.wc
-            )
+            self.controller.image = med.windowlize(self.grids.rawimg, self.ww, self.wc)
             self.updateImage()
         except:
             pass
@@ -2192,9 +2192,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         try:
             self.textWc.selectAll()
-            self.controller.image = med.windowlize(
-                self.grids.rawimg, self.ww, self.wc
-            )
+            self.controller.image = med.windowlize(self.grids.rawimg, self.ww, self.wc)
             self.updateImage()
         except:
             pass
