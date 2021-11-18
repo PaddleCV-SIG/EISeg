@@ -43,7 +43,6 @@ EISeg提供多种安装方式，其中使用[pip](#PIP)和[运行代码](#运行
 PaddlePaddle安装请参考[官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/windows-pip.html)。
 
 ### 克隆到本地
-
 通过git将PaddleSeg克隆到本地：
 
 ```shell
@@ -70,6 +69,7 @@ cd PaddleSeg\EISeg\eiseg
 python exe.py
 ```
 
+
 ### PIP
 
 pip安装方式如下：
@@ -83,9 +83,6 @@ eiseg
 ```
 即可运行软件。
 
-### Windows exe
-
-EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[这里](https://paddleseg.bj.bcebos.com/eiseg/EISeg0.3.0.1.7z)下载最新EISeg。解压后双击启动程序.exe即可运行程序。程序第一次运行会初始化安装所需要的包，请稍等片刻。
 
 ## 使用
 
@@ -157,8 +154,11 @@ EISeg使用[QPT](https://github.com/GT-ZhangAcer/QPT)进行打包。可以从[�
     EISeg目前已添加对遥感图像和医学影像分割的支持，使用相关功能需要安装额外依赖。
 
     - 分割遥感图像请安装GDAL，相关安装及介绍具体详见[遥感标注垂类建设](docs/remote_sensing.md)。
-
     - 分割医学影像请安装SimpleITK，相关安装及介绍具体详见[医疗标注垂类建设](docs/medical.md)。
+    
+- **脚本工具使用**
+
+    EISeg目前提供包括标注转PaddleX数据集、划分COCO格式以及语义标签转实例标签等脚本工具，相关使用方式详见[脚本工具使用](docs/tools.md)。
 
 ## 版本更新
 
