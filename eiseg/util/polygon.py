@@ -17,6 +17,7 @@ from enum import Enum
 import cv2
 import numpy as np
 import math
+from .regularization import boundary_regularization
 
 
 class Instructions(Enum):
@@ -44,13 +45,13 @@ def get_polygon(label, sample="Dynamic"):
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
-            out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
-            # 自定义边界简化
-            """
-                TODO: 内圈太简单有可能简化没有了，造成下面的索引超出界限，
-                      目前会筛选掉这些空内圈避免错误
-            """
-            out = approx_poly_DP(out)
+            # -- Douglas-Peucker算法边界简化
+            # contour = cv2.approxPolyDP(contour, epsilon, True)
+            # -- 自定义（角度和距离）边界简化
+            # contour = approx_poly_DP(contour)
+            # -- 建筑边界简化（https://ieeexplore.ieee.org/document/8933116/citations#citations）
+            contour = boundary_regularization(contour, img_shape)
+            out = contour
             # 给出关系
             rela = (
                 idx,  # own
