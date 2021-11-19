@@ -50,7 +50,7 @@ def get_polygon(label, sample="Dynamic"):
                 TODO: 内圈太简单有可能简化没有了，造成下面的索引超出界限，
                       目前会筛选掉这些空内圈避免错误
             """
-            out = approx_poly_DP(out)
+            out = approx_poly_DIY(out)
             # 给出关系
             rela = (
                 idx,  # own
@@ -125,7 +125,7 @@ def __cal_dist(p1, p2):
 
 
 # 边界点简化
-def approx_poly_DP(contour, min_dist=10, ang_err=5):
+def approx_poly_DIY(contour, min_dist=10, ang_err=5):
     # print(contour.shape)  # N, 1, 2
     cs = [contour[i][0] for i in range(contour.shape[0])]
     ## 1. 先删除夹角接近180度的点
