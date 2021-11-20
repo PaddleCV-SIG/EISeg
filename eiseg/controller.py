@@ -52,7 +52,7 @@ class InteractiveController:
         self.prob_thresh = prob_thresh
         self.model = None
         self.image = None
-        # self.rawImage = None
+        self.rawImage = None
         self.predictor = None
         self.clicker = clicker.Clicker()
         self.states = []
@@ -401,7 +401,7 @@ class InteractiveController:
 
     @property
     def imgShape(self):
-        return self.image.shape[1::-1]
+        return self.image.shape  # [1::-1]
 
     @property
     def modelSet(self):

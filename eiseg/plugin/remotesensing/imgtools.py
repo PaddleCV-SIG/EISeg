@@ -38,27 +38,27 @@ def two_percentLinear(image, max_out=255, min_out=0):
     return np.uint8(result)
 
 
-def selec_band(tifarr, rgb):
-    img_type = str(tifarr.dtype)
-    C = tifarr.shape[-1] if len(tifarr.shape) == 3 else 1
-    if C == 1:
-        res_img = cv2.merge([np.uint16(tifarr)] * 3)
-        if img_type == "uint32":
-            res_img = sample_norm(res_img)
-        return two_percentLinear(res_img)
-    elif C == 2:
-        return None
-    else:
-        res_img = cv2.merge(
-            [
-                np.uint16(tifarr[:, :, rgb[0]]),
-                np.uint16(tifarr[:, :, rgb[1]]),
-                np.uint16(tifarr[:, :, rgb[2]]),
-            ]
-        )
-        if img_type == "uint32":
-            res_img = sample_norm(res_img)
-        return two_percentLinear(res_img)
+# def selec_band(tifarr, rgb):
+#     img_type = str(tifarr.dtype)
+#     C = tifarr.shape[-1] if len(tifarr.shape) == 3 else 1
+#     if C == 1:
+#         res_img = cv2.merge([np.uint16(tifarr)] * 3)
+#         if img_type == "uint32":
+#             res_img = sample_norm(res_img)
+#         return two_percentLinear(res_img)
+#     elif C == 2:
+#         return None
+#     else:
+#         res_img = cv2.merge(
+#             [
+#                 np.uint16(tifarr[:, :, rgb[0]]),
+#                 np.uint16(tifarr[:, :, rgb[1]]),
+#                 np.uint16(tifarr[:, :, rgb[2]]),
+#             ]
+#         )
+#         if img_type == "uint32":
+#             res_img = sample_norm(res_img)
+#         return two_percentLinear(res_img)
 
 
 # DEBUG：test
@@ -107,11 +107,9 @@ def __histogram(ima, NUMS):
 # 计算缩略图
 def get_thumbnail(image, range=2000, max_size=1000):
     h, w = image.shape[:2]
-    resize = False
     if h >= range or w >= range:
         if h >= w:
             image = cv2.resize(image, (int(max_size / h * w), max_size))
         else:
             image = cv2.resize(image, (max_size, int(max_size / w * h)))
-        resize = True
-    return image, resize
+    return image

@@ -276,12 +276,12 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         GridRegion = QtWidgets.QVBoxLayout()
         GridRegion.setObjectName("GridRegion")
-        self.btnInitGrid = p_create_button(
-            "btnInitGrid",
-            self.tr("创建宫格"),
-            osp.join(pjpath, "resource/N2.png"),
-            "",
-        )
+        # self.btnInitGrid = p_create_button(
+        #     "btnInitGrid",
+        #     self.tr("创建宫格"),
+        #     osp.join(pjpath, "resource/N2.png"),
+        #     "",
+        # )
         self.btnFinishedGrid = p_create_button(
             "btnFinishedGrid",
             self.tr("完成宫格"),
@@ -290,7 +290,7 @@ class Ui_EISeg(object):
         )
         hbandLayout = QtWidgets.QHBoxLayout()
         hbandLayout.setObjectName("hbandLayout")
-        hbandLayout.addWidget(self.btnInitGrid)
+        # hbandLayout.addWidget(self.btnInitGrid)
         hbandLayout.addWidget(self.btnFinishedGrid)
         GridRegion.addLayout(hbandLayout)  # 创建宫格
         self.gridTable = QtWidgets.QTableWidget(CentralWidget)
