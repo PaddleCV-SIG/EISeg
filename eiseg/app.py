@@ -40,7 +40,7 @@ import cv2
 import numpy as np
 
 from eiseg import pjpath, __APPNAME__, logger
-from widget import ShortcutWindow, PolygonAnnotation
+from widget import ShortcutWidget, PolygonAnnotation
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
@@ -204,7 +204,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 窗口
         ## 快捷键
-        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
+        self.ShortcutWidget = ShortcutWidget(self.actions, pjpath)
 
         ## 画布
         self.scene.clickRequest.connect(self.canvasClick)
@@ -672,8 +672,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions.set_cutout_background.setIcon(util.newIcon(self.cutoutBackground))
 
     def editShortcut(self):
-        self.shortcutWindow.center()
-        self.shortcutWindow.show()
+        self.ShortcutWidget.center()
+        self.ShortcutWidget.show()
 
     # 多语言
     def updateLanguage(self):
