@@ -19,6 +19,8 @@ import os.path as osp
 from functools import partial
 import json
 from distutils.util import strtobool
+import imghdr
+from datetime import datetime
 import webbrowser
 
 from qtpy import QtGui, QtCore, QtWidgets
@@ -36,7 +38,7 @@ import cv2
 import numpy as np
 
 from eiseg import pjpath, __APPNAME__, logger
-from widget import ShortcutWindow, PolygonAnnotation
+from widget import ShortcutWidget, PolygonAnnotation
 from controller import InteractiveController
 from ui import Ui_EISeg
 import util
@@ -48,7 +50,7 @@ from plugin.remotesensing import Raster
 from plugin.n2grid import RSGrids
 
 
-# TODO: 使用多线程加载后并不能解决假死，为何
+# TODO: 研究paddle子线程
 class ModelThread(QThread):
     _signal = Signal(dict)
 
@@ -89,7 +91,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setupUi(self)
 
         # app变量
-        self.anning = False  # self.status替代
+        self._anning = False  # self.status替代
         self.isDirty = False  # 是否需要保存
         self.image = None  # 可能先加载图片后加载模型，只用于暂存图片
         self.predictor_params = {
@@ -199,7 +201,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 窗口
         ## 快捷键
-        self.shortcutWindow = ShortcutWindow(self.actions, pjpath)
+        self.ShortcutWidget = ShortcutWidget(self.actions, pjpath)
 
         ## 画布
         self.scene.clickRequest.connect(self.canvasClick)
@@ -666,8 +668,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.actions.set_cutout_background.setIcon(util.newIcon(self.cutoutBackground))
 
     def editShortcut(self):
-        self.shortcutWindow.center()
-        self.shortcutWindow.show()
+        self.ShortcutWidget.center()
+        self.ShortcutWidget.show()
 
     # 多语言
     def updateLanguage(self):
@@ -786,7 +788,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.recentModels.remove(model_dict)
                 self.recentModels.insert(0, model_dict)
             self.settings.setValue("recent_models", self.recentModels)
-            # self.status = self.ANNING
             self.statusbar.showMessage(
                 osp.basename(param_path) + self.tr(" 模型加载成功"), 10000
             )
@@ -814,7 +815,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.setModelParam(param_path)
 
     # 标签列表
-    # TODO: widget用subclass实现
     def importLabelList(self, filePath=None):
         if filePath is None:
             filters = self.tr("标签配置文件") + " (*.txt)"
@@ -829,7 +829,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         self.controller.importLabel(filePath)
         logger.info(f"Loaded label list: {self.controller.labelList.labelList}")
-        # print("Loaded label list:", self.controller.labelList.labelList)
         self.refreshLabelList()
 
     def exportLabelList(self, savePath: str = None):
@@ -1237,7 +1236,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.loadLabel(path)
         self.addRecentFile(path)
         self.imagePath = path
-        # self.status = self.ANNING
         return True
 
     def loadLabel(self, imgPath):
@@ -1363,11 +1361,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.createPoly(curr_polygon, color)
         # 状态改变
         if self.status == self.EDITING:
-            self.anning = True
+            self.status = self.ANNING
             for p in self.scene.polygon_items:
                 p.setAnning(isAnning=True)
         else:
-            self.anning = False
+            self.status = self.EDITING
             for p in self.scene.polygon_items:
                 p.setAnning(isAnning=False)
         self.getMask()
@@ -1684,7 +1682,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         self.controller.addClick(x, y, isLeft)
         self.updateImage()
-        self.anning = True
+        self.status = self.ANNING
 
     def updateImage(self, reset_canvas=False):
         if not self.controller:
@@ -2060,14 +2058,24 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     @property
     def status(self):
+        # TODO: 图片，模型
         if not self.controller:
             return self.IDILE
         c = self.controller
         if c.model is None or c.image is None:
             return self.IDILE
-        if self.anning:
+        if self._anning:
             return self.ANNING
         return self.EDITING
+
+    @status.setter
+    def status(self, status):
+        if status not in [self.ANNING, self.EDITING]:
+            return
+        if status == self.ANNING:
+            self._anning = True
+        else:
+            self._anning = False
 
     # 界面布局
     def loadLayout(self):

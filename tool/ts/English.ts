@@ -648,7 +648,7 @@
 	</message>
 </context>
 <context>
-    <name>ShortcutWindow</name>
+    <name>ShortcutWidget</name>
 	<message>
 		<location filename="../../eiseg/widget/shortcut.py" line="42"/>
 		<source>编辑快捷键</source>
