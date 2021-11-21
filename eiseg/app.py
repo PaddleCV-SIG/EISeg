@@ -17,13 +17,9 @@ import logging
 import os
 import os.path as osp
 from functools import partial
-import sys
 import json
 from distutils.util import strtobool
-import imghdr
 import webbrowser
-from datetime import datetime
-from eiseg.plugin.remotesensing.raster import check_rasterio
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -34,8 +30,7 @@ from qtpy.QtCore import (
     QVariant,
     QCoreApplication,
     QThread,
-    Signal,
-    QSize,
+    Signal
 )
 import cv2
 import numpy as np
@@ -1321,8 +1316,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     for p in points:
                         poly.addPointLast(QtCore.QPointF(p[0], p[1]))
 
-    def turnImg(self, delta):
-        if self.grid is None:
+    def turnImg(self, delta, list_click=False):
+        if (self.grid is None or self.grid.curr_idx is None) or list_click:
             # 1. 检查是否有图可翻，保存标签
             self.currIdx += delta
             if self.currIdx >= len(self.imagePaths) or self.currIdx < 0:
@@ -1353,7 +1348,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.exportLabel()
         toRow = self.listFiles.currentRow()
         delta = toRow - self.currIdx
-        self.turnImg(delta)
+        self.turnImg(delta, True)
 
     def finishObject(self):
         if not self.controller or self.image is None:
@@ -1472,7 +1467,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["pseudo_color"]:
             pseudoPath, ext = osp.splitext(savePath)
             pseudoPath = pseudoPath + "_pseudo" + ext
-            # s = self.controller.imgShape
             pseudo = np.zeros([s[0], s[1], 3])
             # mask = self.controller.result_mask
             mask = mask_output
@@ -1485,8 +1479,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["cutout"]:
             mattingPath, ext = osp.splitext(savePath)
             mattingPath = mattingPath + "_cutout" + ext
-            # h, w = self.controller.image.shape[:2]
-            # img = np.ones([h, w, 4], dtype="uint8") * 255
             img = np.ones([s[0], s[1], 4], dtype="uint8") * 255
             img[:, :, :3] = self.controller.image.copy()
             img[mask_output == 0] = self.cutoutBackground
@@ -1518,7 +1510,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 4.5 保存coco
         if self.save_status["coco"]:
             if not self.coco.hasImage(osp.basename(self.imagePath)):
-                # s = self.controller.imgShape
                 imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
             else:
                 imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
@@ -1909,7 +1900,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     # 宫格标注
     def initGrid(self):
         grid_row_count, grid_col_count = self.grid.createGrids()
-        self.grid.curr_idx = (0, 0)
         self.gridTable.setRowCount(grid_row_count)
         self.gridTable.setColumnCount(grid_col_count)
         for r in range(grid_row_count):
@@ -1917,6 +1907,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.gridTable.setItem(r, c, QtWidgets.QTableWidgetItem())
                 self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
                 self.gridTable.item(r, c).setFlags(Qt.ItemIsSelectable)  # 无法高亮选择
+        # 初始显示第一个
+        self.grid.curr_idx = (0, 0)
         self.gridTable.item(0, 0).setBackground(self.GRID_COLOR["overlying"])
         # 事件注册
         self.gridTable.cellClicked.connect(self.changeGrid)
