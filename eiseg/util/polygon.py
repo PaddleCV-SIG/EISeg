@@ -40,28 +40,18 @@ def get_polygon(label, sample="Dynamic"):
             # print(hierarchy)
             # opencv实现边界简化
             epsilon = (
-                0.0005 * cv2.arcLength(contour, True) if sample == "Dynamic" else sample
+                0.005 * cv2.arcLength(contour, True) if sample == "Dynamic" else sample
             )
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
-<<<<<<< HEAD
             # -- Douglas-Peucker算法边界简化
             # contour = cv2.approxPolyDP(contour, epsilon, True)
-            # -- 自定义（角度和距离）边界简化
-            # contour = approx_poly_DIY(contour)
             # -- 建筑边界简化（https://ieeexplore.ieee.org/document/8933116/citations#citations）
-            contour = boundary_regularization(contour, img_shape)
+            contour = boundary_regularization(contour, img_shape, epsilon)
+            # -- 自定义（角度和距离）边界简化
+            contour = approx_poly_DIY(contour)
             out = contour
-=======
-            out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
-            # 自定义边界简化
-            """
-                TODO: 内圈太简单有可能简化没有了，造成下面的索引超出界限，
-                      目前会筛选掉这些空内圈避免错误
-            """
-            out = approx_poly_DIY(out)
->>>>>>> develop
             # 给出关系
             rela = (
                 idx,  # own
@@ -139,20 +129,7 @@ def __cal_dist(p1, p2):
 def approx_poly_DIY(contour, min_dist=10, ang_err=5):
     # print(contour.shape)  # N, 1, 2
     cs = [contour[i][0] for i in range(contour.shape[0])]
-    ## 1. 先删除夹角接近180度的点
-    i = 0
-    while i < len(cs):
-        try:
-            last = (i - 1) if (i != 0) else (len(cs) - 1)
-            next = (i + 1) if (i != len(cs) - 1) else 0
-            ang_i = __cal_ang(cs[last], cs[i], cs[next])
-            if abs(ang_i) > (180 - ang_err):
-                del cs[i]
-            else:
-                i += 1
-        except:
-            i += 1
-    ## 2. 再删除两个相近点与前后两个点角度接近的点
+    ## 1. 先删除两个相近点与前后两个点角度接近的点
     i = 0
     while i < len(cs):
         try:
@@ -177,5 +154,19 @@ def approx_poly_DIY(contour, min_dist=10, ang_err=5):
                 i += 1
         except:
             i += 1
+    ## 2. 再删除夹角接近180度的点
+    i = 0
+    while i < len(cs):
+        try:
+            last = (i - 1) if (i != 0) else (len(cs) - 1)
+            next = (i + 1) if (i != len(cs) - 1) else 0
+            ang_i = __cal_ang(cs[last], cs[i], cs[next])
+            if abs(ang_i) > (180 - ang_err):
+                del cs[i]
+            else:
+                i += 1
+        except:
+            # i += 1
+            del cs[i]
     res = np.array(cs).reshape([-1, 1, 2])
     return res
