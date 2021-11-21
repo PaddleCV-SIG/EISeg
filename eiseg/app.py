@@ -14,6 +14,7 @@
 
 
 import logging
+from ntpath import join
 import os
 import os.path as osp
 from functools import partial
@@ -22,6 +23,7 @@ from distutils.util import strtobool
 import imghdr
 from datetime import datetime
 import webbrowser
+from easydict import EasyDict as edict
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -1442,8 +1444,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if savePath not in self.labelPaths:
             self.labelPaths.append(savePath)
 
-        mask_output = self.getMask() if lab_input is None else lab_input
-        s = self.controller.imgShape
+        if lab_input is None:
+            mask_output = self.getMask()
+            s = self.controller.imgShape
+        else: 
+            mask_output = lab_input
+            s = lab_input.shape
 
         # BUG: 如果用了多边形标注从多边形生成mask
         # 4.1 保存灰度图
@@ -1463,25 +1469,31 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 4.2 保存伪彩色
         if self.save_status["pseudo_color"]:
-            pseudoPath, ext = osp.splitext(savePath)
-            pseudoPath = pseudoPath + "_pseudo" + ext
-            pseudo = np.zeros([s[0], s[1], 3])
-            # mask = self.controller.result_mask
-            mask = mask_output
-            print(pseudo.shape, mask.shape)
-            for lab in self.controller.labelList:
-                pseudo[mask == lab.idx, :] = lab.color[::-1]
-            cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
+            try:
+                pseudoPath, ext = osp.splitext(savePath)
+                pseudoPath = pseudoPath + "_pseudo" + ext
+                pseudo = np.zeros([s[0], s[1], 3])
+                # mask = self.controller.result_mask
+                mask = mask_output
+                # print(pseudo.shape, mask.shape)
+                for lab in self.controller.labelList:
+                    pseudo[mask == lab.idx, :] = lab.color[::-1]
+                cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
+            except Exception as error:
+                print("Error:", error)
 
         # 4.3 保存前景抠图
         if self.save_status["cutout"]:
-            mattingPath, ext = osp.splitext(savePath)
-            mattingPath = mattingPath + "_cutout" + ext
-            img = np.ones([s[0], s[1], 4], dtype="uint8") * 255
-            img[:, :, :3] = self.controller.image.copy()
-            img[mask_output == 0] = self.cutoutBackground
-            img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
-            cv2.imencode(ext, img)[1].tofile(mattingPath)
+            try:
+                mattingPath, ext = osp.splitext(savePath)
+                mattingPath = mattingPath + "_cutout" + ext
+                img = np.ones([s[0], s[1], 4], dtype="uint8") * 255
+                img[:, :, :3] = self.controller.image.copy()
+                img[mask_output == 0] = self.cutoutBackground
+                img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
+                cv2.imencode(ext, img)[1].tofile(mattingPath)
+            except Exception as error:
+                print("Error:", error)
 
         # 4.4 保存json
         if self.save_status["json"]:
@@ -1974,6 +1986,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
         if len(np.unique(self.grid.mask_grids[row][col])) == 1:
             self.grid.mask_grids[row][col] = np.array(self.getMask())
+        if self.cheSaveEvery.isChecked():
+            if self.outputDir is None:
+                self.changeOutputDir()
+            path = osp.join(self.outputDir, (str(row) + "_" + str(col) + "_data.tif"))
+            im, tf = self.raster.getGrid(row, col)
+            h, w = im.shape[:2]
+            geoinfo = edict()
+            geoinfo.xsize = w
+            geoinfo.ysize = h
+            geoinfo.dtype = self.raster.geoinfo.dtype
+            geoinfo.crs = self.raster.geoinfo.crs
+            geoinfo.geotf = tf
+            self.raster.saveMask(self.grid.mask_grids[row][col],
+                                 path.replace("_data.tif", "_mask.tif"),
+                                 geoinfo)  # 保存mask
+            self.raster.saveMask(im, path, geoinfo, 3)  # 保存图像
 
     def turnGrid(self, delta):
         # 切换下一个宫格
@@ -1990,6 +2018,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if r < 0:
                 r = self.grid.grid_count[0] - 1
         self.changeGrid(r, c)
+
+    def closeGrid(self):
+        self.grid = None
+        self.gridTable.setRowCount(0)
+        self.gridTable.clearContents()
 
     def saveGridLabel(self):
         if self.outputDir is not None:
@@ -2008,8 +2041,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             pass
         self.delAllPolygon()  # 清理
         mask = self.grid.splicingList(save_path)
-        self.image = self.raster.getThumbnail()
-        self.controller.image, _ = self.raster.getArray()
+        self.image, is_big = self.raster.getArray()
+        if is_big is None:
+            self.statusbar.showMessage(self.tr("图像过大，已显示缩略图"))
+        self.controller.image = self.image
         self.controller._result_mask = mask
         self.exportLabel(savePath=save_path, lab_input=mask)
         # 刷新
@@ -2021,11 +2056,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.gridTable.item(r, c).setBackground(self.GRID_COLOR["idle"])
                 except:
                     pass
-        self.grid.curr_idx = None
+        self.raster = None
+        self.closeGrid()
+        self.updateBandList(True)
         self.controller.setImage(self.image)
         self.updateImage(True)
         self.setDirty(False)
-        # TODO: 完成和切换
 
     @property
     def opacity(self):
