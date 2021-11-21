@@ -14,7 +14,6 @@
 
 
 import logging
-from ntpath import join
 import os
 import os.path as osp
 from functools import partial
