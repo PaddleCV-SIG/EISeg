@@ -23,6 +23,7 @@ from distutils.util import strtobool
 import imghdr
 import webbrowser
 from datetime import datetime
+from eiseg.plugin.remotesensing.raster import check_rasterio
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -1336,7 +1337,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.saveImage(True)
 
             # 2. 打开新图
-            self.geoinfo = None
             self.loadImage(self.imagePaths[self.currIdx])
             self.listFiles.setCurrentRow(self.currIdx)
         else:
@@ -1460,22 +1460,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if self.rsSave.isChecked():
                     tifPath = pathHead + "_mask.tif"
                     self.raster.saveMask(mask_output, tifPath)
-                # TODO: SHP需要修改
                 if self.shpSave.isChecked():
                     shpPath = pathHead + ".shp"
-                    ## -- test --
                     geocode_list = self.mask2poly(mask_output, False)
-                    # else:
-                    #     polygons = self.scene.polygon_items
-                    #     geocode_list = []
-                    #     for polygon in polygons:
-                    #         l = self.controller.labelList[polygon.labelIndex - 1]
-                    #         label = {"name": l.name, "points": []}
-                    #         for p in polygon.scnenePoints:
-                    #             label["points"].append(p)
-                    #         geocode_list.append(label)
-                    ## ----------
-                    print(rs.save_shp(shpPath, geocode_list, self.geoinfo))
+                    print(rs.save_shp(shpPath, geocode_list, self.raster.geoinfo))
             ext = osp.splitext(savePath)[1]
             cv2.imencode(ext, mask_output)[1].tofile(savePath)
             # self.labelPaths.append(savePath)
@@ -1805,7 +1793,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         # 2. 判断widget是否可以开启
         # 2.1 遥感
-        if self.dockStatus[4] and not rs.check_gdal():
+        if self.dockStatus[4] and not (rs.check_gdal() and rs.check_rasterio()):
             if warn:
                 self.warn(
                     self.tr("无法导入GDAL"),

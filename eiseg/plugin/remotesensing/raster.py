@@ -23,7 +23,7 @@ from easydict import EasyDict as edict
 from .imgtools import sample_norm, two_percentLinear, get_thumbnail
 
 
-def __check_rasterio() -> bool:
+def check_rasterio() -> bool:
     try:
         import rasterio
         return True
@@ -32,7 +32,7 @@ def __check_rasterio() -> bool:
 
 
 IMPORT_STATE = False
-if __check_rasterio():
+if check_rasterio():
     import rasterio
     from rasterio.windows import Window
     IMPORT_STATE = True
@@ -196,15 +196,3 @@ class Raster:
         if save_path is not None:
             self.saveMask(result, save_path, geoinfo)
         return result
-
-
-# if __name__ == "__main__":
-#     tif_path = r"E:\PdCVSIG\github\images\rs_img\cq2.tif"
-#     img = Raster(tif_path, [1, 2, 3], True)
-#     for i in range(3):
-#         for j in range(3):
-#             im, tf = img.getGrid(i, j)
-#             print(tf)
-#             cv2.imshow("im", cv2.cvtColor(im, cv2.COLOR_RGB2BGR))
-#             cv2.waitKey(0)
-#             cv2.destroyAllWindows()
