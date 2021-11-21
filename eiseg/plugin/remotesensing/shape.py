@@ -43,11 +43,7 @@ if check_gdal():
 
 # 坐标系转换
 def __convert_coord(point: List[float], g: List[float]) -> np.array:
-    tform = np.zeros((3, 3))
-    a, b, c, d, e, f = g[:6]
-    tform[0, :] = np.array([a, b, c])
-    tform[1, :] = np.array([d, e, f])
-    tform[2, :] = np.array([0, 0, 1])
+    tform = np.array(g).reshape((3, 3))
     olp = np.ones((1, 3))
     olp[0, :2] = np.array(point)
     nwp = np.dot(tform, olp.T)

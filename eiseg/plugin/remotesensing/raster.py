@@ -84,7 +84,7 @@ class Raster:
         return geoinfo
 
     def checkOpenGrid(self) -> bool:
-        if min(self.geoinfo.xsize, self.geoinfo.ysize) <= self.thumbnail_min:
+        if max(self.geoinfo.xsize, self.geoinfo.ysize) <= self.thumbnail_min:
             self.open_grid = False
         else:
             self.open_grid = True
