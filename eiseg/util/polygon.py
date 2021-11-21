@@ -49,7 +49,7 @@ def get_polygon(label, sample="Dynamic"):
             # -- Douglas-Peucker算法边界简化
             # contour = cv2.approxPolyDP(contour, epsilon, True)
             # -- 自定义（角度和距离）边界简化
-            # contour = approx_poly_DP(contour)
+            # contour = approx_poly_DIY(contour)
             # -- 建筑边界简化（https://ieeexplore.ieee.org/document/8933116/citations#citations）
             contour = boundary_regularization(contour, img_shape)
             out = contour
