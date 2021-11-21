@@ -45,6 +45,7 @@ def get_polygon(label, sample="Dynamic"):
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
+<<<<<<< HEAD
             # -- Douglas-Peucker算法边界简化
             # contour = cv2.approxPolyDP(contour, epsilon, True)
             # -- 自定义（角度和距离）边界简化
@@ -52,6 +53,15 @@ def get_polygon(label, sample="Dynamic"):
             # -- 建筑边界简化（https://ieeexplore.ieee.org/document/8933116/citations#citations）
             contour = boundary_regularization(contour, img_shape)
             out = contour
+=======
+            out = cv2.approxPolyDP(contour, epsilon, True)  # 自然图像简化
+            # 自定义边界简化
+            """
+                TODO: 内圈太简单有可能简化没有了，造成下面的索引超出界限，
+                      目前会筛选掉这些空内圈避免错误
+            """
+            out = approx_poly_DIY(out)
+>>>>>>> develop
             # 给出关系
             rela = (
                 idx,  # own
@@ -126,7 +136,7 @@ def __cal_dist(p1, p2):
 
 
 # 边界点简化
-def approx_poly_DP(contour, min_dist=10, ang_err=5):
+def approx_poly_DIY(contour, min_dist=10, ang_err=5):
     # print(contour.shape)  # N, 1, 2
     cs = [contour[i][0] for i in range(contour.shape[0])]
     ## 1. 先删除夹角接近180度的点
