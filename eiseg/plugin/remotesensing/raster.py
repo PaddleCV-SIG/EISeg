@@ -118,13 +118,19 @@ class Raster:
 
     def getArray(self) -> Tuple[np.array]:
         rgb = []
-        for b in self.show_band:
-            rgb.append(np.uint16(self.src_data.read(b)))
-        ima = cv2.merge(rgb)
+        if not self.open_grid:
+            for b in self.show_band:
+                rgb.append(np.uint16(self.src_data.read(b)))
+            geotf = self.geoinfo.geotf
+        else:
+            for b in self.show_band:
+                rgb.append(get_thumbnail(np.uint16(self.src_data.read(b)), self.thumbnail_min))
+            geotf = None
+        ima = np.stack(rgb, axis=2)  # cv2.merge(rgb)
         if self.geoinfo["dtype"] == "uint32":
             ima = sample_norm(ima)
-        return two_percentLinear(ima), self.geoinfo.geotf
-            
+        return two_percentLinear(ima), geotf
+
     def getGrid(self, row: int, col: int) -> Tuple[np.array]:
         if self.open_grid is False:
             return self.getArray()
@@ -142,10 +148,8 @@ class Raster:
             ima = sample_norm(ima)
         return two_percentLinear(ima), win_tf
 
-    def getThumbnail(self) -> np.array:
-        return get_thumbnail(self.getArray()[0], self.thumbnail_min)
-
-    def saveMask(self, img: np.array, save_path: str, geoinfo: Union[Dict, None]=None) -> None:
+    def saveMask(self, img: np.array, save_path: str, 
+                 geoinfo: Union[Dict, None]=None, count: int=1) -> None:
         if geoinfo is None:
             geoinfo = self.geoinfo
         new_meta = self.src_data.meta.copy()
@@ -153,13 +157,17 @@ class Raster:
             "driver": "GTiff",
             "width": geoinfo.xsize,
             "height": geoinfo.ysize,
-            "count": 1,
+            "count": count,
             "dtype": geoinfo.dtype,
             "crs": geoinfo.crs,
             "transform": geoinfo.geotf[:6]
             })
         with rasterio.open(save_path, "w", **new_meta) as tf:
-            tf.write(img, indexes=1)
+            if count == 1:
+                tf.write(img.astype(geoinfo.dtype), indexes=1)
+            else:
+                for i in range(count):
+                    tf.write(img[:, :, i].astype(geoinfo.dtype), indexes=(i + 1))
 
     def saveMaskbyGrids(self, 
                         img_list: List[List[np.array]], 
