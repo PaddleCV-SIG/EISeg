@@ -13,5 +13,4 @@
 # limitations under the License.
 
 
-from .grid import Grids
 from .rs_grid import RSGrids
