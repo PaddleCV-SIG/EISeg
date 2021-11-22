@@ -1352,7 +1352,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def finishObject(self):
         if not self.controller or self.image is None:
             return
-        current_mask, curr_polygon = self.controller.finishObject()
+        current_mask, curr_polygon = self.controller.finishObject(
+            building=self.boundaryRegular.isChecked())
         if curr_polygon is not None:
             self.updateImage()
             if current_mask is not None:
@@ -1455,9 +1456,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.save_status["gray_scale"]:
             if self.raster is not None:
                 pathHead, _ = osp.splitext(savePath)
-                if self.rsSave.isChecked():
-                    tifPath = pathHead + "_mask.tif"
-                    self.raster.saveMask(mask_output, tifPath)
+                # if self.rsSave.isChecked():
+                tifPath = pathHead + "_mask.tif"
+                self.raster.saveMask(mask_output, tifPath)
                 if self.shpSave.isChecked():
                     shpPath = pathHead + ".shp"
                     geocode_list = self.mask2poly(mask_output, False)
@@ -1962,7 +1963,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         geocode_list = []
         for idx, (l, c) in enumerate(zip(labs, colors)):
             if c is not None:
-                curr_polygon = util.get_polygon((mask == l).astype(np.uint8) * 255)
+                curr_polygon = util.get_polygon(((mask == l).astype(np.uint8) * 255), 
+                                                building=self.boundaryRegular.isChecked())
                 if show == True:
                     self.createPoly(curr_polygon, c)
                     for p in self.scene.polygon_items:
@@ -1988,7 +1990,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.cheSaveEvery.isChecked():
             if self.outputDir is None:
                 self.changeOutputDir()
-            path = osp.join(self.outputDir, (str(row) + "_" + str(col) + "_data.tif"))
+            _, fullflname = osp.split(self.listFiles.currentItem().text())
+            fname, _ = os.path.splitext(fullflname)
+            path = osp.join(self.outputDir, (fname + "_data_" + str(row) + "_" + str(col) + ".tif"))
             im, tf = self.raster.getGrid(row, col)
             h, w = im.shape[:2]
             geoinfo = edict()
@@ -1998,7 +2002,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             geoinfo.crs = self.raster.geoinfo.crs
             geoinfo.geotf = tf
             self.raster.saveMask(self.grid.mask_grids[row][col],
-                                 path.replace("_data.tif", "_mask.tif"),
+                                 path.replace("data", "mask"),
                                  geoinfo)  # 保存mask
             self.raster.saveMask(im, path, geoinfo, 3)  # 保存图像
 
