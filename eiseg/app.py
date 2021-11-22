@@ -1463,13 +1463,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     shpPath = pathHead + ".shp"
                     geocode_list = self.mask2poly(mask_output, False)
                     print(rs.save_shp(shpPath, geocode_list, self.raster.geoinfo))
-            ext = osp.splitext(savePath)[1]
-            cv2.imencode(ext, mask_output)[1].tofile(savePath)
-            # self.labelPaths.append(savePath)
+            else:
+                ext = osp.splitext(savePath)[1]
+                cv2.imencode(ext, mask_output)[1].tofile(savePath)
+                # self.labelPaths.append(savePath)
 
         # 4.2 保存伪彩色
         if self.save_status["pseudo_color"]:
-            try:
+            if self.raster is None:
                 pseudoPath, ext = osp.splitext(savePath)
                 pseudoPath = pseudoPath + "_pseudo" + ext
                 pseudo = np.zeros([s[0], s[1], 3])
@@ -1479,12 +1480,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 for lab in self.controller.labelList:
                     pseudo[mask == lab.idx, :] = lab.color[::-1]
                 cv2.imencode(ext, pseudo)[1].tofile(pseudoPath)
-            except Exception as error:
-                print("Error:", error)
 
         # 4.3 保存前景抠图
         if self.save_status["cutout"]:
-            try:
+            if self.raster is None:
                 mattingPath, ext = osp.splitext(savePath)
                 mattingPath = mattingPath + "_cutout" + ext
                 img = np.ones([s[0], s[1], 4], dtype="uint8") * 255
@@ -1492,8 +1491,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 img[mask_output == 0] = self.cutoutBackground
                 img = cv2.cvtColor(img, cv2.COLOR_RGBA2BGRA)
                 cv2.imencode(ext, img)[1].tofile(mattingPath)
-            except Exception as error:
-                print("Error:", error)
 
         # 4.4 保存json
         if self.save_status["json"]:
