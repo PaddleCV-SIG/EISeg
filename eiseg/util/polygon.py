@@ -25,7 +25,7 @@ class Instructions(Enum):
     Polygon_Instruction = 1
 
 
-def get_polygon(label, sample="Dynamic"):
+def get_polygon(label, sample="Dynamic", building=False):
     results = cv2.findContours(
         image=label, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_TC89_KCOS
     )  # 获取内外边界，用RETR_TREE更好表示
@@ -45,13 +45,14 @@ def get_polygon(label, sample="Dynamic"):
             if not isinstance(epsilon, float) and not isinstance(epsilon, int):
                 epsilon = 0
             # print("epsilon:", epsilon)
-            # -- Douglas-Peucker算法边界简化
-            # contour = cv2.approxPolyDP(contour, epsilon, True)
-            # -- 建筑边界简化（https://ieeexplore.ieee.org/document/8933116/citations#citations）
-            contour = boundary_regularization(contour, img_shape, epsilon)
+            if building is False:
+                # -- Douglas-Peucker算法边界简化
+                contour = cv2.approxPolyDP(contour, epsilon / 10, True)
+            else:
+                # -- 建筑边界简化（https://github.com/niecongchong/RS-building-regularization）
+                contour = boundary_regularization(contour, img_shape, epsilon)
             # -- 自定义（角度和距离）边界简化
-            contour = approx_poly_DIY(contour)
-            out = contour
+            out = approx_poly_DIY(contour)
             # 给出关系
             rela = (
                 idx,  # own
