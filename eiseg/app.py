@@ -1385,6 +1385,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         )
         if res == QMessageBox.Yes:
             self.finishObject()
+            self.exportLabel()
             self.setDirty(False)
             return True
         return False
