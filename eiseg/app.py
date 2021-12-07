@@ -1982,8 +1982,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if self.grid.curr_idx is None:
             return
         self.gridTable.item(row, col).setBackground(self.GRID_COLOR["overlying"])
-        if len(np.unique(self.grid.mask_grids[row][col])) == 1:
-            self.grid.mask_grids[row][col] = np.array(self.getMask())
+        # if len(np.unique(self.grid.mask_grids[row][col])) == 1:
+        self.grid.mask_grids[row][col] = np.array(self.getMask())
         if self.cheSaveEvery.isChecked():
             if self.outputDir is None:
                 self.changeOutputDir()
