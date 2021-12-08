@@ -50,22 +50,28 @@ class GripItem(QtWidgets.QGraphicsPathItem):
         self.anning = anning
         self.setEnabled(anning)
 
+    # BUG: Scaling causes a crash
     @property
     def size(self):
-        if not self.scene():
-            return GripItem.minSize
-        else:
-            maxi, mini = GripItem.maxSize, GripItem.minSize
-            exp = 1 - mini / maxi
-            size = maxi * (1 - exp ** self.scene().scale)
-            return size
+        return GripItem.minSize
+        # if not self.scene():
+        #     return GripItem.minSize
+        # else:
+        #     maxi, mini = GripItem.maxSize, GripItem.minSize
+        #     exp = 1 - mini / maxi
+        #     size = maxi * (1 - exp ** self.scene().scale)
+        #     if size > GripItem.maxSize:
+        #         size = GripItem.maxSize
+        #     if size < GripItem.minSize:
+        #         size = GripItem.minSize
+        #     return size
 
-    def updateSize(self, size=2):
+    def updateSize(self, s=2):
         size = self.size
         self.circle = QtGui.QPainterPath()
-        self.circle.addEllipse(QtCore.QRectF(-size, -size, size * 2, size * 2))
+        self.circle.addEllipse(QtCore.QRectF(-size, -size, size * s, size * s))
         self.square = QtGui.QPainterPath()
-        self.square.addRect(QtCore.QRectF(-size, -size, size * 2, size * 2))
+        self.square.addRect(QtCore.QRectF(-size, -size, size * s, size * s))
         self.setPath(self.square if self.hovering else self.circle)
 
     def hoverEnterEvent(self, ev):
