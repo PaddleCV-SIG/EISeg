@@ -23,6 +23,7 @@ import imghdr
 from datetime import datetime
 import webbrowser
 from easydict import EasyDict as edict
+import re
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -768,6 +769,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 filters,
             )
         if not param_path:
+            return False
+
+        # 中文路径打不开
+        zh_model = re.compile(u'[\u4e00-\u9fa5]')  #检查中文
+
+        if zh_model.search(param_path):
+            self.warn(self.tr("参数路径存在中文"), self.tr("请修改参数路径为非中文路径！"))
             return False
 
         # success, res = self.controller.setModel(param_path)
