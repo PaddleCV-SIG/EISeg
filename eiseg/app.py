@@ -1189,13 +1189,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             image = med.windowlize(image, self.ww, self.wc)
 
         # 遥感图像
-        if path.lower().endswith(
-            tuple(self.formats[2])
-        ):  # imghdr.what(path) == "tiff":
+        if path.lower().endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
             if not self.dockStatus[4]:
                 res = self.warn(
                     self.tr("未打开遥感组件"),
-                    self.tr("打开遥感图像需启用遥感组件，是否立即启用?"),
+                    self.tr("打开遥感图像需启用遥感组件，是否立即启用？"),
                     QMessageBox.Yes | QMessageBox.Cancel,
                 )
                 if res == QMessageBox.Cancel:
