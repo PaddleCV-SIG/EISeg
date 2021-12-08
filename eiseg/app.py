@@ -1708,7 +1708,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     def viewZoomed(self, scale):
         self.scene.scale = scale
-        # self.scene.updatePolygonSize() # App craches while zoom in and out and go to next image
+        self.scene.updatePolygonSize()
 
     # 界面缩放重置
     def resetZoom(self, width, height):
