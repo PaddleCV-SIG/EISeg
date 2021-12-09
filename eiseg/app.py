@@ -1524,7 +1524,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 4.5 保存coco
         if self.save_status["coco"]:
             if not self.coco.hasImage(osp.basename(self.imagePath)):
-                imgId = self.coco.addImage(osp.basename(self.imagePath), s[0], s[1])
+                imgId = self.coco.addImage(osp.basename(self.imagePath), s[1], s[0])
             else:
                 imgId = self.coco.imgNameToId[osp.basename(self.imagePath)]
             for polygon in self.scene.polygon_items:
