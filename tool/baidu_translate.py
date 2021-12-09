@@ -114,4 +114,4 @@ for name in xml.find_all("name"):
     name.string = "APP_EISeg"
 
 print(f"Totally {len(messages)} , translated {translated}, failed {failed}")
-open(ts_path, "w").write(str(xml))
+open(ts_path, "w", encoding="utf-8").write(str(xml))
