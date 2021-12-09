@@ -23,7 +23,7 @@ import imghdr
 from datetime import datetime
 import webbrowser
 from easydict import EasyDict as edict
-import re
+from eiseg.util.opath import check_cn
 
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
@@ -45,9 +45,10 @@ from controller import InteractiveController
 from ui import Ui_EISeg
 import util
 from util import COCO
+from util import check_cn, normcase
+
 import plugin.remotesensing as rs
 from plugin.medical import med
-
 from plugin.remotesensing import Raster
 from plugin.n2grid import RSGrids
 
@@ -772,9 +773,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return False
 
         # 中文路径打不开
-        zh_model = re.compile(u'[\u4e00-\u9fa5]')  #检查中文
-
-        if zh_model.search(param_path):
+        if check_cn(param_path):
             self.warn(self.tr("参数路径存在中文"), self.tr("请修改参数路径为非中文路径！"))
             return False
 
@@ -833,7 +832,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 ".",
                 filters,
             )
-        filePath = osp.normcase(filePath)
+        filePath = normcase(filePath)
         if not osp.exists(filePath):
             return
         self.controller.importLabel(filePath)
@@ -1082,7 +1081,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             )
             if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
-        filePath = osp.normcase(filePath)
+        filePath = normcase(filePath)
         if not self.loadImage(filePath):
             return False
 
@@ -1140,7 +1139,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 break
         imagePaths = [osp.join(inputDir, n) for n in imagePaths]
         for p in imagePaths:
-            p = osp.normcase(p)
+            p = normcase(p)
             self.imagePaths.append(p)
             self.listFiles.addItem(p)
 
@@ -1159,7 +1158,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 1. 拒绝None和不存在的路径，关闭当前图像
         if not path:
             return
-        path = osp.normcase(path)
+        path = normcase(path)
         if not osp.exists(path):
             return
         self.saveImage(True)  # 关闭当前图像

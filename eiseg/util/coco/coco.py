@@ -215,6 +215,7 @@ class COCO:
 
         ann = {
             "id": id,
+            "iscrowd": 0,
             "image_id": image_id,
             "category_id": category_id,
             "segmentation": [segmentation],
