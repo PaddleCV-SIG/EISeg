@@ -691,7 +691,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 lang,
                 partial(self.changeLanguage, lang),
                 None,
-                lang,
+                lang if lang != "Arabic" else "Egypt",
             )
             self.menus.languages.addAction(entry)
 
