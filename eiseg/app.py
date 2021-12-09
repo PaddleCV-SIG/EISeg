@@ -563,8 +563,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             widget.aboutToShow.connect(showAction)
             return widget
 
-        recent_files = newWidget("近期文件", "Data", self.updateRecentFile)
-        recent_params = newWidget("近期模型及参数", "Net", self.updateModelMenu)
+        recent_files = newWidget(self.tr("近期文件"), "Data", self.updateRecentFile)
+        recent_params = newWidget(self.tr("近期模型及参数"), "Net", self.updateModelMenu)
         languages = newWidget("语言", "Language", self.updateLanguage)
 
         self.menus = util.struct(
