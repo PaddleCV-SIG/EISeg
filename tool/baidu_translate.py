@@ -76,7 +76,7 @@ pre_xml = read_ts(pre_ts_path)
 xml = read_ts(ts_path)
 pre_messages = pre_xml.find_all("message")
 messages = xml.find_all("message")
-bd_trans = BaiduTranslate("zh", "en")  # ru
+bd_trans = BaiduTranslate("auto", "en")  # ru
 trans = bd_trans.trans
 
 translated = 0

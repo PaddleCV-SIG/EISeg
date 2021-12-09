@@ -89,6 +89,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
+        currentLang =  self.settings.value("language")
+        layoutdir = Qt.RightToLeft if currentLang == "Arabic" else Qt.LeftToRight
+        self.setLayoutDirection(layoutdir)
 
         # 初始化界面
         self.setupUi(self)
