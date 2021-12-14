@@ -51,9 +51,7 @@ def __convert_coord(point: List[float], g: List[float]) -> np.array:
 
 
 # 边界转为wkt格式
-def __bound2wkt(bounds: List[Dict], 
-                tform: List[float], 
-                ct: osr.CoordinateTransformation) -> List[str]:
+def __bound2wkt(bounds: List[Dict], tform: List[float], ct) -> List[str]:
     geo_list = []
     for bd in bounds:
         gl = defaultdict()
