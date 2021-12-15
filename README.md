@@ -3,7 +3,7 @@
 [![Python 3.6](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/release/python-360/) [![PaddlePaddle 2.2](https://img.shields.io/badge/paddlepaddle-2.2-blue.svg)](https://www.python.org/downloads/release/python-360/) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](LICENSE) [![Downloads](https://pepy.tech/badge/eiseg)](https://pepy.tech/project/eiseg)
 <!-- [![GitHub release](https://img.shields.io/github/release/Naereen/StrapDown.js.svg)](https://github.com/PaddleCV-SIG/iseg/releases) -->
 
-简体中文 | [English](README_EN.md)
+简体中文 | [英文](README_EN.md)
 
 ## 最新动向
 
@@ -30,7 +30,7 @@ EISeg(Efficient Interactive Segmentation)是以[RITM](https://github.com/saic-vu
 | 轻量化模型 | 适用于遥感建筑物标注场景。    | HRNet18s_OCR48 | [static_hrnet18_ocr48_rsbuilding_instance](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr48_rsbuilding_instance.zip) |
 | 轻量化模型 | 适用于医疗肝脏标注场景。       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_lits](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_lits.zip) |
 
-****NOTE****： 将下载的模型结构`*.pdmodel`及相应的模型参数`*.pdiparams`需要放到同一个目录下，加载模型时只需选择`*.pdiparams`结尾的模型参数位置即可， `*.pdmodel`会自动加载。在使用`EdgeFlow`模型时，请将`使用掩膜`关闭，其他模型使用时请勾选`使用掩膜`。
+**NOTE**： 将下载的模型结构`*.pdmodel`及相应的模型参数`*.pdiparams`需要放到同一个目录下，加载模型时只需选择`*.pdiparams`结尾的模型参数位置即可， `*.pdmodel`会自动加载。在使用`EdgeFlow`模型时，请将`使用掩膜`关闭，其他模型使用时请勾选`使用掩膜`。
 
 ## 安装使用
 
