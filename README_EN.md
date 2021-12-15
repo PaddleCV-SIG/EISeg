@@ -154,8 +154,8 @@ Start the annotation when the above are all set up. Here are the commonly used k
 
   EISeg now supports remote sensing images and medical images segmentation, and additional dependencies need to be installed for their functioning.
 
-  - Install GDAL for remote sensing image segmentation, please refer to [Remote Sensing Segmentation](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/EISeg/docs/remote_sensing.md)。
-  - Install SimpleITK for medical images segmentation, please refer to [Medical Image Segmentation](https://github.com/PaddlePaddle/PaddleSeg/blob/develop/EISeg/docs/medical.md)。
+  - Install GDAL for remote sensing image segmentation, please refer to [Remote Sensing Segmentation](docs/remote_sensing_en.md)。
+  - Install SimpleITK for medical images segmentation, please refer to [Medical Image Segmentation](docs/medical_en.md)。
 
 - **Scripting Tool**
 
