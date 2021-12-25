@@ -228,6 +228,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
         # self.sldMISlide.valueChanged.connect(self.slideChanged)
+        self.sliderWw.valueChanged.connect(self.wwChanged)
+        self.sliderWc.valueChanged.connect(self.wcChanged)
         self.textWw.returnPressed.connect(self.wwChanged)
         self.textWc.returnPressed.connect(self.wcChanged)
 
@@ -1194,6 +1196,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if image.shape[-1] != 1:
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
                 return False
+                
+            maxValue = np.max(image) # 根据数据模态自适应窗宽窗位
+            minValue = np.min(image)
+            if minValue == 0:
+                ww = maxValue
+                wc = int(maxValue/2)
+            else:
+                ww = maxValue + int(abs(minValue))
+                wc = int((minValue  + maxValue)/2 )
+            self.sliderWw.setValue(int(ww))
+            self.textWw.setText(str(ww))
+            self.sliderWc.setValue(int(wc))
+            self.textWc.setText(str(wc))
 
             self.controller.rawImage = self.image = image
             image = med.windowlize(image, self.ww, self.wc)
@@ -2166,7 +2181,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller or self.image is None:
             return
         try:  # 那种jpg什么格式的医疗图像调整窗宽等会造成崩溃
-            self.textWw.selectAll()
+            objectName = self.sender().objectName()
+            if objectName == 'SliderWw':
+                self.textWw.setText(str(self.sliderWw.value()))
+            else:
+                self.textWw.selectAll()
+                self.sliderWw.setValue(int(self.textWw.text()))
+            
             self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
             self.updateImage()
         except:
@@ -2176,7 +2197,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller or self.image is None:
             return
         try:
-            self.textWc.selectAll()
+            objectName = self.sender().objectName()
+            if objectName == 'SliderWc':
+                self.textWc.setText(str(self.sliderWc.value()))
+            else:
+                self.textWc.selectAll()
+                self.sliderWc.setValue(int(self.textWc.text()))
             self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
             self.updateImage()
         except:
