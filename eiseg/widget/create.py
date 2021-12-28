@@ -28,6 +28,18 @@ def create_text(parent, text_name=None, text_text=None):
     return text
 
 
+## 创建可编辑文本
+def create_edit(parent, text_name=None, text_text=None):
+    edit = QtWidgets.QLineEdit(parent)
+    if text_name is not None:
+        edit.setObjectName(text_name)
+    if text_text is not None:
+        edit.setText(text_text)
+    edit.setValidator(QtGui.QIntValidator())
+    edit.setMaxLength(5)
+    return edit
+
+
 ## 创建按钮
 def create_button(parent, btn_name, btn_text, ico_path=None, curt=None):
     # 创建和设置按钮
@@ -58,17 +70,23 @@ def create_slider(
     text,
     default_value=50,
     max_value=100,
+    min_value=0,
     text_rate=0.01,
+    edit=False
 ):
     Region = QtWidgets.QHBoxLayout()
     lab = create_text(parent, None, text)
     Region.addWidget(lab)
-    labShow = create_text(parent, text_name, str(default_value * text_rate))
+    if edit is False:
+        labShow = create_text(parent, text_name, str(default_value * text_rate))
+    else:
+        labShow = create_edit(parent, text_name, str(default_value * text_rate))
     Region.addWidget(labShow)
     Region.setStretch(0, 1)
     Region.setStretch(1, 10)
     sld = QtWidgets.QSlider(parent)
     sld.setMaximum(max_value)  # 好像只能整数的，这里是扩大了10倍，1 . 10
+    sld.setMinimum(min_value)
     sld.setProperty("value", default_value)
     sld.setOrientation(QtCore.Qt.Horizontal)
     sld.setObjectName(sld_name)
@@ -86,7 +104,7 @@ def create_slider(
         """
     )
     sld.textLab = labShow
-    return sld, Region
+    return sld, labShow, Region
 
 
 class DockWidget(QDockWidget):

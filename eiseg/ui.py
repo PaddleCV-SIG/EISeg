@@ -173,20 +173,20 @@ class Ui_EISeg(object):
         horizontalLayout = QtWidgets.QHBoxLayout(widget)
         ShowSetRegion = QtWidgets.QVBoxLayout()
         ShowSetRegion.setObjectName("ShowSetRegion")
-        self.sldThresh, SegShowRegion = p_create_slider(
+        self.sldThresh, _, SegShowRegion = p_create_slider(
             "sldThresh", "labThresh", self.tr("分割阈值：")
         )
         ShowSetRegion.addLayout(SegShowRegion)
         ShowSetRegion.addWidget(self.sldThresh)
         # 透明度
-        self.sldOpacity, MaskShowRegion = p_create_slider(
+        self.sldOpacity, _, MaskShowRegion = p_create_slider(
             "sldOpacity", "labOpacity", self.tr("标签透明度："), 75
         )
         ShowSetRegion.addLayout(MaskShowRegion)
         ShowSetRegion.addWidget(self.sldOpacity)
         # 点大小
-        self.sldClickRadius, PointShowRegion = p_create_slider(
-            "sldClickRadius", "labClickRadius", self.tr("点击可视化半径："), 3, 10, 1
+        self.sldClickRadius, _, PointShowRegion = p_create_slider(
+            "sldClickRadius", "labClickRadius", self.tr("点击可视化半径："), 3, 10, 0, 1
         )
         ShowSetRegion.addLayout(PointShowRegion)
         ShowSetRegion.addWidget(self.sldClickRadius)
@@ -246,43 +246,22 @@ class Ui_EISeg(object):
         MIRegion.setObjectName("MIRegion")
         # mi_text = create_text(CentralWidget, "sliceSelection", self.tr("切片选择"))
         # MIRegion.addWidget(mi_text)
-        # self.sldMISlide, slideRegion = p_create_slider(
+        # self.sldMISlide, _, slideRegion = p_create_slider(
         #     "sldMISlide", "labMISlide", self.tr("切片选择："), 1, 1, 1
         # )
         # self.sldMISlide.setMinimum(1)
-        wwLabel = QtWidgets.QLabel("窗宽")
-        ## 增加窗宽窗位滑动条
-        self.sliderWw = QtWidgets.QSlider(Qt.Horizontal)
-        self.sliderWw.setObjectName("SliderWw")
-        self.sliderWw.setMinimum(-2048)
-        self.sliderWw.setMaximum(2048)
-        self.sliderWw.setValue(200)
-        
-        self.textWw = QtWidgets.QLineEdit()
-        self.textWw.setText("200")
-        self.textWw.setValidator(QtGui.QIntValidator())
-        self.textWw.setMaxLength(5)
-
-        wcLabel = QtWidgets.QLabel("窗位")
-        self.sliderWc = QtWidgets.QSlider(Qt.Horizontal)
-        self.sliderWc.setObjectName("SliderWc")
-        self.sliderWc.setMinimum(-2048)
-        self.sliderWc.setMaximum(2048)
-        self.sliderWc.setValue(0)
-        
-        self.textWc = QtWidgets.QLineEdit()
-        self.textWc.setText("0")
-        self.textWc.setValidator(QtGui.QIntValidator())
-        self.textWc.setMaxLength(5)
-
         # MIRegion.addLayout(slideRegion)
         # MIRegion.addWidget(self.sldMISlide)
-        MIRegion.addWidget(wwLabel)
+        self.sliderWw, self.textWw, WwRegion = p_create_slider(
+            "sliderWw", "textWw", self.tr("窗宽："), 200, 2048, -2048, 1, True
+        )
+        MIRegion.addLayout(WwRegion)
         MIRegion.addWidget(self.sliderWw)
-        MIRegion.addWidget(self.textWw)
-        MIRegion.addWidget(wcLabel)
+        self.sliderWc, self.textWc, WcRegion = p_create_slider(
+            "sliderWc", "textWc", self.tr("窗位："), 0, 2048, -2048, 1, True
+        )
+        MIRegion.addLayout(WcRegion)
         MIRegion.addWidget(self.sliderWc)
-        MIRegion.addWidget(self.textWc)
         horizontalLayout.addLayout(MIRegion)
         self.MedDock = p_create_dock("MedDock", self.tr("医疗设置"), widget)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.MedDock)
@@ -369,7 +348,9 @@ class Ui_EISeg(object):
         text,
         default_value=50,
         max_value=100,
+        min_value=0,
         text_rate=0.01,
+        edit=False
     ):
         return create_slider(
             parent,
@@ -378,5 +359,7 @@ class Ui_EISeg(object):
             text,
             default_value,
             max_value,
+            min_value,
             text_rate,
+            edit
         )
