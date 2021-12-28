@@ -227,11 +227,11 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
-        # self.sldMISlide.valueChanged.connect(self.slideChanged)
-        self.sliderWw.valueChanged.connect(self.wwChanged)
-        self.sliderWc.valueChanged.connect(self.wcChanged)
-        self.textWw.returnPressed.connect(self.wwChanged)
-        self.textWc.returnPressed.connect(self.wcChanged)
+        # self.sldMISlide.sliderReleased.connect(self.slideChanged)
+        self.sliderWw.sliderReleased.connect(self.swwChanged)
+        self.sliderWc.sliderReleased.connect(self.swcChanged)
+        self.textWw.returnPressed.connect(self.twwChanged)
+        self.textWc.returnPressed.connect(self.twcChanged)
 
         ## 标签列表点击
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
@@ -2186,12 +2186,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.textWw.setText(str(self.sliderWw.value()))
             else:
                 self.textWw.selectAll()
-                self.sliderWw.setValue(int(self.textWw.text()))
-            
             self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
             self.updateImage()
         except:
             pass
+
+    def twwChanged(self):
+        if self.ww > self.sliderWw.maximum():
+            self.textWw.setText(str(self.sliderWw.maximum()))
+        if self.ww < self.sliderWw.minimum():
+            self.textWw.setText(str(self.sliderWw.minimum()))
+        self.sliderWw.setProperty("value", self.ww)
+        self.wwChanged()
+
+    def swwChanged(self):
+        self.textWw.setText(str(self.sliderWw.value()))
+        self.wwChanged()
 
     def wcChanged(self):
         if not self.controller or self.image is None:
@@ -2202,11 +2212,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.textWc.setText(str(self.sliderWc.value()))
             else:
                 self.textWc.selectAll()
-                self.sliderWc.setValue(int(self.textWc.text()))
             self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
             self.updateImage()
         except:
             pass
+
+    def twcChanged(self):
+        if self.wc > self.sliderWc.maximum():
+            self.textWc.setText(str(self.sliderWc.maximum()))
+        if self.wc < self.sliderWc.minimum():
+            self.textWc.setText(str(self.sliderWc.minimum()))
+        self.sliderWc.setProperty("value", self.wc)
+        self.wcChanged()
+
+    def swcChanged(self):
+        self.textWc.setText(str(self.sliderWc.value()))
+        self.wcChanged()
 
     @property
     def ww(self):
