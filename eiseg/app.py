@@ -28,14 +28,7 @@ from eiseg.util.opath import check_cn
 from qtpy import QtGui, QtCore, QtWidgets
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QTableWidgetItem
 from qtpy.QtGui import QImage, QPixmap
-from qtpy.QtCore import (
-    Qt,
-    QByteArray,
-    QVariant,
-    QCoreApplication,
-    QThread,
-    Signal
-)
+from qtpy.QtCore import Qt, QByteArray, QVariant, QCoreApplication, QThread, Signal
 import cv2
 import numpy as np
 
@@ -89,7 +82,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.settings = QtCore.QSettings(
             osp.join(pjpath, "config/setting.ini"), QtCore.QSettings.IniFormat
         )
-        currentLang =  self.settings.value("language")
+        currentLang = self.settings.value("language")
         layoutdir = Qt.RightToLeft if currentLang == "Arabic" else Qt.LeftToRight
         self.setLayoutDirection(layoutdir)
 
@@ -227,11 +220,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
-        # self.sldMISlide.sliderReleased.connect(self.slideChanged)
-        self.sliderWw.sliderReleased.connect(self.swwChanged)
-        self.sliderWc.sliderReleased.connect(self.swcChanged)
-        self.textWw.returnPressed.connect(self.twwChanged)
-        self.textWc.returnPressed.connect(self.twcChanged)
+        # self.sldMISlide.valueChanged.connect(self.slideChanged)
+        self.textWw.returnPressed.connect(self.wwChanged)
+        self.textWc.returnPressed.connect(self.wcChanged)
 
         ## 标签列表点击
         self.labelListTable.cellDoubleClicked.connect(self.labelListDoubleClick)
@@ -556,6 +547,19 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         toggle_logging.setChecked(bool(self.settings.value("log", False)))
+        use_qt_widget = action(
+            tr("&使用QT文件窗口"),
+            self.useQtWidget,
+            "use_qt_widget",
+            "Qt",
+            tr("如果使用文件选择窗口时遇到问题可以选择使用Qt窗口"),
+            checkable=True,
+        )
+        # print(
+        #     "use_qt_widget",
+        #     self.settings.value("use_qt_widget", type=bool),
+        # )
+        use_qt_widget.setChecked(self.settings.value("use_qt_widget", False, type=bool))
 
         self.actions = util.struct()
         for name in dir():
@@ -625,6 +629,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             ),
             helpMenu=(
                 languages,
+                use_qt_widget,
                 quick_start,
                 report_bug,
                 edit_shortcuts,
@@ -768,12 +773,18 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(self.recentModels) == 0
                 else osp.dirname(self.recentModels[-1]["param_path"])
             )
+            if self.settings.value("use_qt_widget", False):
+                options = QtWidgets.QFileDialog.DontUseNativeDialog
+            else:
+                options = QtWidgets.QFileDialog.ReadOnly
             param_path, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择模型参数") + " - " + __APPNAME__,
                 start_path,
                 filters,
+                options=options,
             )
+            # QtWidgets.QFileDialog.DontUseNativeDialog
         if not param_path:
             return False
 
@@ -830,12 +841,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     # 标签列表
     def importLabelList(self, filePath=None):
         if filePath is None:
+            if self.settings.value("use_qt_widget", False):
+                options = QtWidgets.QFileDialog.DontUseNativeDialog
+            else:
+                options = QtWidgets.QFileDialog.ReadOnly
             filters = self.tr("标签配置文件") + " (*.txt)"
             filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择标签配置文件路径") + " - " + __APPNAME__,
                 ".",
                 filters,
+                options=options,
             )
         filePath = normcase(filePath)
         if not osp.exists(filePath):
@@ -850,12 +866,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             return
         if savePath is None:
             filters = self.tr("标签配置文件") + "(*.txt)"
-            dlg = QtWidgets.QFileDialog(self, self.tr("保存标签配置文件"), ".", filters)
+            dlg = QtWidgets.QFileDialog(
+                self,
+                self.tr("保存标签配置文件"),
+                ".",
+                filters,
+            )
+            dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
+            if self.settings.value("use_qt_widget", False, type=bool):
+                options = QtWidgets.QFileDialog.DontUseNativeDialog
+            else:
+                options = QtWidgets.QFileDialog.DontUseCustomDirectoryIcons
             dlg.setDefaultSuffix("txt")
             dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
-            dlg.setOption(QtWidgets.QFileDialog.DontConfirmOverwrite, False)
             savePath, _ = dlg.getSaveFileName(
-                self, self.tr("选择保存标签配置文件路径") + " - " + __APPNAME__, ".", filters
+                self,
+                self.tr("选择保存标签配置文件路径") + " - " + __APPNAME__,
+                ".",
+                filters,
+                options=options,
             )
         self.controller.exportLabel(savePath)
 
@@ -1078,11 +1107,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 recentPath = "."
             else:
                 recentPath = osp.dirname(recentPath[0])
+            if self.settings.value("use_qt_widget", False, type=bool):
+                options = QtWidgets.QFileDialog.DontUseNativeDialog
+            else:
+                options = QtWidgets.QFileDialog.ReadOnly
             filePath, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self,
                 self.tr("选择待标注图片") + " - " + __APPNAME__,
                 recentPath,
                 filters,
+                options=options,
             )
             if len(filePath) == 0:  # 用户没选就直接关闭窗口
                 return
@@ -1105,12 +1139,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 recentPath = "."
             else:
                 recentPath = osp.dirname(recentPath[-1])
+            options = (
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks
+            )
+            if self.settings.value("use_qt_widget", False, type=bool):
+                options = options | QtWidgets.QFileDialog.DontUseNativeDialog
             inputDir = QtWidgets.QFileDialog.getExistingDirectory(
                 self,
                 self.tr("选择待标注图片文件夹") + " - " + __APPNAME__,
                 recentPath,
-                QtWidgets.QFileDialog.ShowDirsOnly
-                | QtWidgets.QFileDialog.DontResolveSymlinks,
+                options,
             )
             if not osp.exists(inputDir):
                 return
@@ -1196,25 +1235,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if image.shape[-1] != 1:
                 self.warn("医学影像打开错误", "暂不支持打开多层医学影像")
                 return False
-                
-            maxValue = np.max(image) # 根据数据模态自适应窗宽窗位
-            minValue = np.min(image)
-            if minValue == 0:
-                ww = maxValue
-                wc = int(maxValue/2)
-            else:
-                ww = maxValue + int(abs(minValue))
-                wc = int((minValue  + maxValue)/2 )
-            self.sliderWw.setValue(int(ww))
-            self.textWw.setText(str(ww))
-            self.sliderWc.setValue(int(wc))
-            self.textWc.setText(str(wc))
 
             self.controller.rawImage = self.image = image
             image = med.windowlize(image, self.ww, self.wc)
 
         # 遥感图像
-        if path.lower().endswith(tuple(self.formats[2])):  # imghdr.what(path) == "tiff":
+        if path.lower().endswith(
+            tuple(self.formats[2])
+        ):  # imghdr.what(path) == "tiff":
             if not self.dockStatus[4]:
                 res = self.warn(
                     self.tr("未打开遥感组件"),
@@ -1376,7 +1404,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller or self.image is None:
             return
         current_mask, curr_polygon = self.controller.finishObject(
-            building=self.boundaryRegular.isChecked())
+            building=self.boundaryRegular.isChecked()
+        )
         if curr_polygon is not None:
             self.updateImage()
             if current_mask is not None:
@@ -1471,7 +1500,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if lab_input is None:
             mask_output = self.getMask()
             s = self.controller.imgShape
-        else: 
+        else:
             mask_output = lab_input
             s = lab_input.shape
 
@@ -1605,12 +1634,17 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def changeOutputDir(self, outputDir=None):
         # 1. 弹框选择标签路径
         if outputDir is None:
+            options = (
+                QtWidgets.QFileDialog.ShowDirsOnly
+                | QtWidgets.QFileDialog.DontResolveSymlinks
+            )
+            if self.settings.value("use_qt_widget", False, type=bool):
+                options = options | QtWidgets.QFileDialog.DontUseNativeDialog
             outputDir = QtWidgets.QFileDialog.getExistingDirectory(
                 self,
                 self.tr("选择标签保存路径") + " - " + __APPNAME__,
                 self.settings.value("output_dir", "."),
-                QtWidgets.QFileDialog.ShowDirsOnly
-                | QtWidgets.QFileDialog.DontResolveSymlinks,
+                options,
             )
         if not osp.exists(outputDir):
             return False
@@ -1952,10 +1986,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             last_r, last_c = self.grid.curr_idx
             if self.grid.mask_grids[last_r][last_c] is None:
                 self.gridTable.item(last_r, last_c).setBackground(
-                    self.GRID_COLOR["idle"])
+                    self.GRID_COLOR["idle"]
+                )
             else:
                 self.gridTable.item(last_r, last_c).setBackground(
-                    self.GRID_COLOR["finised"])
+                    self.GRID_COLOR["finised"]
+                )
         self.delAllPolygon()
         image, mask = self.grid.getGrid(row, col)
         self.controller.setImage(image)
@@ -1984,8 +2020,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         geocode_list = []
         for idx, (l, c) in enumerate(zip(labs, colors)):
             if c is not None:
-                curr_polygon = util.get_polygon(((mask == l).astype(np.uint8) * 255), 
-                                                building=self.boundaryRegular.isChecked())
+                curr_polygon = util.get_polygon(
+                    ((mask == l).astype(np.uint8) * 255),
+                    building=self.boundaryRegular.isChecked(),
+                )
                 if show == True:
                     self.createPoly(curr_polygon, c)
                     for p in self.scene.polygon_items:
@@ -2013,7 +2051,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 self.changeOutputDir()
             _, fullflname = osp.split(self.listFiles.currentItem().text())
             fname, _ = os.path.splitext(fullflname)
-            path = osp.join(self.outputDir, (fname + "_data_" + str(row) + "_" + str(col) + ".tif"))
+            path = osp.join(
+                self.outputDir, (fname + "_data_" + str(row) + "_" + str(col) + ".tif")
+            )
             im, tf = self.raster.getGrid(row, col)
             h, w = im.shape[:2]
             geoinfo = edict()
@@ -2022,9 +2062,9 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             geoinfo.dtype = self.raster.geoinfo.dtype
             geoinfo.crs = self.raster.geoinfo.crs
             geoinfo.geotf = tf
-            self.raster.saveMask(self.grid.mask_grids[row][col],
-                                 path.replace("data", "mask"),
-                                 geoinfo)  # 保存mask
+            self.raster.saveMask(
+                self.grid.mask_grids[row][col], path.replace("data", "mask"), geoinfo
+            )  # 保存mask
             self.raster.saveMask(im, path, geoinfo, 3)  # 保存图像
 
     def turnGrid(self, delta):
@@ -2181,53 +2221,25 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if not self.controller or self.image is None:
             return
         try:  # 那种jpg什么格式的医疗图像调整窗宽等会造成崩溃
-            objectName = self.sender().objectName()
-            if objectName == 'SliderWw':
-                self.textWw.setText(str(self.sliderWw.value()))
-            else:
-                self.textWw.selectAll()
-            self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
+            self.textWw.selectAll()
+            self.controller.image = med.windowlize(
+                self.controller.rawImage, self.ww, self.wc
+            )
             self.updateImage()
         except:
             pass
-
-    def twwChanged(self):
-        if self.ww > self.sliderWw.maximum():
-            self.textWw.setText(str(self.sliderWw.maximum()))
-        if self.ww < self.sliderWw.minimum():
-            self.textWw.setText(str(self.sliderWw.minimum()))
-        self.sliderWw.setProperty("value", self.ww)
-        self.wwChanged()
-
-    def swwChanged(self):
-        self.textWw.setText(str(self.sliderWw.value()))
-        self.wwChanged()
 
     def wcChanged(self):
         if not self.controller or self.image is None:
             return
         try:
-            objectName = self.sender().objectName()
-            if objectName == 'SliderWc':
-                self.textWc.setText(str(self.sliderWc.value()))
-            else:
-                self.textWc.selectAll()
-            self.controller.image = med.windowlize(self.controller.rawImage, self.ww, self.wc)
+            self.textWc.selectAll()
+            self.controller.image = med.windowlize(
+                self.controller.rawImage, self.ww, self.wc
+            )
             self.updateImage()
         except:
             pass
-
-    def twcChanged(self):
-        if self.wc > self.sliderWc.maximum():
-            self.textWc.setText(str(self.sliderWc.maximum()))
-        if self.wc < self.sliderWc.minimum():
-            self.textWc.setText(str(self.sliderWc.minimum()))
-        self.sliderWc.setProperty("value", self.wc)
-        self.wcChanged()
-
-    def swcChanged(self):
-        self.textWc.setText(str(self.sliderWc.value()))
-        self.wcChanged()
 
     @property
     def ww(self):
@@ -2236,3 +2248,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     @property
     def wc(self):
         return int(self.textWc.text())
+
+    def useQtWidget(self, s):
+        print("checked", s)
+        self.settings.setValue("use_qt_widget", s)
