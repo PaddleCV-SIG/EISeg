@@ -220,6 +220,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
+        # self.sldMISlide.sliderReleased.connect(self.slideChanged)
         self.sliderWw.sliderReleased.connect(self.swwChanged)
         self.sliderWc.sliderReleased.connect(self.swcChanged)
         self.textWw.returnPressed.connect(self.twwChanged)
@@ -1241,10 +1242,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             minValue = np.min(image)
             if minValue == 0:
                 ww = maxValue
-                wc = int(maxValue / 2)
+                wc = int(maxValue/2)
             else:
                 ww = maxValue + int(abs(minValue))
-                wc = int((minValue + maxValue) / 2)
+                wc = int((minValue  + maxValue)/2 )
             self.sliderWw.setValue(int(ww))
             self.textWw.setText(str(ww))
             self.sliderWc.setValue(int(wc))
@@ -2262,30 +2263,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     @property
     def wc(self):
         return int(self.textWc.text())
-
-    def twwChanged(self):
-        if self.ww > self.sliderWw.maximum():
-            self.textWw.setText(str(self.sliderWw.maximum()))
-        if self.ww < self.sliderWw.minimum():
-            self.textWw.setText(str(self.sliderWw.minimum()))
-        self.sliderWw.setProperty("value", self.ww)
-        self.wwChanged()
-
-    def swwChanged(self):
-        self.textWw.setText(str(self.sliderWw.value()))
-        self.wwChanged()
-
-    def twcChanged(self):
-        if self.wc > self.sliderWc.maximum():
-            self.textWc.setText(str(self.sliderWc.maximum()))
-        if self.wc < self.sliderWc.minimum():
-            self.textWc.setText(str(self.sliderWc.minimum()))
-        self.sliderWc.setProperty("value", self.wc)
-        self.wcChanged()
-
-    def swcChanged(self):
-        self.textWc.setText(str(self.sliderWc.value()))
-        self.wcChanged()
 
     def useQtWidget(self, s):
         print("checked", s)
