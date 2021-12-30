@@ -220,8 +220,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.sldOpacity.valueChanged.connect(self.maskOpacityChanged)
         self.sldClickRadius.valueChanged.connect(self.clickRadiusChanged)
         self.sldThresh.valueChanged.connect(self.threshChanged)
-        self.sliderWw.sliderReleased.connect(self.swwChanged)
-        self.sliderWc.sliderReleased.connect(self.swcChanged)
+        self.sliderWw.valueChanged.connect(self.swwChanged)
+        self.sliderWc.valueChanged.connect(self.swcChanged)
         self.textWw.returnPressed.connect(self.twwChanged)
         self.textWc.returnPressed.connect(self.twcChanged)
 
