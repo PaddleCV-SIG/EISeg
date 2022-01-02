@@ -404,6 +404,16 @@
         <translation>It is used to observe the software execution process and debug. We don&apos;t automatically collect any logs. We may want you to turn on this function when you feed back the problem to help us locate the problem.</translation>
     </message>
     <message>
+        <location filename="../../eiseg/app.py" line="551"/>
+        <source>&amp;使用QT文件窗口</source>
+        <translation>Use QT file window</translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="551"/>
+        <source>如果使用文件选择窗口时遇到问题可以选择使用Qt窗口</source>
+        <translation>If you encounter problems using the file selection window, you can choose to use the QT window.</translation>
+    </message>
+    <message>
         <location filename="../../eiseg/app.py" line="653"/>
         <source>文件</source>
         <translation>File</translation>
@@ -828,6 +838,11 @@
         <location filename="../../eiseg/ui.py" line="287"/>
         <source>完成宫格</source>
         <translation>Complete the grid</translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/ui.py" line="291"/>
+        <source>保存每个宫格的标签</source>
+        <translation>Save all of grids</translation>
     </message>
     <message>
         <location filename="../../eiseg/ui.py" line="316"/>
