@@ -288,7 +288,7 @@ class Ui_EISeg(object):
         hbandLayout.addWidget(self.btnFinishedGrid)
         GridRegion.addLayout(hbandLayout)  # 创建宫格
         self.cheSaveEvery = QtWidgets.QCheckBox(self)
-        self.cheSaveEvery.setText("保存每个宫格的标签")
+        self.cheSaveEvery.setText(self.tr("保存每个宫格的标签"))
         self.cheSaveEvery.setChecked(False)
         GridRegion.addWidget(self.cheSaveEvery)
         self.gridTable = QtWidgets.QTableWidget(CentralWidget)
