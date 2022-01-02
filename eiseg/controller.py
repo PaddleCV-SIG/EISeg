@@ -270,7 +270,8 @@ class InteractiveController:
         if self.lccFilter:
             object_mask = self.getLargestCC(object_mask)
         polygon = util.get_polygon((object_mask.astype(np.uint8) * 255), 
-                                   building=building)
+                                    img_size=object_mask.shape,
+                                    building=building)
         if polygon is not None:
             self._result_mask[object_mask] = self.curr_label_number
             self.resetLastObject()

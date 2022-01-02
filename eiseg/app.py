@@ -1539,6 +1539,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         # 4.1 保存灰度图
         if self.save_status["gray_scale"]:
             if self.raster is not None:
+                # FIXME: when big map saved, self.raster is None, 
+                #        so adjust polygon can't saved in tif's mask.
                 pathHead, _ = osp.splitext(savePath)
                 # if self.rsSave.isChecked():
                 tifPath = pathHead + "_mask.tif"
@@ -1995,6 +1997,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
     # 宫格标注
     def initGrid(self):
+        self.delAllPolygon()
         grid_row_count, grid_col_count = self.grid.createGrids()
         self.gridTable.setRowCount(grid_row_count)
         self.gridTable.setColumnCount(grid_col_count)
