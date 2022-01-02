@@ -138,5 +138,6 @@ class DockWidget(QDockWidget):
 ## 创建dock
 def creat_dock(parent, name, text, widget):
     dock = DockWidget(parent, name, text)
+    dock.setMinimumWidth(300)  # Uniform size
     dock.setWidget(widget)
     return dock

@@ -111,10 +111,8 @@ class Raster:
         #     self.geoinfo.count, self.geoinfo.dtype, self.geoinfo.xsize,
         #     self.geoinfo.ysize, self.__analysis_proj4())
         # )
-        return str("● 波段数：{0}\n● 数据类型：{1}\n● 行数：{2}\n● 列数：{3}\n● EPSG：{4}".format(
-            self.geoinfo.count, self.geoinfo.dtype, self.geoinfo.xsize,
-            self.geoinfo.ysize, self.geoinfo.crs.to_string().split(":")[-1])
-        )
+        return (str(self.geoinfo.count), str(self.geoinfo.dtype), str(self.geoinfo.xsize),
+                str(self.geoinfo.ysize), str(self.geoinfo.crs.to_string().split(":")[-1]))
 
     def getArray(self) -> Tuple[np.array]:
         rgb = []
