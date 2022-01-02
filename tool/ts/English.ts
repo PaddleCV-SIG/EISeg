@@ -595,6 +595,26 @@
         <translation>The remote sensing component needs to be enabled to open the remote sensing image. Do you want to enable it now?</translation>
     </message>
     <message>
+        <location filename="../../eiseg/app.py" line="1238"/>
+        <source>● 波段数：</source>
+        <translation>● Number of bands: </translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="1238"/>
+        <source>● 数据类型：</source>
+        <translation>● Data type: </translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="1238"/>
+        <source>● 行数：</source>
+        <translation>● Number of rows: </translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="1238"/>
+        <source>● 列数：</source>
+        <translation>● Number of columns: </translation>
+    </message>
+    <message>
         <location filename="../../eiseg/app.py" line="1213"/>
         <source>图像过大</source>
         <translation>The image is too large</translation>

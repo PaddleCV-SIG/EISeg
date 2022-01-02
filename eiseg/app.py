@@ -1279,7 +1279,12 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                     self.dockWidgets["grid"].show()
                 self.grid = RSGrids(self.raster)
                 self.initGrid()
-            self.edtGeoinfo.setText(self.raster.showGeoInfo())
+            gi = self.raster.showGeoInfo()
+            self.edtGeoinfo.setText(self.tr("● 波段数：") + gi[0] + "\n" + 
+                                    self.tr("● 数据类型：") + gi[1] + "\n" + 
+                                    self.tr("● 行数：") + gi[2] + "\n" + 
+                                    self.tr("● 列数：") + gi[3] + "\n" + 
+                                    "● EPSG：" + gi[4])
             if max(self.rsRGB) > self.raster.geoinfo.count:
                 self.rsRGB = [1, 1, 1]
             self.raster.setBand(self.rsRGB)
