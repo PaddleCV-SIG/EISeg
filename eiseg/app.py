@@ -404,6 +404,16 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             checkable=True,
         )
         save_coco.setChecked(self.save_status["coco"])
+        # test func
+        self.show_rs_poly = action(
+            tr("&显示遥感多边形"),
+            None,
+            "show_rs_poly",
+            "ShowRSPoly",
+            tr("显示遥感大图多边形"),
+            checkable=True,
+        )
+        self.show_rs_poly.setChecked(False)
         save_cutout = action(
             tr("&抠图保存"),
             partial(self.toggleSave, "cutout"),
@@ -575,7 +585,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
 
         recent_files = newWidget(self.tr("近期文件"), "Data", self.updateRecentFile)
         recent_params = newWidget(self.tr("近期模型及参数"), "Net", self.updateModelMenu)
-        languages = newWidget("语言", "Language", self.updateLanguage)
+        languages = newWidget(self.tr("语言"), "Language", self.updateLanguage)
 
         self.menus = util.struct(
             recent_files=recent_files,
@@ -618,6 +628,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 None,
                 save_json,
                 save_coco,
+                None,
+                self.show_rs_poly,  # test
             ),
             showMenu=(
                 model_widget,
@@ -2130,6 +2142,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         self.controller.image = self.image
         self.controller._result_mask = mask
         self.exportLabel(savePath=save_path, lab_input=mask)
+        # -- RS Show polygon demo --
+        if self.show_rs_poly.isChecked():
+            h, w = self.image.shape[:2]
+            th_mask = cv2.resize(mask, dsize=(w, h), interpolation=cv2.INTER_NEAREST)
+            indexs = np.unique(th_mask)[1:]
+            for i in indexs:
+                i_mask = np.zeros_like(th_mask, dtype="uint8")
+                i_mask[th_mask == i] = 255
+                curr_polygon = util.get_polygon(i_mask)
+                color = self.controller.labelList[i - 1].color
+                self.createPoly(curr_polygon, color)
+                for p in self.scene.polygon_items:
+                    p.setAnning(isAnning=False)
+        # -- RS Show polygon demo --
         # 刷新
         grid_row_count = self.gridTable.rowCount()
         grid_col_count = self.gridTable.colorCount()
