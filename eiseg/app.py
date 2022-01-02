@@ -786,7 +786,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if len(self.recentModels) == 0
                 else osp.dirname(self.recentModels[-1]["param_path"])
             )
-            if self.settings.value("use_qt_widget", False):
+            if self.settings.value("use_qt_widget", False, type=bool):
                 options = QtWidgets.QFileDialog.DontUseNativeDialog
             else:
                 options = QtWidgets.QFileDialog.ReadOnly
@@ -854,7 +854,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     # 标签列表
     def importLabelList(self, filePath=None):
         if filePath is None:
-            if self.settings.value("use_qt_widget", False):
+            if self.settings.value("use_qt_widget", False, type=bool):
                 options = QtWidgets.QFileDialog.DontUseNativeDialog
             else:
                 options = QtWidgets.QFileDialog.ReadOnly
