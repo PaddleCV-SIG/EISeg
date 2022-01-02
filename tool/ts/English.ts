@@ -214,6 +214,16 @@
         <translation>Save polygon information in coco format</translation>
     </message>
     <message>
+        <location filename="../../eiseg/app.py" line="409"/>
+        <source>&amp;显示遥感多边形</source>
+        <translation>&amp;Display RS polygons</translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="409"/>
+        <source>显示遥感大图多边形</source>
+        <translation>Display RS large polygon</translation>
+    </message>
+    <message>
         <location filename="../../eiseg/app.py" line="411"/>
         <source>&amp;抠图保存</source>
         <translation>&amp;Save Matting</translation>
@@ -412,6 +422,11 @@
         <location filename="../../eiseg/app.py" line="551"/>
         <source>如果使用文件选择窗口时遇到问题可以选择使用Qt窗口</source>
         <translation>If you encounter problems using the file selection window, you can choose to use the QT window.</translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="578"/>
+        <source>语言</source>
+        <translation>Language</translation>
     </message>
     <message>
         <location filename="../../eiseg/app.py" line="653"/>
