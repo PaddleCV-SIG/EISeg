@@ -71,6 +71,7 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
             painter.setPen(self.pen)
             painter.drawLine(self.coords.x(), rect.top(), self.coords.x(), rect.bottom())
             painter.drawLine(rect.left(), self.coords.y(), rect.right(), self.coords.y())
+        # TODO: Add clear when the mouse not in scene
 
     def onMouseChanged(self, pointf):
         self.coords = pointf
