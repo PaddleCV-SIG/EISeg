@@ -205,6 +205,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         ## 画布
         self.scene.clickRequest.connect(self.canvasClick)
         self.canvas.zoomRequest.connect(self.viewZoomed)
+        self.canvas.mousePosChanged.connect(self.scene.onMouseChanged)
         self.annImage = QtWidgets.QGraphicsPixmapItem()
         self.scene.addItem(self.annImage)
 
