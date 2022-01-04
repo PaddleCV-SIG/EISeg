@@ -176,17 +176,17 @@ def approx_poly_DIY(contour, min_dist=10, ang_err=5):
 
 
 def check_size_minmax(polygons, img_size):
-    w_max, h_max = img_size
-    ps = polygons[0]
-    for i in range(len(ps)):
-        x, y = ps[i]
-        if x < 0:
-            x = 0
-        elif x > w_max:
-            x = w_max
-        if y < 0:
-            y = 0
-        elif y > h_max:
-            y = h_max
-        ps[i] = np.array([x, y])
-    return [ps]
+    h_max, w_max = img_size
+    for ps in polygons:
+        for j in range(len(ps)):
+            x, y = ps[j]
+            if x < 0:
+                x = 0
+            elif x > w_max:
+                x = w_max
+            if y < 0:
+                y = 0
+            elif y > h_max:
+                y = h_max
+            ps[j] = np.array([x, y])
+    return polygons
