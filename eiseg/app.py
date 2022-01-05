@@ -139,6 +139,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         else:
             self.cutoutBackground = [0, 0, 128, 255]
 
+        if self.settings.value("cross_color"):
+            self.crossColor = [
+                int(c) for c in self.settings.value("cross_color")
+            ]
+        else:
+            self.crossColor = [0, 0, 0, 127]
+        self.scene.setPenColor(self.crossColor)
+
         # widget
         self.dockWidgets = {
             "model": self.ModelDock,
@@ -431,6 +439,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             self.cutoutBackground,
             tr("抠图后背景像素的颜色"),
         )
+        set_cross_color = action(
+            tr("&设置十字丝颜色"),
+            self.setCrossColor,
+            "set_cross_color",
+            self.crossColor,
+            tr("十字丝的显示颜色"),
+        )
         close = action(
             tr("&关闭"),
             partial(self.saveImage, True),
@@ -627,6 +642,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_cutout,
                 set_cutout_background,
                 None,
+                set_cross_color,
+                None,
                 save_json,
                 save_coco,
                 None,
@@ -681,18 +698,27 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         menu(tr("帮助"), self.menus.helpMenu)
         util.addActions(self.toolBar, self.menus.toolBar)
 
-    def setCutoutBackground(self):
-        c = self.cutoutBackground
+    def __setColor(self, action, setting_name):
+        c = action
         color = QtWidgets.QColorDialog.getColor(
             QtGui.QColor(*c),
             self,
             options=QtWidgets.QColorDialog.ShowAlphaChannel,
         )
-        self.cutoutBackground = color.getRgb()
+        action = color.getRgb()
         self.settings.setValue(
-            "cutout_background", [int(c) for c in self.cutoutBackground]
+            setting_name, [int(c) for c in action]
         )
+        return action
+
+    def setCutoutBackground(self):
+        self.cutoutBackground = self.__setColor(self.cutoutBackground, "cutout_background")
         self.actions.set_cutout_background.setIcon(util.newIcon(self.cutoutBackground))
+
+    def setCrossColor(self):
+        self.crossColor = self.__setColor(self.crossColor, "cross_color")
+        self.actions.set_cross_color.setIcon(util.newIcon(self.crossColor))
+        self.scene.setPenColor(self.crossColor)
 
     def editShortcut(self):
         self.ShortcutWidget.center()
