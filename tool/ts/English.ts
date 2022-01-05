@@ -244,6 +244,16 @@
         <translation>The color to use for all background pixels</translation>
     </message>
     <message>
+        <location filename="../../eiseg/app.py" line="442"/>
+        <source>&amp;设置十字丝颜色</source>
+        <translation>&amp;Set cross wire color</translation>
+    </message>
+    <message>
+        <location filename="../../eiseg/app.py" line="447"/>
+        <source>十字丝的显示颜色</source>
+        <translation>The color of crosshair</translation>
+    </message>
+    <message>
         <location filename="../../eiseg/app.py" line="427"/>
         <source>&amp;关闭</source>
         <translation>&amp;Close</translation>

@@ -75,3 +75,7 @@ class AnnotationView(QtWidgets.QGraphicsView):
         if ev.button() == Qt.MiddleButton:
             self.middle_click = False
         super(AnnotationView, self).mouseReleaseEvent(ev)
+
+    def leaveEvent(self, ev):
+        self.mousePosChanged.emit(QPointF(-1, -1))
+        return super(AnnotationView, self).leaveEvent(ev)
