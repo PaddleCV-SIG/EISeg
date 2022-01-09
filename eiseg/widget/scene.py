@@ -73,8 +73,10 @@ class AnnotationScene(QtWidgets.QGraphicsScene):
         if self.coords is not None and self.coords != QPointF(-1, -1):
             painter.setClipRect(rect)
             painter.setPen(self.pen)
-            painter.drawLine(self.coords.x(), rect.top(), self.coords.x(), rect.bottom())
-            painter.drawLine(rect.left(), self.coords.y(), rect.right(), self.coords.y())
+            painter.drawLine(int(self.coords.x()), int(rect.top()), 
+                             int(self.coords.x()), int(rect.bottom()))
+            painter.drawLine(int(rect.left()), int(self.coords.y()), 
+                             int(rect.right()), int(self.coords.y()))
 
     def onMouseChanged(self, pointf):
         self.coords = pointf
