@@ -37,7 +37,7 @@ class Ui_EISeg(object):
     def setupUi(self, MainWindow):
         ## -- 主窗体设置 --
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setMinimumSize(QtCore.QSize(1366, 768))
+        MainWindow.setMinimumSize(QtCore.QSize(1200, 700))  # 1366x768的屏幕显示不全
         MainWindow.setWindowTitle(__APPNAME__ + " " + __VERSION__)
         MainWindow.setWindowIcon(QIcon())  # TODO: 默认图标需要换一个吗，貌似不能不显示图标
         CentralWidget = QtWidgets.QWidget(MainWindow)
@@ -223,10 +223,10 @@ class Ui_EISeg(object):
             bandRegion.addLayout(hbandLayout)
         resultSave = create_text(CentralWidget, "resultSave", self.tr("保存设置"))
         bandRegion.addWidget(resultSave)
-        self.boundaryRegular = QtWidgets.QCheckBox(self.tr("使用建筑边界简化"))
+        self.boundaryRegular = QtWidgets.QCheckBox(self.tr("建筑边界规范化"))
         self.boundaryRegular.setObjectName("boundaryRegular")
         bandRegion.addWidget(self.boundaryRegular)
-        self.shpSave = QtWidgets.QCheckBox(self.tr("额外保存为ESRI Shapefile"))
+        self.shpSave = QtWidgets.QCheckBox(self.tr("另存为shapefile"))
         self.shpSave.setObjectName("shpSave")
         bandRegion.addWidget(self.shpSave)
         horizontalLayout.addLayout(bandRegion)

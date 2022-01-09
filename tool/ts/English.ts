@@ -856,13 +856,13 @@
     </message>
     <message>
         <location filename="../../eiseg/ui.py" line="226"/>
-        <source>使用建筑边界简化</source>
-        <translation>Simplify with building boundaries</translation>
+        <source>建筑边界规范化</source>
+        <translation>building boundary normalization</translation>
     </message>
     <message>
         <location filename="../../eiseg/ui.py" line="229"/>
-        <source>额外保存为ESRI Shapefile</source>
-        <translation>Save extra as ESRI ShapeFile</translation>
+        <source>另存为shapefile</source>
+        <translation>Save extra as shapefile</translation>
     </message>
     <message>
         <location filename="../../eiseg/ui.py" line="233"/>
