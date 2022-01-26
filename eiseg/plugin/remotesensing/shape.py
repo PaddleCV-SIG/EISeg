@@ -72,6 +72,8 @@ def __bound2wkt(bounds: List[Dict], tform: List[float], ct) -> List[str]:
 
 # 保存shp文件
 def save_shp(shp_path: str, geocode_list: List[Dict], geo_info: Dict) -> str:
+    if geo_info.crs_wkt is None:
+        return "Can't create shapefile because the image's crs is None!"
     if IMPORT_STATE == True:
         # 支持中文路径
         gdal.SetConfigOption("GDAL_FILENAME_IS_UTF8", "YES")
@@ -83,11 +85,11 @@ def save_shp(shp_path: str, geocode_list: List[Dict], geo_info: Dict) -> str:
         strDriverName = "ESRI Shapefile"
         oDriver = ogr.GetDriverByName(strDriverName)
         if oDriver == None:
-            return "驱动不可用：" + strDriverName
+            return "Drive not available: " + strDriverName
         # 创建数据源
         oDS = oDriver.CreateDataSource(shp_path)
         if oDS == None:
-            return "创建文件失败：" + shp_path
+            return "Failed to create file: " + shp_path
         # 创建一个多边形图层
         prosrs = osr.SpatialReference()
         prosrs.ImportFromWkt(geo_info.crs_wkt)
@@ -98,7 +100,7 @@ def save_shp(shp_path: str, geocode_list: List[Dict], geo_info: Dict) -> str:
         shpe_name = osp.splitext(osp.split(shp_path)[-1])[0]
         oLayer = oDS.CreateLayer(shpe_name, geosrs, ogr_type)
         if oLayer == None:
-            return "图层创建失败！"
+            return "Layer creation failed!"
         # 创建属性表
         # 创建id字段
         oId = ogr.FieldDefn("id", ogr.OFTInteger)
@@ -118,6 +120,6 @@ def save_shp(shp_path: str, geocode_list: List[Dict], geo_info: Dict) -> str:
             oLayer.CreateFeature(oFeaturePolygon)
         # 创建完成后，关闭进程
         oDS.Destroy()
-        return "数据集创建完成！"
+        return "Dataset creation successfully!"
     else:
         raise ImportError("can't import gdal, osr, ogr!")

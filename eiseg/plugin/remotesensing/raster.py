@@ -80,7 +80,10 @@ class Raster:
         geoinfo.ysize = meta["height"]
         geoinfo.geotf = meta["transform"]
         geoinfo.crs = meta["crs"]
-        geoinfo.crs_wkt = geoinfo.crs.wkt
+        if geoinfo.crs is not None:
+            geoinfo.crs_wkt = geoinfo.crs.wkt
+        else:
+            geoinfo.crs_wkt = None
         return geoinfo
 
     def checkOpenGrid(self) -> bool:
@@ -111,8 +114,12 @@ class Raster:
         #     self.geoinfo.count, self.geoinfo.dtype, self.geoinfo.xsize,
         #     self.geoinfo.ysize, self.__analysis_proj4())
         # )
+        if self.geoinfo.crs is not None:
+            crs = str(self.geoinfo.crs.to_string().split(":")[-1])
+        else:
+            crs = "None"
         return (str(self.geoinfo.count), str(self.geoinfo.dtype), str(self.geoinfo.xsize),
-                str(self.geoinfo.ysize), str(self.geoinfo.crs.to_string().split(":")[-1]))
+                str(self.geoinfo.ysize), crs)
 
     def getArray(self) -> Tuple[np.array]:
         rgb = []
