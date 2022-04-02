@@ -60,10 +60,10 @@ def __bound2wkt(bounds: List[Dict], tform: List[float], ct) -> List[str]:
         p = bd["points"]
         for i in range(len(p)):
             x, y = __convert_coord(p[i], tform)  # 仿射变换
-            lon, lat = ct.TransformPoint(x, y)[:2]  # 转换到经纬度坐标
+            lat, lon = ct.TransformPoint(x, y)[:2]  # 转换到经纬度坐标
             gl["polygon"] += (str(lat) + " " + str(lon)) + ","
         x, y = __convert_coord(p[0], tform)  # 仿射变换
-        lon, lat = ct.TransformPoint(x, y)[:2]  # 转换到经纬度坐标
+        lat, lon = ct.TransformPoint(x, y)[:2]  # 转换到经纬度坐标
         gl["polygon"] += (str(lat) + " " + str(lon)) + "))"
         # gl["polygon"] = gl["polygon"][:-1] + "))"
         geo_list.append(gl)
