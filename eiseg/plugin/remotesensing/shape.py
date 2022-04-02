@@ -46,11 +46,13 @@ def __convert_coord(point: List[float], g: List[float]) -> np.array:
     tform = np.array(g).reshape((3, 3))
     olp = np.ones((1, 3))
     olp[0, :2] = np.array(point)
+    olp = olp[::-1]
     nwp = np.dot(tform, olp.T)
     return nwp.T[0, :2]
 
 
 # 边界转为wkt格式
+# FIXME: EPSG:26914 - NAD83 / UTM zone 14N - 投影坐标系 经纬度交换
 def __bound2wkt(bounds: List[Dict], tform: List[float], ct) -> List[str]:
     geo_list = []
     for bd in bounds:
