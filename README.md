@@ -7,8 +7,9 @@
 
 ## 最新动向
 
-- 交互式分割论文[EdgeFlow](https://arxiv.org/abs/2109.09406)被ICCV 2021 Workshop接收。
-- 支持静态图预测，全面提升交互速度；新增遥感、医疗标注垂类方向，上线宫格标注，最新EISeg 0.4.0推出。
+- 新增用于X-Ray胸腔标注模型，该模型基于ResNet50_DeeplabV3+，参考MoCo对比学习的思想，优化其数据增强策略，以匹配X-ray的图像特性，完成多数据源的对比学习预训练，提供可靠的预训练模型参数。
+- 新增MRI椎骨标注模型，该模型与广州第一人民医院合作，基于MRSpineSeg训练，可实现一键识别磁共振(MRI)模态和CT模态的矢状位方向的腰椎椎体及其附件。
+- 新增铝板瑕疵标注模型，该模型基于百度自建质检数据集训练，可实现常见的铝板瑕疵如黑点，小白线，异物等瑕疵的智能标注。
 
 ## 介绍
 
@@ -18,19 +19,22 @@ EISeg(Efficient Interactive Segmentation)是以[RITM](https://github.com/saic-vu
 
 ## 模型准备
 
-在使用EIseg前，请先下载模型参数。EISeg 0.4.0版本开放了在COCO+LVIS、大规模人像数据、mapping_challenge及LiTS(Liver Tumor Segmentation Challenge)上训练的四个垂类方向模型，满足通用场景、人像场景、建筑物标注及医疗影像肝脏的标注需求。其中模型结构对应EISeg交互工具中的网络选择模块，用户需要根据自己的场景需求选择不同的网络结构和加载参数。
+在使用EIseg前，请先下载模型参数。EISeg 0.5.0版本开放了在COCO+LVIS、大规模人像数据、mapping_challenge，Chest X-Ray，MRSpineSeg，LiTS及百度自建质检数据集上训练的7个垂类方向模型，满足通用场景、人像场景、建筑物标注，医疗影像肝脏，胸腔，椎骨及铝板质检的标注需求。其中模型结构对应EISeg交互工具中的网络选择模块，用户需要根据自己的场景需求选择不同的网络结构和加载参数。
 
 | 模型类型   | 适用场景                   | 模型结构       | 模型下载地址                                                     |
 | ---------- | -------------------------- | -------------- | ------------------------------------------------------------ |
-| 高精度模型 | 适用于通用场景的图像标注。 | HRNet18_OCR64  | [static_hrnet18_ocr64_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_cocolvis.zip) |
-| 轻量化模型 | 适用于通用场景的图像标注。 | HRNet18s_OCR48 | [static_hrnet18s_ocr48_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_cocolvis.zip) |
-| 高精度模型 | 适用于人像标注场景。       | HRNet18_OCR64  | [static_hrnet18_ocr64_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_human.zip) |
-| 轻量化模型 | 适用于人像标注场景。       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_human.zip) |
-| 高精度模型 | 适用于通用图像标注场景。       | EdgeFlow | [static_edgeflow_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_edgeflow_cocolvis.zip) |
-| 轻量化模型 | 适用于遥感建筑物标注场景。    | HRNet18s_OCR48 | [static_hrnet18_ocr48_rsbuilding_instance](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr48_rsbuilding_instance.zip) |
-| 轻量化模型 | 适用于医疗肝脏标注场景。       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_lits](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_lits.zip) |
+| 高精度模型 | 通用场景的图像标注 | HRNet18_OCR64  | [static_hrnet18_ocr64_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_cocolvis.zip) |
+| 轻量化模型 | 通用场景的图像标注 | HRNet18s_OCR48 | [static_hrnet18s_ocr48_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_cocolvis.zip) |
+| 高精度模型 | 通用图像标注场景      | EdgeFlow | [static_edgeflow_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_edgeflow_cocolvis.zip) |
+| 高精度模型 | 人像标注场景      | HRNet18_OCR64  | [static_hrnet18_ocr64_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_human.zip) |
+| 轻量化模型 | 人像标注场景       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_human.zip) |
+| 轻量化模型 | 遥感建筑物标注场景    | HRNet18s_OCR48 | [static_hrnet18_ocr48_rsbuilding_instance](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr48_rsbuilding_instance.zip) |
+| 高精度模型\* | x光胸腔标注场景       | Resnet50_Deeplabv3+ | [static_resnet50_deeplab_chest_xray](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_resnet50_deeplab_chest_xray.zip) |
+| 轻量化模型 | 医疗肝脏标注场景       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_lits](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_lits.zip) |
+| 轻量化模型\* | MRI椎骨图像标注场景       | HRNet18s_OCR48 | [static_hrnet18s_ocr48_MRSpineSeg](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_hrnet18s_ocr48_MRSpineSeg.zip) |
+| 轻量化模型\* | 质检铝板瑕疵标注场景      | HRNet18s_OCR48 | [static_hrnet18s_ocr48_aluminium](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_hrnet18s_ocr48_aluminium.zip) |
 
-**NOTE**： 将下载的模型结构`*.pdmodel`及相应的模型参数`*.pdiparams`需要放到同一个目录下，加载模型时只需选择`*.pdiparams`结尾的模型参数位置即可， `*.pdmodel`会自动加载。在使用`EdgeFlow`模型时，请将`使用掩膜`关闭，其他模型使用时请勾选`使用掩膜`。
+**NOTE**： 将下载的模型结构`*.pdmodel`及相应的模型参数`*.pdiparams`需要放到同一个目录下，加载模型时只需选择`*.pdiparams`结尾的模型参数位置即可， `*.pdmodel`会自动加载。在使用`EdgeFlow`模型时，请将`使用掩膜`关闭，其他模型使用时请勾选`使用掩膜`。其中，`高精度模型`推荐使用带有显卡的电脑，以便获得更流畅的标注体验。
 
 ## 安装使用
 
@@ -162,6 +166,7 @@ eiseg
 
 ## 版本更新
 
+- 2022.04.10  **0.5.0**：【1】新增chest_xray模型；【2】新增MRSpineSeg模型；【3】新增铝板质检标注模型；【4】修复保存shp时可能坐标出错。
 - 2021.11.16  **0.4.0**：【1】将动态图预测转换成静态图预测，单次点击速度提升十倍；【2】新增遥感图像标注功能，支持多光谱数据通道的选择；【3】支持大尺幅数据的切片（多宫格）处理；【4】新增医疗图像标注功能，支持读取dicom的数据格式，支持选择窗宽和窗位。
 - 2021.09.16  **0.3.0**：【1】初步完成多边形编辑功能，支持对交互标注的结果进行编辑；【2】支持中/英界面；【3】支持保存为灰度/伪彩色标签和COCO格式；【4】界面拖动更加灵活；【5】标签栏可拖动，生成mask的覆盖顺序由上往下覆盖。
 - 2021.07.07  **0.2.0**：新增contrib：EISeg，可实现人像和通用图像的快速交互式标注。
@@ -171,7 +176,10 @@ eiseg
 
 ## 贡献者
 
-感谢[Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Youssef Harby](https://github.com/Youssef-Harby), [Zhiliang Yu](https://github.com/yzl19940819), [Nick Nie](https://github.com/niecongchong) 等开发者及[RITM](https://github.com/saic-vul/ritm_interactive_segmentation) 算法支持。
+- 感谢[Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Youssef Harby](https://github.com/Youssef-Harby), [Zhiliang Yu](https://github.com/yzl19940819), [Nick Nie](https://github.com/niecongchong) 等开发者及[RITM](https://github.com/saic-vul/ritm_interactive_segmentation) 算法支持。
+- 感谢[LabelMe](https://github.com/wkentaro/labelme)和[LabelImg](https://github.com/tzutalin/labelImg)的标签设计。
+- 感谢[Weibin Liao](https://github.com/MrBlankness)提供的ResNet50_DeeplabV3+预训练模型。
+- 感谢[Junjie Guo](https://github.com/Guojunjie08)及[Jiajun Feng](https://github.com/richarddddd198)在椎骨模型上提供的技术支持。
 
 ## 学术引用
 
