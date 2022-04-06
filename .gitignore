@@ -142,6 +142,9 @@ dmypy.json
 # vscode
 .vscode/*
 
+# pycharm
+.idea/*
+
 # exe
 out/
 eiseg/requirements_with_opt.txt
