@@ -19,11 +19,11 @@ from PIL import Image
 
 
 def checkOpenGrid(img, thumbnail_min):
-        H, W = img.shape[:2]
-        if max(H, W) <= thumbnail_min:
-            return False
-        else:
-            return True
+    H, W = img.shape[:2]
+    if max(H, W) <= thumbnail_min:
+        return False
+    else:
+        return True
 
 
 class Grids:
