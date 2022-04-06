@@ -6,8 +6,9 @@
 
 ## Latest Developments
 
-- Our paper on interactive segmentation named [EdgeFlow](https://arxiv.org/abs/2109.09406) is accepted by ICCV 2021 Workshop.
-- Support static graph inference with fully enhanced interaction speed; launch the latest EISeg 0.4.0 that newly adds remote sensing, medical labeling, and square division labeling.
+- Added interactive model of ResNet50_DeeplabV3+ for chest Xray in medical scenarios. The pretrained model refers to MoCo comparative learning to match the characteristics of X-ray.
+- Added an MRI spine interactive model, which cooperates with Guangzhou First People's Hospital. It is trained on MRSpineSeg dataset, which can realize one-click identification of intermediate-level lumbar vertebral cones and accessories on transvers plane.
+- Added a defect inspection model for aluminum plate, which is trained based on Baidu's self-built data set. It can annotate common aluminum plate defects such as black spots, small white lines, foreign objects and other defects.
 
 ## Introduction
 
@@ -17,19 +18,22 @@ EISeg (Efficient Interactive Segmentation), built on [RITM](https://github.com/s
 
 ## Model Preparation
 
-Please download the model parameters before using EIseg. EISeg 0.4.0 provides four direction models trained on COCO+LVIS, large-scale portrait data, mapping_challenge, and LiTS(Liver Tumor Segmentation Challenge) to meet the labeling needs of generic and portrait scenarios as well as architecture and liver in medical images. The model architecture corresponds to the network selection module in EISeg interactive tools, and users need to select different network structures and loading parameters in accordance with their own needs.
+Please download the model parameters before using EIseg. EISeg 0.5.0 provides seven direction models trained on COCO+LVIS, large-scale portrait data, mapping_challenge, MRSpineSeg, Chest Xray, LiTS and Self-built aluminum plate quality inspection data set to meet the labeling needs of generic and portrait scenarios as well as architecture, medical and industrial images. The model architecture corresponds to the network selection module in EISeg interactive tools, and users need to select different network structures and loading parameters in accordance with their own needs.
 
 | Model Type             | Applicable Scenarios                     | Model Architecture | Download Link                                                |
 | ---------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------ |
 | High Performance Model | Image annotation in generic scenarios    | HRNet18_OCR64      | [static_hrnet18_ocr64_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_cocolvis.zip) |
 | Lightweight Model      | Image annotation in generic scenarios    | HRNet18s_OCR48     | [static_hrnet18s_ocr48_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_cocolvis.zip) |
 | High Performance Model | Annotation in portrait scenarios         | HRNet18_OCR64      | [static_hrnet18_ocr64_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr64_human.zip) |
-| Lightweight Model      | Annotation in portrait scenarios         | HRNet18s_OCR48     | [static_hrnet18s_ocr48_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_human.zip) |
 | High Performance Model | Image annotation in generic scenarios    | EdgeFlow           | [static_edgeflow_cocolvis](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_edgeflow_cocolvis.zip) |
+| Lightweight Model      | Annotation in portrait scenarios         | HRNet18s_OCR48     | [static_hrnet18s_ocr48_human](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_human.zip) |
 | Lightweight Model      | Annotation of remote sensing building    | HRNet18s_OCR48     | [static_hrnet18_ocr48_rsbuilding_instance](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18_ocr48_rsbuilding_instance.zip) |
+| High Performance Model \*| Annotation of chest Xray in medical scenarios | Resnet50_DeeplabV3+   | [static_resnet50_deeplab_chest_xray \*](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_resnet50_deeplab_chest_xray.zip) |
 | Lightweight Model      | Annotation of liver in medical scenarios | HRNet18s_OCR48     | [static_hrnet18s_ocr48_lits](https://paddleseg.bj.bcebos.com/eiseg/0.4/static_hrnet18s_ocr48_lits.zip) |
+| Lightweight Model \*     | Annotation of Spinal Structures in medical scenarios | HRNet18s_OCR48     | [static_hrnet18s_ocr48_MRSpineSeg](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_hrnet18s_ocr48_MRSpineSeg.zip) |
+| Lightweight Model \*     | Annotation of Aluminum plate defects in industrial scenarios | HRNet18s_OCR48     | [static_hrnet18s_ocr48_aluminium ](https://paddleseg.bj.bcebos.com/eiseg/0.5/static_hrnet18s_ocr48_aluminium.zip) |
 
-**NOTE**： The downloaded model structure `*.pdmodel` and the corresponding model parameters `*.pdiparams` should be put into the same directory. When loading the model, you only need to decide the location of the model parameter at the end of `*.pdiparams`, and `*.pdmodel` will be loaded automatically. When using `EdgeFlow` model, please turn off `Use Mask`, and check `Use Mask` when adopting other models.
+**NOTE**： The downloaded model structure `*.pdmodel` and the corresponding model parameters `*.pdiparams` should be put into the same directory. When loading the model, you only need to decide the location of the model parameter at the end of `*.pdiparams`, and `*.pdmodel` will be loaded automatically. When using `EdgeFlow` model, please turn off `Use Mask`, and check `Use Mask` when adopting other models. For `High Performance Model`, we recommend to utilize the computer with gpu for a smoother annotation experience.
 
 ## Installation
 
@@ -163,6 +167,7 @@ Start the annotation when the above are all set up. Here are the commonly used k
 
 ## Version Updates
 
+- 2022.04.10  **0.5.0**: 【1】Add chest_xray interactive model;【2】Add MRSpineSeg interactive model;【3】Add industrial quality inspection model;【4】Fix geo-transform / CRS error when shapefile saved.
 - 2021.12.14 **0.4.1**: 【1】Fix the bug of crashing; 【2】Newly add the post-labeling operation of remote sensing building images. 
 - 2021.11.16 **0.4.0**: 【1】 Convert dynamic graph inference into static graph inference with ten times' increase in the speed of single click; 【2】 Add the function of remote sensing image labeling, support the selection of multi-spectral data channels; 【3】 Support the processing of slicing (multi squre division) of large size data; 【4】 Add medical image labeling function, support the reading dicom format and the selection of window width and position.
 - 2021.09.16  **0.3.0**：【1】Complete the function of polygon editing with support for editing the results of interactive annotation；【2】Support CH/EN interface；【3】Support saving as grayscale/pseudo-color labels and COCO format；【4】More flexible interface dragging；【5】Achieve the dragging of label bar, and the generated mask is overwritten from top to bottom.
@@ -170,7 +175,10 @@ Start the annotation when the above are all set up. Here are the commonly used k
 
 ## Contributors
 
-Our gratitude goes to Developers including [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Youssef Harby](https://github.com/Youssef-Harby), [Zhiliang Yu](https://github.com/yzl19940819), [Nick Nie](https://github.com/niecongchong) and the support of [RITM](https://github.com/saic-vul/ritm_interactive_segmentation).
+- Our gratitude goes to Developers including [Yuying Hao](https://github.com/haoyuying), [Lin Han](https://github.com/linhandev), [Yizhou Chen](https://github.com/geoyee), [Yiakwy](https://github.com/yiakwy), [GT](https://github.com/GT-ZhangAcer), [Youssef Harby](https://github.com/Youssef-Harby), [Zhiliang Yu](https://github.com/yzl19940819), [Nick Nie](https://github.com/niecongchong) and the support of [RITM](https://github.com/saic-vul/ritm_interactive_segmentation).
+- Thanks for the labelling deisgn of [LabelMe](https://github.com/wkentaro/labelme) and [LabelImg](https://github.com/tzutalin/labelImg).
+- Thanks for [Weibin Liao](https://github.com/MrBlankness) to provide the pretrain model of ResNet50_DeeplabV3.
+- Thanks for support of [Junjie Guo](https://github.com/Guojunjie08) and [Jiajun Feng](https://github.com/richarddddd198) on MRSpineSeg model.
 
 ## Citation
 

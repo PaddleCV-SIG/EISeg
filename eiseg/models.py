@@ -14,7 +14,7 @@
 
 
 import os.path as osp
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 
 import paddle.inference as paddle_infer

@@ -86,7 +86,9 @@ class Raster:
             geoinfo.crs_wkt = None
         return geoinfo
 
-    def checkOpenGrid(self) -> bool:
+    def checkOpenGrid(self, thumbnail_min: Union[int, None]) -> bool:
+        if isinstance(thumbnail_min, int):
+            self.thumbnail_min = thumbnail_min
         if max(self.geoinfo.xsize, self.geoinfo.ysize) <= self.thumbnail_min:
             self.open_grid = False
         else:
