@@ -67,8 +67,8 @@ def __stretch(ima: np.array, NUMS: int) -> np.array:
         for i in range(NUMS):
             lut.append(n / step)
             n += hist[i + bt]
-        np.take(lut, ima, out=ima)
-        return ima
+    np.take(lut, ima, out=ima)
+    return ima
 
 
 # 计算直方图
