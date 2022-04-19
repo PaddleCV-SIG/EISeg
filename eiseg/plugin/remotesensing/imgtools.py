@@ -19,7 +19,9 @@ from skimage import exposure
 
 
 # 2%线性拉伸
-def two_percentLinear(image: np.array, max_out: int=255, min_out: int=0) -> np.array:
+def two_percentLinear(image: np.ndarray, 
+                      max_out: int=255, 
+                      min_out: int=0) -> np.ndarray:
     b, g, r = cv2.split(image)
 
     def __gray_process(gray, maxout=max_out, minout=min_out):
