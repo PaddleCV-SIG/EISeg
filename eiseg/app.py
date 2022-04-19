@@ -1311,8 +1311,6 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 if not self.dockStatus[4]:
                     return False
             self.raster = Raster(path)
-            if self.raster.checkOpenGrid(self.thumbnail_min):
-                self.loadGrid(self.raster)
             gi = self.raster.showGeoInfo()
             self.edtGeoinfo.setText(self.tr("● 波段数：") + gi[0] + "\n" + 
                                     self.tr("● 数据类型：") + gi[1] + "\n" + 
@@ -1322,7 +1320,13 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if max(self.rsRGB) > self.raster.geoinfo.count:
                 self.rsRGB = [1, 1, 1]
             self.raster.setBand(self.rsRGB)
-            image, _ = self.raster.getGrid(0, 0)
+            if self.raster.checkOpenGrid(self.thumbnail_min):
+                if self.loadGrid(self.raster):
+                    image, _ = self.raster.getGrid(0, 0)
+                else:
+                    image, _ = self.raster.getArray()
+            else:
+                image, _ = self.raster.getArray()
             self.updateBandList()
             # self.updateSlideSld(True)
         else:
@@ -1956,6 +1960,8 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     #             w.hide()
 
     def rsBandSet(self, idx):
+        if self.raster is None:
+            return
         for i in range(len(self.bandCombos)):
             self.rsRGB[i] = self.bandCombos[i].currentIndex() + 1  # 从1开始
         self.raster.setBand(self.rsRGB)
@@ -2254,7 +2260,7 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
     def loadGrid(self, img, is_rs=True):
         res = self.warn(self.tr("图像过大"), self.tr("图像过大，将启用宫格功能！"), \
                         buttons=QMessageBox.Yes | QMessageBox.No)
-        if res == QMessageBox.Yes and is_rs is False:
+        if res == QMessageBox.Yes:
             # 打开宫格功能
             if self.dockWidgets["grid"].isVisible() is False:
                 # TODO: 改成self.dockStatus

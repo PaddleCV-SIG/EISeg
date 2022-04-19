@@ -123,7 +123,7 @@ class Raster:
         return (str(self.geoinfo.count), str(self.geoinfo.dtype), str(self.geoinfo.xsize),
                 str(self.geoinfo.ysize), crs)
 
-    def getArray(self) -> Tuple[np.array]:
+    def getArray(self) -> Tuple[np.ndarray]:
         rgb = []
         if not self.open_grid:
             for b in self.show_band:
@@ -134,11 +134,11 @@ class Raster:
                 rgb.append(get_thumbnail(self.src_data.read(b), self.thumbnail_min))
             geotf = None
         ima = np.stack(rgb, axis=2)  # cv2.merge(rgb)
-        if self.geoinfo["dtype"] == "uint32":
+        if self.geoinfo["dtype"] != "uint8":
             ima = sample_norm(ima)
         return two_percentLinear(ima), geotf
 
-    def getGrid(self, row: int, col: int) -> Tuple[np.array]:
+    def getGrid(self, row: int, col: int) -> Tuple[np.ndarray]:
         if self.open_grid is False:
             return self.getArray()
         grid_idx = np.array([row, col])
@@ -179,9 +179,9 @@ class Raster:
                     tf.write(img[:, :, i], indexes=(i + 1))
 
     def saveMaskbyGrids(self, 
-                        img_list: List[List[np.array]], 
+                        img_list: List[List[np.ndarray]], 
                         save_path: Union[str, None]=None,
-                        geoinfo: Union[Dict, None]=None) -> np.array:
+                        geoinfo: Union[Dict, None]=None) -> np.ndarray:
         if geoinfo is None:
             geoinfo = self.geoinfo
         raw_size = (geoinfo.ysize, geoinfo.xsize)
