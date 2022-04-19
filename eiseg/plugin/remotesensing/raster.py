@@ -127,11 +127,11 @@ class Raster:
         rgb = []
         if not self.open_grid:
             for b in self.show_band:
-                rgb.append(np.uint16(self.src_data.read(b)))
+                rgb.append(self.src_data.read(b))
             geotf = self.geoinfo.geotf
         else:
             for b in self.show_band:
-                rgb.append(get_thumbnail(np.uint16(self.src_data.read(b)), self.thumbnail_min))
+                rgb.append(get_thumbnail(self.src_data.read(b), self.thumbnail_min))
             geotf = None
         ima = np.stack(rgb, axis=2)  # cv2.merge(rgb)
         if self.geoinfo["dtype"] == "uint32":
