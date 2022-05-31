@@ -1208,8 +1208,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         imagePaths.sort()
         if len(imagePaths) == 0:
             return
-        # 3.2 设置默认输出路径为文件夹下的 label 文件夹
-        self.outputDir = osp.join(inputDir, "label")
+        # 3.2 设置默认输出路径
+        if self.outputDir is None:
+            # 没设置为文件夹下的 label 文件夹
+            self.outputDir = osp.join(inputDir, "label")
         if not osp.exists(self.outputDir):
             os.makedirs(self.outputDir)
         # 3.3 有重名图片，标签保留原来拓展名
