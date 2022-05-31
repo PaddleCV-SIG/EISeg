@@ -418,11 +418,20 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             tr("&显示遥感多边形"),
             None,
             "show_rs_poly",
-            "ShowRSPoly",
-            tr("显示遥感大图多边形"),
+            "Show",
+            tr("显示遥感大图的多边形结果"),
             checkable=True,
         )
         self.show_rs_poly.setChecked(False)
+        self.grid_message = action(
+            tr("&启用宫格检测"),
+            None,
+            "grid_message",
+            "Show",
+            tr("针对每张图片启用宫格检测"),
+            checkable=True,
+        )
+        self.grid_message.setChecked(True)
         save_cutout = action(
             tr("&抠图保存"),
             partial(self.toggleSave, "cutout"),
@@ -647,7 +656,10 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
                 save_json,
                 save_coco,
                 None,
-                self.show_rs_poly,  # test
+                # test
+                self.show_rs_poly,
+                None,
+                self.grid_message,
             ),
             showMenu=(
                 model_widget,
@@ -1259,8 +1271,14 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
         if path.lower().endswith(tuple(self.formats[0])):
             image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), 1)
             image = image[:, :, ::-1]  # BGR转RGB
-            if checkOpenGrid(image, self.thumbnail_min):
-                if self.loadGrid(image, False):
+            if self.grid_message.isChecked():
+                if checkOpenGrid(image, self.thumbnail_min):
+                    if self.loadGrid(image, False):
+                        image, _ = self.grid.getGrid(0, 0)
+            else:
+                if self.dockWidgets["grid"].isVisible() is True:
+                    self.grid = Grids(image)
+                    self.initGrid()
                     image, _ = self.grid.getGrid(0, 0)
 
         # 医学影像
@@ -1322,13 +1340,22 @@ class APP_EISeg(QMainWindow, Ui_EISeg):
             if max(self.rsRGB) > self.raster.geoinfo.count:
                 self.rsRGB = [1, 1, 1]
             self.raster.setBand(self.rsRGB)
-            if self.raster.checkOpenGrid(self.thumbnail_min):
-                if self.loadGrid(self.raster):
-                    image, _ = self.raster.getGrid(0, 0)
+            if self.grid_message.isChecked():
+                if self.raster.checkOpenGrid(self.thumbnail_min):
+                    if self.loadGrid(self.raster):
+                        image, _ = self.raster.getGrid(0, 0)
+                    else:
+                        image, _ = self.raster.getArray()
                 else:
                     image, _ = self.raster.getArray()
             else:
-                image, _ = self.raster.getArray()
+                if self.dockWidgets["grid"].isVisible() is True:
+                    self.grid = RSGrids(self.raster)
+                    self.raster.open_grid = True
+                    self.initGrid()
+                    image, _ = self.raster.getGrid(0, 0)
+                else:
+                    image, _ = self.raster.getArray()
             self.updateBandList()
             # self.updateSlideSld(True)
         else:
